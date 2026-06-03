@@ -188,7 +188,7 @@ a.back:hover{border-color:var(--accent);color:var(--text)}
 </div>
 
 <script>
-console.log('BAKER conversation v3 - voice fix loaded');
+console.log('BAKER conversation v4 - voice speak fix');var cachedVoices=[];if(speechSynthesis.onvoiceschanged!==undefined){speechSynthesis.onvoiceschanged=function(){cachedVoices=speechSynthesis.getVoices();};}- voice fix loaded');
 // ── State ─────────────────────────────────────────────────
 var state = {
   history: [],
@@ -854,7 +854,7 @@ function speakText(txt) {
 
   var utt = new SpeechSynthesisUtterance(clean);
   // Pick best available voice - prefer British/deep
-  var voices = speechSynthesis.getVoices();
+  if(!cachedVoices||!cachedVoices.length){cachedVoices=speechSynthesis.getVoices();} var voices=cachedVoices;
   var preferred = ['Daniel','Google UK English Male','Microsoft George','Alex','Fred','en-GB'];
   var chosen = null;
   preferred.forEach(function(pref) {
