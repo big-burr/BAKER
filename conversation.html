@@ -188,7 +188,7 @@ a.back:hover{border-color:var(--accent);color:var(--text)}
 </div>
 
 <script>
-console.log('BAKER v4');
+console.log('BAKER conversation v3 - voice fix loaded');
 // ── State ─────────────────────────────────────────────────
 var state = {
   history: [],
@@ -207,6 +207,8 @@ var voiceRec = null;
 var voiceActive = false;
 var isSpeaking = false;
 var voiceFinal = '';
+var speechRate = 0.92;
+var silenceTimer = null;
 
 // ── Boot ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
@@ -734,6 +736,8 @@ function startVoice() {
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { alert('Voice input requires Chrome.'); return; }
   if (state.busy) return;
+  // Warm up speech synthesis with user gesture context so it works after async fetch
+  try { var w = new SpeechSynthesisUtterance(''); w.volume = 0; speechSynthesis.speak(w); } catch(e) {}
   voiceFinal = '';
   document.getElementById('voice-live').textContent = '';
   voiceRec = new SR();
@@ -754,6 +758,19 @@ function startVoice() {
       else interim += e.results[i][0].transcript;
     }
     document.getElementById('voice-live').textContent = voiceFinal + interim;
+
+    // Reset 2-second silence timer
+    if (silenceTimer) clearTimeout(silenceTimer);
+    silenceTimer = setTimeout(function() {
+      if (voiceActive) stopVoice();
+    }, 2000);
+
+    // Stop on "over" keyword
+    if (/over\s*$/i.test(voiceFinal.trim())) {
+      voiceFinal = voiceFinal.replace(/\s*over\s*$/i, '').trim() + ' ';
+      if (silenceTimer) clearTimeout(silenceTimer);
+      stopVoice();
+    }
   };
 
   voiceRec.onend = function() {
@@ -769,6 +786,7 @@ function startVoice() {
 
 function stopVoice() {
   voiceActive = false;
+  if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
   if (voiceRec) { voiceRec.stop(); voiceRec = null; }
   var txt = voiceFinal.trim();
   voiceFinal = '';
@@ -786,6 +804,19 @@ async function sendVoiceMessage(txt) {
   if (state.busy) return;
   var key = localStorage.getItem('baker_api_key');
   if (!key) { setVoiceStatus('No API key — check Settings', false); return; }
+
+  // Check for speed commands first
+  var speedChange = checkSpeedCommand(txt);
+  if (speedChange) {
+    var msg = speedChange==='faster'
+      ? 'Understood, sir. Speaking rate increased to ' + Math.round(speechRate*100) + '.'
+      : 'Of course, sir. Speaking rate decreased to ' + Math.round(speechRate*100) + '.';
+    appendMsg('baker', msg);
+    speakText(msg);
+    setMicState('idle');
+    setVoiceStatus('Tap to speak', false);
+    return;
+  }
 
   appendMsg('user', txt);
   state.history.push({role:'user', content:txt});
@@ -838,6 +869,17 @@ async function sendVoiceMessage(txt) {
   }
 }
 
+// ── Speed commands ───────────────────────────────────────
+function checkSpeedCommand(txt) {
+  var lower = txt.toLowerCase();
+  var fasterPhrases = ['talk faster','speak faster','faster','speed up','too slow','go faster','baker faster'];
+  var slowerPhrases = ['talk slower','speak slower','slower','slow down','too fast','go slower','baker slower','baker slow down'];
+  var matched = null;
+  fasterPhrases.forEach(function(p){ if(!matched && lower.indexOf(p)!==-1){ speechRate=Math.min(2.0,Math.round((speechRate+0.1)*10)/10); matched='faster'; }});
+  slowerPhrases.forEach(function(p){ if(!matched && lower.indexOf(p)!==-1){ speechRate=Math.max(0.3,Math.round((speechRate-0.1)*10)/10); matched='slower'; }});
+  return matched;
+}
+
 // Load voices as soon as they are available
 var cachedVoices = [];
 function loadVoices() {
@@ -873,7 +915,7 @@ function speakText(txt) {
   });
   if (!chosen) chosen = voices.find(function(v){ return v.lang && v.lang.indexOf('en') === 0; });
   if (chosen) utt.voice = chosen;
-  utt.rate = 0.92;
+  utt.rate = speechRate;
   utt.pitch = 0.85;
   utt.volume = 1;
 
