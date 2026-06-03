@@ -1,0 +1,13 @@
+{
+  "name": "BAKER",
+  "short_name": "BAKER",
+  "description": "Your AI-powered second brain",
+  "start_url": "/BAKER/",
+  "scope": "/BAKER/",
+  "display": "standalone",
+  "background_color": "#0f0f10",
+  "theme_color": "#7c6af7",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAKER — Lecture Capture</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7c6af7">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f10;--surface:#1a1a1d;--surface2:#222226;--border:#2e2e34;
+  --accent:#7c6af7;--accent-dim:#3d3578;--text:#e8e6f0;--muted:#7a7880;
+  --green:#4ade80;--amber:#fbbf24;--red:#f87171;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+.hdr{border-bottom:1px solid var(--border);padding:11px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--surface)}
+.back{background:transparent;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;text-decoration:none;transition:all .15s}
+.back:hover{border-color:var(--accent);color:var(--text)}
+.logo{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--accent);letter-spacing:.1em;background:rgba(124,106,247,.12);border:1px solid var(--accent-dim);padding:3px 8px;border-radius:4px}
+.hdr-sub{font-size:12px;color:var(--muted);font-weight:300}
+.no-key-warn{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--red);padding:3px 8px;border:1px solid rgba(248,113,113,.3);border-radius:4px;display:none}
+
+.mode-bar{display:flex;padding:10px 18px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface);gap:0}
+.m-btn{flex:1;padding:9px;border:1px solid var(--border);background:transparent;font-family:var(--mono);font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;letter-spacing:.1em;transition:all .15s}
+.m-btn:first-child{border-radius:4px 0 0 4px}
+.m-btn:last-child{border-radius:0 4px 4px 0;border-left:none}
+.m-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.m-btn:not(.active):hover{color:var(--text);background:var(--surface2)}
+
+.main{display:grid;grid-template-columns:1fr 1fr;flex:1;overflow:hidden}
+
+.panel{display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden}
+.p-hdr{padding:9px 15px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+.p-lbl{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+.pill{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:20px;border:1px solid var(--border);color:var(--muted)}
+.pill.ok{color:var(--green);border-color:var(--green)}
+.pill.err{color:var(--red);border-color:var(--red)}
+
+.fields{padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:7px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface)}
+label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:3px}
+input[type=text]{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-family:var(--sans);font-size:12px;color:var(--text);outline:none;transition:border-color .15s}
+input[type=text]:focus{border-color:var(--accent)}
+input[type=text]::placeholder{color:var(--muted);opacity:.4}
+
+.input-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+.rec-view{flex:1;display:flex;flex-direction:column;align-items:center;padding:14px;gap:10px;overflow:hidden}
+.rec-top{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0}
+.rec-btn{width:52px;height:52px;border-radius:50%;border:2px solid var(--border);background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:20px}
+.rec-btn:hover{border-color:var(--red)}
+.rec-btn.on{border-color:var(--red);background:rgba(248,113,113,.1);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.3)}50%{box-shadow:0 0 0 8px rgba(248,113,113,0)}}
+.timer{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.1em}
+.timer.on{color:var(--red)}
+.rec-status{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.06em;text-align:center;line-height:1.6}
+.live-tx{flex:1;width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:9px;overflow-y:auto;font-family:var(--mono);font-size:11px;line-height:1.8;color:var(--text)}
+.live-tx::-webkit-scrollbar{width:3px}
+.live-tx::-webkit-scrollbar-thumb{background:var(--border)}
+.interim{color:var(--muted);font-style:italic}
+
+.tx-view{flex:1;padding:10px 14px;display:flex;flex-direction:column;gap:5px;overflow:hidden}
+textarea{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:9px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;resize:none;line-height:1.8;transition:border-color .15s}
+textarea:focus{border-color:var(--accent)}
+textarea::placeholder{color:var(--muted);opacity:.4}
+.cc{font-family:var(--mono);font-size:10px;color:var(--muted);text-align:right}
+
+.sum-btn{margin:0 14px 10px;padding:9px;background:var(--accent);border:none;border-radius:4px;font-family:var(--mono);font-size:11px;font-weight:500;color:#fff;cursor:pointer;letter-spacing:.08em;transition:opacity .15s,transform .1s;flex-shrink:0}
+.sum-btn:hover{opacity:.88}
+.sum-btn:active{transform:scale(.98)}
+.sum-btn:disabled{opacity:.35;cursor:not-allowed}
+
+.out-panel{display:flex;flex-direction:column;overflow:hidden}
+.out-body{flex:1;overflow-y:auto;padding:12px;font-family:var(--mono);font-size:11px;line-height:1.8;color:var(--text);white-space:pre-wrap;word-break:break-word}
+.out-body::-webkit-scrollbar{width:3px}
+.out-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.ph{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted);text-align:center}
+.ph .ico{font-size:26px;opacity:.25}
+.ph p{font-family:var(--mono);font-size:10px;line-height:1.9;opacity:.5}
+.out-foot{padding:9px 14px;border-top:1px solid var(--border);display:flex;gap:7px;flex-shrink:0;background:var(--surface)}
+.c-btn{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:7px;font-family:var(--mono);font-size:10px;color:var(--text);cursor:pointer;letter-spacing:.06em;transition:all .15s}
+.c-btn:hover:not(:disabled){border-color:var(--accent);background:var(--border)}
+.c-btn:disabled{opacity:.3;cursor:not-allowed}
+.c-btn.copied{color:var(--green);border-color:var(--green)}
+.d-btn{flex:1;background:rgba(124,106,247,.12);border:1px solid var(--accent-dim);border-radius:4px;padding:7px;font-family:var(--mono);font-size:10px;color:var(--accent);cursor:pointer;letter-spacing:.06em;transition:background .15s}
+.d-btn:hover:not(:disabled){background:rgba(124,106,247,.22)}
+.d-btn:disabled{opacity:.3;cursor:not-allowed}
+
+.m-h1{color:var(--accent);font-weight:500}
+.m-h2{color:var(--amber)}
+.m-bl{color:var(--green)}
+.m-bo{color:var(--muted)}
+.m-sp{color:var(--border)}
+.m-lk{color:var(--accent)}
+
+.thinking{display:flex;align-items:center;gap:8px;padding:14px;color:var(--muted);font-family:var(--mono);font-size:11px}
+.dots span{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--accent);animation:bnc 1.2s infinite;margin-right:2px}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+@keyframes bnc{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-4px);opacity:1}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <a class="back" href="index.html">← BAKER</a>
+  <span class="logo">🎓</span>
+  <span class="hdr-sub">lecture capture</span>
+  <span class="no-key-warn" id="key-warn">⚠ No API key — set in BAKER settings</span>
+</div>
+
+<div class="mode-bar">
+  <button class="m-btn" id="btn-rec" onclick="switchMode('record')">⏺ RECORD</button>
+  <button class="m-btn active" id="btn-tx" onclick="switchMode('transcript')">✏ TRANSCRIPT</button>
+</div>
+
+<div class="main">
+  <div class="panel">
+    <div class="p-hdr"><span class="p-lbl">Metadata</span></div>
+    <div class="fields">
+      <div><label>Course</label><input type="text" id="course" placeholder="PSYCH 201" /></div>
+      <div><label>Professor</label><input type="text" id="professor" placeholder="Dr. Smith" /></div>
+      <div><label>Date</label><input type="text" id="date" /></div>
+      <div><label>Topic</label><input type="text" id="topic" placeholder="Memory formation" /></div>
+    </div>
+
+    <div class="input-area">
+      <div class="rec-view" id="rec-view" style="display:none">
+        <div class="rec-top">
+          <button class="rec-btn" id="rec-btn" onclick="toggleRec()">
+            <span id="rec-icon">🎙</span>
+          </button>
+          <span class="timer" id="timer">00:00</span>
+          <span class="rec-status" id="rec-status">click to start recording<br>works best in Chrome</span>
+        </div>
+        <div class="live-tx" id="live-tx">
+          <span style="color:var(--muted);opacity:.4;font-size:10px">transcript appears here as you speak...</span>
+        </div>
+      </div>
+
+      <div class="tx-view" id="tx-view">
+        <textarea id="tx-input" placeholder="Paste your transcript or raw notes here...
+
+You can paste a recording transcript, live notes from class, or a mix of both. BAKER will keep your original text and add a summary below it."></textarea>
+        <div class="cc"><span id="cc">0</span> chars</div>
+      </div>
+    </div>
+
+    <button class="sum-btn" id="sum-btn" onclick="summarize()">▶ SUMMARIZE → BAKER</button>
+  </div>
+
+  <div class="out-panel">
+    <div class="p-hdr">
+      <span class="p-lbl">Output</span>
+      <span class="pill" id="out-pill">ready</span>
+    </div>
+    <div class="out-body" id="out-body">
+      <div class="ph">
+        <div class="ico">◈</div>
+        <p>Your formatted note appears here.<br>Matches Lecture-Recording template.<br><br>Download → move to<br>BAKER / 00-Capture / Lectures</p>
+      </div>
+    </div>
+    <div class="out-foot">
+      <button class="c-btn" id="c-btn" onclick="copyOut()" disabled>Copy markdown</button>
+      <button class="d-btn" id="d-btn" onclick="dlNote()" disabled>Download .md → BAKER</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let mode = 'transcript', isRec = false, recog = null;
+let finalTx = '', interimTx = '';
+let timerInt = null, secs = 0, outText = '';
+
+document.getElementById('date').value = new Date().toISOString().split('T')[0];
+document.getElementById('tx-input').addEventListener('input', function() {
+  document.getElementById('cc').textContent = this.value.length.toLocaleString();
+});
+
+function getKey() {
+  const k = localStorage.getItem('baker_api_key');
+  if (!k) document.getElementById('key-warn').style.display = 'block';
+  return k;
+}
+
+function switchMode(m) {
+  mode = m;
+  document.getElementById('btn-rec').classList.toggle('active', m === 'record');
+  document.getElementById('btn-tx').classList.toggle('active', m === 'transcript');
+  document.getElementById('rec-view').style.display = m === 'record' ? 'flex' : 'none';
+  document.getElementById('tx-view').style.display = m === 'transcript' ? 'flex' : 'none';
+  if (m !== 'record' && isRec) stopRec();
+}
+
+function toggleRec() { isRec ? stopRec() : startRec(); }
+
+function startRec() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { document.getElementById('rec-status').textContent = 'speech recognition needs Chrome — use TRANSCRIPT mode'; return; }
+  finalTx = ''; interimTx = '';
+  document.getElementById('live-tx').innerHTML = '';
+  recog = new SR();
+  recog.continuous = true; recog.interimResults = true; recog.lang = 'en-US';
+  recog.onstart = () => {
+    isRec = true;
+    document.getElementById('rec-btn').classList.add('on');
+    document.getElementById('rec-icon').textContent = '⏹';
+    document.getElementById('rec-status').textContent = 'listening...';
+    document.getElementById('timer').classList.add('on');
+    startTimer();
+  };
+  recog.onresult = (e) => {
+    interimTx = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalTx += e.results[i][0].transcript + ' ';
+      else interimTx += e.results[i][0].transcript;
+    }
+    updateLive();
+  };
+  recog.onerror = (e) => {
+    if (e.error === 'not-allowed') { document.getElementById('rec-status').textContent = 'microphone access denied — check browser settings'; stopRec(); }
+  };
+  recog.onend = () => { if (isRec) { try { recog.start(); } catch(e) {} } };
+  try { recog.start(); } catch(e) { document.getElementById('rec-status').textContent = 'could not start — try Chrome'; }
+}
+
+function stopRec() {
+  isRec = false;
+  if (recog) { recog.stop(); recog = null; }
+  clearInterval(timerInt);
+  document.getElementById('rec-btn').classList.remove('on');
+  document.getElementById('rec-icon').textContent = '🎙';
+  document.getElementById('timer').classList.remove('on');
+  const t = document.getElementById('timer').textContent;
+  document.getElementById('rec-status').textContent = `${t} recorded · ready to summarize`;
+  updateLive(true);
+}
+
+function updateLive(final = false) {
+  const el = document.getElementById('live-tx');
+  el.innerHTML = finalTx.replace(/\n/g,'<br>') + (final ? '' : `<span class="interim">${interimTx}</span>`);
+  el.scrollTop = el.scrollHeight;
+}
+
+function startTimer() {
+  secs = 0; clearInterval(timerInt);
+  timerInt = setInterval(() => {
+    secs++;
+    const m = String(Math.floor(secs/60)).padStart(2,'0');
+    const s = String(secs%60).padStart(2,'0');
+    document.getElementById('timer').textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+async function summarize() {
+  const apiKey = getKey();
+  if (!apiKey) { alert('No API key found. Go back to BAKER and set it in Settings.'); return; }
+
+  let raw = '';
+  if (mode === 'record') {
+    raw = finalTx.trim();
+    if (!raw) { alert('No transcript yet — start recording first.'); return; }
+  } else {
+    raw = document.getElementById('tx-input').value.trim();
+    if (!raw) { alert('Paste a transcript first.'); return; }
+  }
+
+  const course = document.getElementById('course').value.trim();
+  const prof = document.getElementById('professor').value.trim();
+  const date = document.getElementById('date').value.trim();
+  const topic = document.getElementById('topic').value.trim();
+
+  const btn = document.getElementById('sum-btn');
+  btn.disabled = true; btn.textContent = '⟳ PROCESSING...';
+  setPill('working','');
+  document.getElementById('c-btn').disabled = true;
+  document.getElementById('d-btn').disabled = true;
+  document.getElementById('out-body').innerHTML = `<div class="thinking"><div class="dots"><span></span><span></span><span></span></div>Claude is reading your lecture...</div>`;
+
+  const depth = localStorage.getItem('baker_depth') || 'medium';
+
+  const depthPrompts = {
+    indepth: `You are BAKER's lecture analyzer. Return ONLY the analysis below — no preamble, no code fences, start directly with ## 🔑
+
+## 🔑 Key points
+[8-12 specific, concrete bullet points — real facts, definitions, and arguments from the lecture]
+
+## ❓ Questions to follow up
+[4-6 genuine questions this lecture raises worth researching or asking the professor]
+
+## 💡 Insights
+[2-4 observations about why this material matters, surprising implications, or connections to bigger ideas]
+
+## 🔗 Connects to
+[[02-Areas/College]] · [[05-Notes/Maps/College-MOC]]
+[3-5 more related topics — write each as a [[wikilink]] if it could be a note in the vault, otherwise plain text]
+
+## 📌 Key terms
+[Define 3-5 important terms or concepts introduced in this lecture]
+
+---
+*Status: reviewed · [[HOME]]*`,
+
+    medium: `You are BAKER's lecture analyzer. Return ONLY the analysis below — no preamble, no code fences, start directly with ## 🔑
+
+## 🔑 Key points
+[5-8 specific, concrete bullet points — real facts from the lecture]
+
+## ❓ Questions to follow up
+[2-3 genuine questions this lecture raises]
+
+## 💡 Insights
+[1-2 observations about why this material matters]
+
+## 🔗 Connects to
+[[02-Areas/College]] · [[05-Notes/Maps/College-MOC]]
+[2-3 more related topics — write each as a [[wikilink]] if it could be a note in the vault, otherwise plain text]
+
+---
+*Status: reviewed · [[HOME]]*`,
+
+    concise: `You are BAKER's lecture analyzer. Return ONLY the analysis below — no preamble, no code fences, start directly with ## 🔑
+
+## 🔑 Key points
+[4-5 bullet points — the most important facts only]
+
+## 💡 Insights
+[1 key takeaway from this lecture]
+
+## 🔗 Connects to
+[[02-Areas/College]] · [[05-Notes/Maps/College-MOC]]
+
+---
+*Status: reviewed · [[HOME]]*`,
+
+    miniscule: `You are BAKER's lecture analyzer. Return ONLY 3 bullet points — the absolute most critical facts from this lecture. No headers, no preamble, no code fences. Just 3 bullets then a blank line then: *[[02-Areas/College]] · [[05-Notes/Maps/College-MOC]] · [[HOME]]*`
+  };
+
+  const system = depthPrompts[depth];
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system,
+        messages: [{ role: 'user', content: `Analyze this lecture:\n\n${raw}` }]
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const analysis = data.content.map(b => b.text||'').join('\n').trim();
+
+    outText = `---
+date: ${date}
+type: lecture
+course: ${course||'Unknown'}
+professor: ${prof||'Unknown'}
+topic: ${topic||'Unknown'}
+status: reviewed
+tags: [lecture, college]
+---
+
+# 🎓 ${course||'Lecture'} — ${topic||'Notes'}
+
+**Date:** ${date}
+**Professor:** ${prof||'Unknown'}
+**Course:** ${course||'Unknown'}
+
+---
+
+## 📝 Raw notes / transcript
+${raw}
+
+---
+
+${analysis}`;
+
+    renderOut(outText);
+    setPill('done','ok');
+    document.getElementById('c-btn').disabled = false;
+    document.getElementById('d-btn').disabled = false;
+  } catch(err) {
+    document.getElementById('out-body').innerHTML = `<div class="thinking" style="color:var(--red)">Error: ${err.message}</div>`;
+    setPill('error','err');
+  }
+  btn.disabled = false; btn.textContent = '▶ SUMMARIZE → BAKER';
+}
+
+function setPill(t,cls) {
+  const p = document.getElementById('out-pill');
+  p.textContent = t; p.className = 'pill'+(cls?' '+cls:'');
+}
+
+function renderOut(text) {
+  const esc = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  document.getElementById('out-body').innerHTML = esc
+    .replace(/^(---)/gm,'<span class="m-sp">---</span>')
+    .replace(/^(# .+)$/gm,'<span class="m-h1">$1</span>')
+    .replace(/^(## .+)$/gm,'<span class="m-h2">$1</span>')
+    .replace(/^(- .+)$/gm,'<span class="m-bl">$1</span>')
+    .replace(/(\*\*[^*]+\*\*)/g,'<span class="m-bo">$1</span>')
+    .replace(/(\[\[.+?\]\])/g,'<span class="m-lk">$1</span>');
+}
+
+function copyOut() {
+  if (!outText) return;
+  navigator.clipboard.writeText(outText).then(() => {
+    const b = document.getElementById('c-btn');
+    b.textContent = '✓ Copied!'; b.classList.add('copied');
+    setTimeout(()=>{ b.textContent='Copy markdown'; b.classList.remove('copied'); }, 2000);
+  });
+}
+
+function dlNote() {
+  if (!outText) return;
+  const c = (document.getElementById('course').value.trim()||'Lecture').replace(/\s+/g,'-');
+  const d = document.getElementById('date').value.trim()||new Date().toISOString().split('T')[0];
+  const t = (document.getElementById('topic').value.trim()||'Note').replace(/\s+/g,'-');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([outText],{type:'text/markdown'}));
+  a.download = `${d}-${c}-${t}.md`; a.click();
+}
+
+getKey();
+</script>
+</body>
+</html>

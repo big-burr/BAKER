@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAKER — Analyze</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7c6af7">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f10;--surface:#1a1a1d;--border:#2e2e34;
+  --accent:#7c6af7;--accent-dim:#3d3578;--text:#e8e6f0;--muted:#7a7880;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column}
+.hdr{border-bottom:1px solid var(--border);padding:11px 18px;display:flex;align-items:center;gap:10px;background:var(--surface)}
+.back{background:transparent;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;text-decoration:none;transition:all .15s}
+.back:hover{border-color:var(--accent);color:var(--text)}
+.logo{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--accent);letter-spacing:.1em;background:rgba(124,106,247,.12);border:1px solid var(--accent-dim);padding:3px 8px;border-radius:4px}
+.hdr-sub{font-size:12px;color:var(--muted);font-weight:300}
+.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:40px;text-align:center}
+.icon{font-size:48px;opacity:.3}
+.title{font-family:var(--mono);font-size:16px;font-weight:500;color:var(--text)}
+.sub{font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.9;max-width:360px}
+.badge{font-family:var(--mono);font-size:10px;padding:4px 12px;border-radius:20px;background:rgba(124,106,247,.1);border:1px solid var(--accent-dim);color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <a class="back" href="index.html">← BAKER</a>
+  <span class="logo">🔍</span>
+  <span class="hdr-sub">analyze</span>
+</div>
+<div class="center">
+  <div class="icon">🔍</div>
+  <div class="title">Analyze</div>
+  <span class="badge">coming soon</span>
+  <div class="sub">
+    Drop any note, project, or block of text.<br>
+    BAKER breaks it down — insights, gaps,<br>
+    risks, and recommended next actions.<br><br>
+    Works with your project notes in<br>
+    BAKER / 01-Projects
+  </div>
+</div>
+</body>
+</html>

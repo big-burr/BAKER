@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAKER</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7c6af7">
+<link rel="apple-touch-icon" href="icon.svg">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f10;--surface:#1a1a1d;--surface2:#222226;--border:#2e2e34;
+  --accent:#7c6af7;--accent-dim:#3d3578;--text:#e8e6f0;--muted:#7a7880;
+  --green:#4ade80;--amber:#fbbf24;--red:#f87171;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh}
+
+/* Header */
+.hdr{border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;gap:12px;background:var(--surface);position:sticky;top:0;z-index:10}
+.logo{font-family:var(--mono);font-size:15px;font-weight:500;color:var(--accent);letter-spacing:.12em;background:rgba(124,106,247,.12);border:1px solid var(--accent-dim);padding:5px 12px;border-radius:4px}
+.hdr-sub{font-size:13px;color:var(--muted);font-weight:300}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.api-badge{font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:20px;border:1px solid var(--border);color:var(--muted)}
+.api-badge.set{color:var(--green);border-color:var(--green)}
+.api-badge.unset{color:var(--red);border-color:var(--red)}
+.settings-btn{background:transparent;border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s}
+.settings-btn:hover{border-color:var(--accent);color:var(--text)}
+
+/* Setup banner */
+.setup-banner{margin:24px 24px 0;padding:16px 20px;background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.3);border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.setup-banner p{font-family:var(--mono);font-size:12px;color:var(--red);line-height:1.6}
+.setup-banner button{flex-shrink:0;background:var(--red);border:none;border-radius:4px;padding:8px 14px;font-family:var(--mono);font-size:11px;color:#fff;cursor:pointer;letter-spacing:.06em}
+
+/* Content */
+.content{padding:24px}
+.section-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+
+/* Tool grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:32px}
+.tool-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;transition:all .2s;position:relative;overflow:hidden}
+.tool-card.active{cursor:pointer;text-decoration:none;display:block;color:inherit}
+.tool-card.active:hover{border-color:var(--accent);background:var(--surface2);transform:translateY(-1px)}
+.tool-card.active:hover .tool-arrow{opacity:1;transform:translateX(0)}
+.tool-card.soon{opacity:.5;cursor:default}
+.tool-icon{font-size:22px;margin-bottom:10px}
+.tool-name{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--text);margin-bottom:4px}
+.tool-desc{font-size:12px;color:var(--muted);line-height:1.6}
+.tool-badge{position:absolute;top:14px;right:14px;font-family:var(--mono);font-size:9px;padding:3px 7px;border-radius:20px}
+.badge-live{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);color:var(--green)}
+.badge-soon{background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+.badge-next{background:rgba(124,106,247,.1);border:1px solid var(--accent-dim);color:var(--accent)}
+.tool-arrow{font-family:var(--mono);font-size:16px;color:var(--accent);position:absolute;bottom:16px;right:16px;opacity:0;transform:translateX(-4px);transition:all .2s}
+
+/* Phase labels */
+.phase-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.phase-line{flex:1;height:1px;background:var(--border)}
+.phase-tag{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;white-space:nowrap}
+
+/* Footer */
+.footer{padding:20px 24px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+
+/* Settings modal */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;padding:24px}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;width:100%;max-width:440px}
+.modal-title{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--text);margin-bottom:6px}
+.modal-sub{font-size:12px;color:var(--muted);margin-bottom:22px;line-height:1.6}
+.field{margin-bottom:16px}
+.field label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:5px}
+.key-wrap{position:relative}
+.key-wrap input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:9px 36px 9px 10px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;transition:border-color .15s}
+.key-wrap input:focus{border-color:var(--accent)}
+.key-wrap input::placeholder{opacity:.4}
+.show-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px}
+.modal-actions{display:flex;gap:8px;margin-top:20px}
+.save-btn{flex:1;background:var(--accent);border:none;border-radius:4px;padding:10px;font-family:var(--mono);font-size:11px;color:#fff;cursor:pointer;font-weight:500;letter-spacing:.06em}
+.save-btn:hover{opacity:.88}
+.cancel-btn{flex:1;background:transparent;border:1px solid var(--border);border-radius:4px;padding:10px;font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer}
+.cancel-btn:hover{background:var(--surface2)}
+.clear-btn{background:transparent;border:1px solid rgba(248,113,113,.3);border-radius:4px;padding:10px 14px;font-family:var(--mono);font-size:11px;color:var(--red);cursor:pointer}
+.clear-btn:hover{background:rgba(248,113,113,.07)}
+.depth-btn{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:8px;font-family:var(--mono);font-size:10px;color:var(--muted);cursor:pointer;transition:all .15s;text-align:center}
+.depth-btn:hover{border-color:var(--accent);color:var(--text)}
+.depth-btn.active{background:rgba(124,106,247,.15);border-color:var(--accent);color:var(--accent)}
+.modal-note{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:14px;line-height:1.7;padding:10px;background:var(--bg);border-radius:4px;border:1px solid var(--border)}
+.modal-note a{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <span class="logo">BAKER</span>
+  <span class="hdr-sub">second brain</span>
+  <div class="hdr-right">
+    <span class="api-badge" id="api-badge">checking...</span>
+    <button class="settings-btn" onclick="openSettings()">⚙ Settings</button>
+  </div>
+</header>
+
+<div id="setup-banner" class="setup-banner" style="display:none">
+  <p>No API key set — BAKER needs your Anthropic API key to run AI tools.</p>
+  <button onclick="openSettings()">Set up →</button>
+</div>
+
+<main class="content">
+
+  <div class="phase-hdr">
+    <span class="phase-tag">Phase 2 — AI tools</span>
+    <div class="phase-line"></div>
+  </div>
+
+  <div class="grid">
+
+    <a class="tool-card active" href="lecture.html">
+      <div class="tool-icon">🎓</div>
+      <div class="tool-name">Lecture Capture</div>
+      <div class="tool-desc">Record or paste a lecture transcript. BAKER summarizes it and formats a note ready to drop into your vault.</div>
+      <span class="tool-badge badge-live">live</span>
+      <span class="tool-arrow">→</span>
+    </a>
+
+    <a class="tool-card active" href="discussion.html">
+      <div class="tool-icon">💬</div>
+      <div class="tool-name">Discussion</div>
+      <div class="tool-desc">Log and summarize conversations. Save them directly to your vault with key takeaways.</div>
+      <span class="tool-badge badge-next">up next</span>
+      <span class="tool-arrow">→</span>
+    </a>
+
+    <a class="tool-card active" href="analyze.html">
+      <div class="tool-icon">🔍</div>
+      <div class="tool-name">Analyze</div>
+      <div class="tool-desc">Drop any note or project. BAKER breaks it down — insights, gaps, and next actions.</div>
+      <span class="tool-badge badge-next">up next</span>
+      <span class="tool-arrow">→</span>
+    </a>
+
+    <div class="tool-card soon">
+      <div class="tool-icon">📥</div>
+      <div class="tool-name">Inbox Processor</div>
+      <div class="tool-desc">Drop a raw note. BAKER reads it and tells you where in the vault it belongs.</div>
+      <span class="tool-badge badge-soon">coming soon</span>
+    </div>
+
+    <div class="tool-card soon">
+      <div class="tool-icon">🚀</div>
+      <div class="tool-name">Project Analyzer</div>
+      <div class="tool-desc">Paste a project note. BAKER identifies risks, gaps, and next steps.</div>
+      <span class="tool-badge badge-soon">coming soon</span>
+    </div>
+
+    <div class="tool-card soon">
+      <div class="tool-icon">📊</div>
+      <div class="tool-name">Weekly Summary</div>
+      <div class="tool-desc">Feed in your daily logs. BAKER generates your weekly review automatically.</div>
+      <span class="tool-badge badge-soon">coming soon</span>
+    </div>
+
+    <div class="tool-card soon">
+      <div class="tool-icon">🔗</div>
+      <div class="tool-name">Note Linker</div>
+      <div class="tool-desc">Paste a note. BAKER suggests which existing vault notes it connects to.</div>
+      <span class="tool-badge badge-soon">coming soon</span>
+    </div>
+
+    <div class="tool-card soon">
+      <div class="tool-icon">🗣</div>
+      <div class="tool-name">Conversation Logger</div>
+      <div class="tool-desc">Summarize a conversation and save it directly to 00-Capture/Conversations.</div>
+      <span class="tool-badge badge-soon">coming soon</span>
+    </div>
+
+  </div>
+
+  <div class="phase-hdr">
+    <span class="phase-tag">Phase 3 — Digital assistant</span>
+    <div class="phase-line"></div>
+  </div>
+
+  <div class="grid">
+    <div class="tool-card soon">
+      <div class="tool-icon">🤖</div>
+      <div class="tool-name">Vault Chat</div>
+      <div class="tool-desc">Ask BAKER anything about your notes. It reads your vault and answers from your own knowledge.</div>
+      <span class="tool-badge badge-soon">phase 3</span>
+    </div>
+    <div class="tool-card soon">
+      <div class="tool-icon">📱</div>
+      <div class="tool-name">iPhone App</div>
+      <div class="tool-desc">Capture anywhere. Notes sync to your vault automatically.</div>
+      <span class="tool-badge badge-soon">phase 3</span>
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <span>BAKER v0.2 · Phase 2</span>
+  <span>vault → Documents/BAKER</span>
+</footer>
+
+<!-- Settings Modal -->
+<div class="overlay" id="overlay" onclick="closeIfOutside(event)">
+  <div class="modal">
+    <div class="modal-title">⚙ Settings</div>
+    <div class="modal-sub">Your API key is stored only in this browser. It never leaves your device.</div>
+    <div class="field">
+      <label>Anthropic API Key</label>
+      <div class="key-wrap">
+        <input type="password" id="key-input" placeholder="sk-ant-..." />
+        <button class="show-btn" onclick="toggleShow()" id="show-btn">👁</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Summary Depth</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:2px">
+        <button class="depth-btn" id="depth-indepth" onclick="setDepth('indepth')">🔬 In-depth</button>
+        <button class="depth-btn" id="depth-medium" onclick="setDepth('medium')">📄 Medium</button>
+        <button class="depth-btn" id="depth-concise" onclick="setDepth('concise')">⚡ Concise</button>
+        <button class="depth-btn" id="depth-miniscule" onclick="setDepth('miniscule')">🔹 Miniscule</button>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:8px" id="depth-desc">Choose how detailed your lecture summaries are.</div>
+    </div>
+    <div class="field">
+      <label>Discussion Effort Level</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:2px">
+        <button class="depth-btn" id="effort-deep" onclick="setEffort('deep')">🔬 Deep</button>
+        <button class="depth-btn" id="effort-standard" onclick="setEffort('standard')">💬 Standard</button>
+        <button class="depth-btn" id="effort-quick" onclick="setEffort('quick')">⚡ Quick</button>
+        <button class="depth-btn" id="effort-minimal" onclick="setEffort('minimal')">🔹 Minimal</button>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:8px" id="effort-desc">Controls how detailed BAKER's responses are in Discussion.</div>
+    </div>
+    <div class="modal-note">
+      Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key.<br>
+      Usage is billed to your Anthropic account. Claude Sonnet is very affordable for personal use.
+    </div>
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeSettings()">Cancel</button>
+      <button class="clear-btn" onclick="clearKey()">Clear</button>
+      <button class="save-btn" onclick="saveKey()">Save key</button>
+    </div>
+  </div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+
+function checkKey() {
+  const k = localStorage.getItem('baker_api_key');
+  const badge = document.getElementById('api-badge');
+  const banner = document.getElementById('setup-banner');
+  if (k && k.startsWith('sk-ant-')) {
+    badge.textContent = 'API key set';
+    badge.className = 'api-badge set';
+    banner.style.display = 'none';
+  } else {
+    badge.textContent = 'no API key';
+    badge.className = 'api-badge unset';
+    banner.style.display = 'flex';
+  }
+}
+
+function openSettings() {
+  const k = localStorage.getItem('baker_api_key') || '';
+  document.getElementById('key-input').value = k;
+  document.getElementById('overlay').classList.add('open');
+  loadDepth();
+  loadEffort();
+}
+
+function closeSettings() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function closeIfOutside(e) {
+  if (e.target === document.getElementById('overlay')) closeSettings();
+}
+
+function toggleShow() {
+  const inp = document.getElementById('key-input');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function saveKey() {
+  const k = document.getElementById('key-input').value.trim();
+  if (!k) { alert('Paste your API key first.'); return; }
+  localStorage.setItem('baker_api_key', k);
+  closeSettings();
+  checkKey();
+}
+
+function clearKey() {
+  if (!confirm('Remove API key?')) return;
+  localStorage.removeItem('baker_api_key');
+  document.getElementById('key-input').value = '';
+  closeSettings();
+  checkKey();
+}
+
+checkKey();
+
+const depthDescriptions = {
+  indepth: 'Full breakdown — key points, questions, insights, connections, detailed analysis.',
+  medium: 'Balanced — key points, questions, insights, connections.',
+  concise: 'Quick — key points and insights only.',
+  miniscule: 'Ultra-short — 3 bullet points max. Fast saves.'
+};
+
+function setDepth(d) {
+  localStorage.setItem('baker_depth', d);
+  document.querySelectorAll('.depth-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('depth-' + d).classList.add('active');
+  document.getElementById('depth-desc').textContent = depthDescriptions[d];
+}
+
+function loadDepth() {
+  const d = localStorage.getItem('baker_depth') || 'medium';
+  setDepth(d);
+}
+
+loadDepth();
+
+const effortDescriptions = {
+  deep: 'Thorough, detailed responses. Best for complex problems and analysis.',
+  standard: 'Balanced responses. Good for most conversations.',
+  quick: 'Concise replies. Good for quick back-and-forth.',
+  minimal: 'Very brief. Lowest API usage — just the essentials.'
+};
+
+function setEffort(e) {
+  localStorage.setItem('baker_effort', e);
+  document.querySelectorAll('[id^="effort-"]').forEach(b => b.classList.remove('active'));
+  document.getElementById('effort-' + e).classList.add('active');
+  document.getElementById('effort-desc').textContent = effortDescriptions[e];
+}
+
+function loadEffort() {
+  const e = localStorage.getItem('baker_effort') || 'standard';
+  setEffort(e);
+}
+
+loadEffort();
+</script>
+</body>
+</html>
