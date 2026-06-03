@@ -188,7 +188,7 @@ a.back:hover{border-color:var(--accent);color:var(--text)}
 </div>
 
 <script>
-console.log('BAKER conversation v4 - voice speak fix');var cachedVoices=[];if(speechSynthesis.onvoiceschanged!==undefined){speechSynthesis.onvoiceschanged=function(){cachedVoices=speechSynthesis.getVoices();};}- voice fix loaded');
+console.log('BAKER conversation v3 - voice fix loaded');
 // ── State ─────────────────────────────────────────────────
 var state = {
   history: [],
@@ -838,32 +838,43 @@ async function sendVoiceMessage(txt) {
   }
 }
 
+// Load voices as soon as they are available
+var cachedVoices = [];
+function loadVoices() {
+  cachedVoices = speechSynthesis.getVoices();
+}
+loadVoices();
+if (speechSynthesis.onvoiceschanged !== undefined) {
+  speechSynthesis.onvoiceschanged = loadVoices;
+}
+
 function speakText(txt) {
   if (!voiceMode) { state.busy = false; return; }
   stopSpeaking();
-  // Strip markdown symbols for cleaner speech
+
+  // Strip markdown for cleaner speech
   var clean = txt
-    .replace(/#{1,6}\s/g,'')
+    .replace(/#{1,6} /g,'')
     .replace(/\*\*(.*?)\*\*/g,'$1')
     .replace(/\*(.*?)\*/g,'$1')
     .replace(/\[\[([^\]]+)\]\]/g,'$1')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g,'$1')
     .replace(/`([^`]+)`/g,'$1')
-    .replace(/^[-*]\s/gm,'')
+    .replace(/^[-*] /gm,'')
     .trim();
 
   var utt = new SpeechSynthesisUtterance(clean);
-  // Pick best available voice - prefer British/deep
-  if(!cachedVoices||!cachedVoices.length){cachedVoices=speechSynthesis.getVoices();} var voices=cachedVoices;
-  var preferred = ['Daniel','Google UK English Male','Microsoft George','Alex','Fred','en-GB'];
+
+  // Pick best voice from cached list
+  var voices = cachedVoices.length ? cachedVoices : speechSynthesis.getVoices();
+  var preferred = ['Daniel','Google UK English Male','Microsoft George','Microsoft David','Alex'];
   var chosen = null;
   preferred.forEach(function(pref) {
-    if (!chosen) chosen = voices.find(function(v){return v.name.includes(pref)||v.lang===pref;});
+    if (!chosen) chosen = voices.find(function(v){ return v.name.indexOf(pref) !== -1; });
   });
-  if (!chosen) chosen = voices.find(function(v){return v.lang.startsWith('en');});
+  if (!chosen) chosen = voices.find(function(v){ return v.lang && v.lang.indexOf('en') === 0; });
   if (chosen) utt.voice = chosen;
-  utt.rate = 0.95;
-  utt.pitch = 0.9;
+  utt.rate = 0.92;
+  utt.pitch = 0.85;
   utt.volume = 1;
 
   isSpeaking = true;
@@ -876,7 +887,8 @@ function speakText(txt) {
     setMicState('idle');
     setVoiceStatus('Tap to speak', false);
   };
-  utt.onerror = function() {
+  utt.onerror = function(e) {
+    console.log('Speech error:', e);
     isSpeaking = false;
     state.busy = false;
     setMicState('idle');
