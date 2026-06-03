@@ -172,7 +172,7 @@ a.back:hover{border-color:var(--accent);color:var(--text)}
   <div class="mic-ring" id="mic-ring" onclick="handleMicClick()">
     <span id="mic-icon">🎙</span>
   </div>
-  <div class="voice-status" id="voice-status">Tap to speak</div>
+  <div class="voice-status" id="voice-status">Tap to begin</div>
   <div class="voice-live" id="voice-live"></div>
 </div>
 
@@ -805,7 +805,17 @@ async function sendVoiceMessage(txt) {
   var key = localStorage.getItem('baker_api_key');
   if (!key) { setVoiceStatus('No API key — check Settings', false); return; }
 
-  // Check for speed commands first
+  // Check for goodbye phrases first
+  if (checkGoodbye(txt)) {
+    appendMsg('user', txt);
+    var farewell = 'It has been a pleasure, sir. Saving our conversation now.';
+    appendMsg('baker', farewell);
+    speakText(farewell);
+    setTimeout(function(){ endConvo(); }, 2000);
+    return;
+  }
+
+  // Check for speed commands
   var speedChange = checkSpeedCommand(txt);
   if (speedChange) {
     var msg = speedChange==='faster'
@@ -880,6 +890,13 @@ function checkSpeedCommand(txt) {
   return matched;
 }
 
+// ── Goodbye detection ────────────────────────────────────
+var goodbyePhrases = ['goodbye baker','goodnight baker','sign off baker','peace out baker','good night baker'];
+function checkGoodbye(txt) {
+  var lower = txt.toLowerCase().trim();
+  return goodbyePhrases.some(function(p){ return lower.indexOf(p) !== -1; });
+}
+
 // Load voices as soon as they are available
 var cachedVoices = [];
 function loadVoices() {
@@ -927,7 +944,15 @@ function speakText(txt) {
     isSpeaking = false;
     state.busy = false;
     setMicState('idle');
-    setVoiceStatus('Tap to speak', false);
+    setVoiceStatus('Listening again...', true);
+    // Auto-restart listening after BAKER finishes speaking
+    if (voiceMode) {
+      setTimeout(function() {
+        if (voiceMode && !state.busy && !isSpeaking) {
+          startVoice();
+        }
+      }, 600);
+    }
   };
   utt.onerror = function(e) {
     console.log('Speech error:', e);
