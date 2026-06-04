@@ -87,6 +87,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .depth-btn.active{background:rgba(124,106,247,.15);border-color:var(--accent);color:var(--accent)}
 .modal-note{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:14px;line-height:1.7;padding:10px;background:var(--bg);border-radius:4px;border:1px solid var(--border)}
 .modal-note a{color:var(--accent)}
+@keyframes glow{0%,100%{opacity:1}50%{opacity:.4}}
 </style>
 </head>
 <body>
@@ -96,7 +97,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   <span class="hdr-sub">second brain</span>
   <div class="hdr-right">
     <span class="api-badge" id="api-badge">checking...</span>
-    <button class="settings-btn" onclick="openSettings()">⚙ Settings</button>
+    <span id="global-mic-dot" style="display:none;width:8px;height:8px;border-radius:50%;background:#4ade80;box-shadow:0 0 6px #4ade80;animation:glow 1.5s infinite" title="Constant mic active"></span>
+  <button class="settings-btn" onclick="openSettings()">⚙ Settings</button>
   </div>
 </header>
 
@@ -234,6 +236,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       </div>
       <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:8px" id="effort-desc">Controls how detailed BAKER's responses are in Discussion.</div>
     </div>
+    <div class="field">
+      <label>Constant Mic</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+        <button class="depth-btn" id="mic-on" onclick="setConstantMic(true)" style="flex:1">🎙 On</button>
+        <button class="depth-btn" id="mic-off" onclick="setConstantMic(false)" style="flex:1">🔇 Off</button>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:8px">When on, BAKER listens for voice commands from any page. Say "Hey BAKER" to activate, or navigate by name.</div>
+    </div>
     <div class="modal-note">
       Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key.<br>
       Usage is billed to your Anthropic account. Claude Sonnet is very affordable for personal use.
@@ -270,6 +280,7 @@ function openSettings() {
   document.getElementById('overlay').classList.add('open');
   loadDepth();
   loadEffort();
+  loadConstantMic();
 }
 
 function closeSettings() {
@@ -323,6 +334,69 @@ function loadDepth() {
 }
 
 loadDepth();
+
+// ── Constant Mic ──────────────────────────────────────────
+var globalMic = null;
+
+function setConstantMic(on) {
+  localStorage.setItem('baker_constant_mic', on ? 'true' : 'false');
+  document.getElementById('mic-on').className = 'depth-btn' + (on ? ' active' : '');
+  document.getElementById('mic-off').className = 'depth-btn' + (!on ? ' active' : '');
+  on ? startGlobalMic() : stopGlobalMic();
+}
+
+function loadConstantMic() {
+  var on = localStorage.getItem('baker_constant_mic') === 'true';
+  document.getElementById('mic-on').className = 'depth-btn' + (on ? ' active' : '');
+  document.getElementById('mic-off').className = 'depth-btn' + (!on ? ' active' : '');
+  if (on) startGlobalMic();
+}
+
+function startGlobalMic() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('Constant mic requires Chrome.'); return; }
+  stopGlobalMic();
+  document.getElementById('global-mic-dot').style.display = 'inline-block';
+
+  globalMic = new SR();
+  globalMic.continuous = true;
+  globalMic.interimResults = false;
+  globalMic.lang = 'en-US';
+
+  globalMic.onresult = function(e) {
+    var txt = e.results[e.results.length-1][0].transcript.toLowerCase().trim();
+    console.log('Global mic heard:', txt);
+    if (txt.includes('lecture') || txt.includes('lecture capture')) {
+      window.location.href = 'lecture.html';
+    } else if (txt.includes('conversation') || txt.includes('discussion') || txt.includes('chat with baker') || txt.includes('baker chat')) {
+      window.location.href = 'conversation.html';
+    } else if (txt.includes('analyze') || txt.includes('analysis') || txt.includes('analyse')) {
+      window.location.href = 'analyze.html';
+    } else if (txt.includes('settings') || txt.includes('open settings')) {
+      openSettings();
+    } else if (txt.includes('hey baker') || txt.includes('baker')) {
+      // Flash the mic dot as acknowledgement
+      var dot = document.getElementById('global-mic-dot');
+      dot.style.background = '#7c6af7';
+      setTimeout(function(){ dot.style.background = '#4ade80'; }, 500);
+    }
+  };
+
+  globalMic.onend = function() {
+    if (localStorage.getItem('baker_constant_mic') === 'true') {
+      try { globalMic.start(); } catch(e) {}
+    }
+  };
+
+  try { globalMic.start(); } catch(e) { console.log('Global mic error:', e); }
+}
+
+function stopGlobalMic() {
+  if (globalMic) { globalMic.stop(); globalMic = null; }
+  document.getElementById('global-mic-dot').style.display = 'none';
+}
+
+loadConstantMic();
 
 const effortDescriptions = {
   deep: 'Thorough, detailed responses. Best for complex problems and analysis.',
