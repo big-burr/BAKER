@@ -31,11 +31,11 @@ a.back:hover{border-color:var(--accent);color:var(--text)}
 .hbtn.end:hover{background:rgba(248,113,113,.07)}
 .hbtn.save-dl{color:var(--accent);border-color:var(--accent-dim);background:rgba(124,106,247,.07)}
 .hbtn.save-dl:hover{background:rgba(124,106,247,.15)}
+.hbtn.spotify-on{color:#1db954;border-color:#1db954;background:rgba(29,185,84,.06)}
 .effort-pill{font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:20px;border:1px solid var(--border);color:var(--muted)}
 .status-bar{padding:5px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:7px;flex-shrink:0;overflow-x:auto;min-height:30px}
 .sb-txt{font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap;flex-shrink:0}
-.sb-txt.ok{color:var(--green)}
-.sb-txt.amber{color:var(--amber)}
+.sb-txt.ok{color:var(--green)}.sb-txt.amber{color:var(--amber)}
 .chip{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:2px 9px;font-family:var(--mono);font-size:10px;white-space:nowrap;flex-shrink:0}
 .chip.auto{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.2);color:var(--green)}
 .chip.manual{background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
@@ -46,13 +46,9 @@ a.back:hover{border-color:var(--accent);color:var(--text)}
 .topic-inp{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:5px 10px;font-family:var(--sans);font-size:12px;color:var(--text);outline:none}
 .topic-inp:focus{border-color:var(--accent)}
 .topic-inp::placeholder{color:var(--muted);opacity:.4}
-
-/* ── Orb container ── */
-.orb-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);border-bottom:1px solid var(--border);position:relative;overflow:hidden;height:0;transition:height .3s ease}
-.orb-wrap.visible{height:280px}
-#orb-canvas{display:block;width:100%;height:280px}
-.orb-state-label{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;color:rgba(30,180,200,.5);letter-spacing:.15em;text-transform:uppercase;pointer-events:none;transition:opacity .3s}
-
+.orb-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);border-bottom:1px solid var(--border);position:relative;overflow:hidden;height:260px}
+#orb-canvas{display:block;width:100%;height:260px}
+.orb-state-label{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;color:rgba(30,180,200,.45);letter-spacing:.15em;text-transform:uppercase;pointer-events:none}
 .messages{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 .messages::-webkit-scrollbar{width:3px}
 .messages::-webkit-scrollbar-thumb{background:var(--border)}
@@ -118,10 +114,18 @@ a.back:hover{border-color:var(--accent);color:var(--text)}
 .voice-status{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;min-height:18px}
 .voice-status.active{color:var(--text)}
 .voice-live{font-family:var(--mono);font-size:11px;color:var(--muted);font-style:italic;text-align:center;min-height:18px;max-width:300px;line-height:1.5}
+.weather-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-top:6px;display:flex;align-items:center;gap:10px;max-width:280px}
+.weather-temp{font-family:var(--mono);font-size:22px;font-weight:500;color:var(--text)}
+.weather-desc{font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.7}
+.spotify-card{background:var(--surface);border:1px solid #1db954;border-radius:8px;padding:10px 14px;margin-top:6px;max-width:320px}
+.spotify-track{font-family:var(--mono);font-size:11px;color:var(--text);margin-bottom:2px}
+.spotify-artist{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.spotify-controls{display:flex;gap:6px;margin-top:8px}
+.sp-btn{flex:1;padding:5px;border-radius:4px;font-family:var(--mono);font-size:11px;cursor:pointer;border:1px solid #1db954;background:transparent;color:#1db954;transition:all .15s}
+.sp-btn:hover{background:rgba(29,185,84,.12)}
 </style>
 </head>
 <body>
-
 <input type="file" id="manual-file-input" accept=".md,.txt" multiple>
 
 <div class="hdr">
@@ -134,6 +138,7 @@ a.back:hover{border-color:var(--accent);color:var(--text)}
       <button class="mode-tab" id="tab-voice" onclick="setMode('voice')">🎙 Voice</button>
     </div>
     <span class="effort-pill" id="effort-pill">standard</span>
+    <button class="hbtn" id="spotify-btn" onclick="handleSpotifyBtn()">♫ Spotify</button>
     <button class="hbtn" id="vault-btn">⬡ Connect Vault</button>
     <button class="hbtn" id="load-btn">📁 Load note</button>
     <button class="hbtn" onclick="clearChat()">Clear</button>
@@ -151,7 +156,6 @@ a.back:hover{border-color:var(--accent);color:var(--text)}
   <input class="topic-inp" id="topic" placeholder="What are we discussing? (optional)">
 </div>
 
-<!-- Orb -->
 <div class="orb-wrap" id="orb-wrap">
   <canvas id="orb-canvas"></canvas>
   <div class="orb-state-label" id="orb-label">standby</div>
@@ -160,14 +164,16 @@ a.back:hover{border-color:var(--accent);color:var(--text)}
 <div class="messages" id="messages">
   <div class="welcome" id="welcome">
     <div class="welcome-icon">◈</div>
-    <div class="welcome-title">BAKER online.</div>
-    <div class="welcome-sub">Good to have you, sir. Connect your vault and I will pull relevant notes automatically. I can also create and edit vault notes on request.</div>
+    <div class="welcome-title" id="welcome-title">BAKER online.</div>
+    <div class="welcome-sub" id="welcome-sub">Good to have you, sir. Connect your vault and I will pull relevant notes automatically.</div>
     <div class="starters">
       <div class="starter" id="s1">💡 Project idea</div>
       <div class="starter" id="s2">📅 Daily reflection</div>
       <div class="starter" id="s3">📚 Study help</div>
       <div class="starter" id="s4">📂 Check my notes</div>
       <div class="starter" id="s5">✏ Create a note</div>
+      <div class="starter" id="s6">🌤 Weather</div>
+      <div class="starter" id="s7">🎵 Now playing</div>
     </div>
   </div>
 </div>
@@ -189,7 +195,7 @@ a.back:hover{border-color:var(--accent);color:var(--text)}
 <div class="overlay" id="end-overlay">
   <div class="modal">
     <div class="modal-title">⏹ End conversation</div>
-    <div class="modal-sub" id="end-sub">BAKER will summarize this conversation based on your effort setting and save it to your vault at 00-Capture/Conversations/.</div>
+    <div class="modal-sub" id="end-sub">BAKER will summarize this conversation and save it to your vault.</div>
     <div class="modal-acts">
       <button class="mbtn" onclick="closeEnd()">Cancel</button>
       <button class="mbtn red" onclick="endConvo()">Summarize &amp; Save</button>
@@ -198,26 +204,20 @@ a.back:hover{border-color:var(--accent);color:var(--text)}
 </div>
 
 <script>
-// ── Orb (WebGL two-pass) ───────────────────────────────────
-(function() {
-  var canvas = document.getElementById('orb-canvas');
-  var gl = canvas.getContext('webgl');
-  if (!gl) return;
+// ═══════════════════════════════════════════════════════════
+// ORB — WebGL two-pass (fibonacci + arc/audio/hex/gradient)
+// ═══════════════════════════════════════════════════════════
+(function(){
+  var canvas=document.getElementById('orb-canvas');
+  var gl=canvas.getContext('webgl');
+  if(!gl)return;
+  var W=0,H=0;
+  function resize(){W=canvas.offsetWidth;H=canvas.offsetHeight;canvas.width=W;canvas.height=H;}
+  resize();window.addEventListener('resize',resize);
 
-  var W = 0, H = 0;
+  var vert='attribute vec2 a;void main(){gl_Position=vec4(a,0,1);}';
 
-  function resize() {
-    W = canvas.offsetWidth;
-    H = canvas.offsetHeight;
-    canvas.width = W;
-    canvas.height = H;
-  }
-  resize();
-  window.addEventListener('resize', resize);
-
-  var vert = 'attribute vec2 a;void main(){gl_Position=vec4(a,0,1);}';
-
-  var fragOrb = [
+  var fragOrb=[
     'precision highp float;',
     'uniform vec2 R;uniform float T;uniform sampler2D C0;',
     '#define PI 3.14159265359',
@@ -226,907 +226,677 @@ a.back:hover{border-color:var(--accent);color:var(--text)}
     'float h11(float p){p=fract(p*.1031);p*=p+33.33;p*=p+p;return fract(p);}',
     'float circ(vec2 uv,float r,float b){return smoothstep(r,r-b,length(uv)-r);}',
     'void main(){',
-    '  vec2 uv=(2.0*gl_FragCoord.xy-R)/R.y;',
-    '  float bias=8.0/R.x;',
-    '  vec3 col=vec3(0.0);',
-    '  float t=(T+80.0)/3.0;',
+    '  vec2 uv=(2.0*gl_FragCoord.xy-R)/R.y;float bias=8.0/R.x;',
+    '  vec3 col=vec3(0.0);float t=(T+80.0)/3.0;',
     '  for(float i=0.0;i<300.0;i++){',
-    '    float th=2.0*PI*i/gR;',
-    '    float ph=sin(acos(1.0-2.0*i/300.0))*0.475;',
-    '    float rd=(h11(i)>0.5?1.0:-1.0);',
-    '    th-=t*rd;',
+    '    float th=2.0*PI*i/gR;float ph=sin(acos(1.0-2.0*i/300.0))*0.475;',
+    '    float rd=(h11(i)>0.5?1.0:-1.0);th-=t*rd;',
     '    col+=circ(uv+vec2(cos(th)*ph,sin(th)*ph),14.0/R.x,bias)*theme*((abs(sin(th)*ph)+abs(cos(th)*ph))/5.0);',
     '  }',
-    '  col+=circ(uv,0.25,bias);',
-    '  col-=circ(uv,0.25-(3.0/R.y),bias);',
-    '  vec3 prv=texture2D(C0,gl_FragCoord.xy/R).rgb;',
-    '  col=mix(col,prv,0.95);',
-    '  gl_FragColor=vec4(col,1.0);',
-    '}'
-  ].join('\n');
+    '  col+=circ(uv,0.25,bias);col-=circ(uv,0.25-(3.0/R.y),bias);',
+    '  vec3 prv=texture2D(C0,gl_FragCoord.xy/R).rgb;col=mix(col,prv,0.95);',
+    '  gl_FragColor=vec4(col,1.0);}'].join('\n');
 
-  var fragComp = [
+  var fragComp=[
     'precision highp float;',
-    'uniform vec2 R;uniform float T;uniform float AU;uniform float SPD;',
-    'uniform sampler2D C0;',
-    '#define PI  3.14159265359',
+    'uniform vec2 R;uniform float T;uniform float AU;uniform float SPD;uniform sampler2D C0;',
+    '#define PI 3.14159265359',
     '#define TAU 6.28318530718',
     'const vec3 theme=vec3(0.118,0.580,0.643);',
-    'vec3 hsb2rgb(vec3 c){',
-    '  vec3 rgb=clamp(abs(mod(c.x*6.0+vec3(0,4,2),6.0)-3.0)-1.0,0.0,1.0);',
-    '  rgb*=rgb*(3.0-2.0*rgb);return c.z*mix(vec3(1),rgb,c.y);}',
+    'vec3 hsb2rgb(vec3 c){vec3 rgb=clamp(abs(mod(c.x*6.0+vec3(0,4,2),6.0)-3.0)-1.0,0.0,1.0);rgb*=rgb*(3.0-2.0*rgb);return c.z*mix(vec3(1),rgb,c.y);}',
     'float circ(vec2 uv,float r,float b){return smoothstep(r,r-b,length(uv)-r);}',
     'vec2 sv=vec2(1.0,1.7320508);',
     'float hexSDF(vec2 p){p=abs(p);return max(dot(p,sv*0.5),p.x);}',
-    'vec4 getHex(vec2 p){',
-    '  vec4 hC=floor(vec4(p,p-vec2(0.5,1.0))/sv.xyxy)+0.5;',
-    '  vec4 h=vec4(p-hC.xy*sv,p-(hC.zw+0.5)*sv);',
-    '  return dot(h.xy,h.xy)<dot(h.zw,h.zw)?vec4(h.xy,hC.xy):vec4(h.zw,hC.zw+0.5);}',
-    'vec3 hexLayer(vec2 uv,float sc,vec3 col){',
-    '  float asp=R.x/R.y;',
-    '  vec2 hv=getHex(sc*uv*vec2(asp,1.0)).xy;',
-    '  float d=hexSDF(hv);',
-    '  return mix(vec3(0),vec3(1),smoothstep(0.0,0.03,d-0.5+0.04))*col;}',
-    'vec3 arcLayer(vec2 p,float r,float o,vec3 col,float bias){',
-    '  float d=circ(p,r,bias); d-=circ(p,r-o,bias);',
-    '  float angle=atan(p.y,p.x)+PI+T*SPD;',
-    '  float lA=TAU/3.0,sA=TAU/48.0;',
-    '  if(abs(mod(angle,lA)-lA/2.0)<0.06)d-=1.0;',
-    '  if(abs(mod(angle,sA)-sA/2.0)<0.01)d-=1.0;',
-    '  return max(0.0,d)*col*0.2;}',
+    'vec4 getHex(vec2 p){vec4 hC=floor(vec4(p,p-vec2(0.5,1.0))/sv.xyxy)+0.5;vec4 h=vec4(p-hC.xy*sv,p-(hC.zw+0.5)*sv);return dot(h.xy,h.xy)<dot(h.zw,h.zw)?vec4(h.xy,hC.xy):vec4(h.zw,hC.zw+0.5);}',
+    'vec3 hexLayer(vec2 uv,float sc,vec3 col){float asp=R.x/R.y;vec2 hv=getHex(sc*uv*vec2(asp,1.0)).xy;float d=hexSDF(hv);return mix(vec3(0),vec3(1),smoothstep(0.0,0.03,d-0.5+0.04))*col;}',
+    'vec3 arcLayer(vec2 p,float r,float o,vec3 col,float bias){float d=circ(p,r,bias);d-=circ(p,r-o,bias);float angle=atan(p.y,p.x)+PI+T*SPD;float lA=TAU/3.0,sA=TAU/48.0;if(abs(mod(angle,lA)-lA/2.0)<0.06)d-=1.0;if(abs(mod(angle,sA)-sA/2.0)<0.01)d-=1.0;return max(0.0,d)*col*0.2;}',
     'void main(){',
-    '  vec2 uv=gl_FragCoord.xy/R;',
-    '  vec2 p=(uv-0.5)*vec2(R.x/R.y,1.0);',
-    '  float bias=8.0/R.x;',
-    '  vec3 col=vec3(0.0);',
+    '  vec2 uv=gl_FragCoord.xy/R;vec2 p=(uv-0.5)*vec2(R.x/R.y,1.0);float bias=8.0/R.x;vec3 col=vec3(0.0);',
     '  col+=arcLayer(p,0.18,0.025,theme*vec3(0.75,0.75,1.25),bias);',
     '  col+=texture2D(C0,uv).rgb;',
-    '  float audio=pow(AU,3.5);',
-    '  float d=length(p)-0.4;',
-    '  vec3 wm=vec3(1.0);',
-    '  wm*=smoothstep(0.2,0.4,uv.x);wm*=smoothstep(0.2,0.4,1.0-uv.x);',
+    '  float audio=pow(AU,3.5);float d=length(p)-0.4;',
+    '  vec3 wm=vec3(1.0);wm*=smoothstep(0.2,0.4,uv.x);wm*=smoothstep(0.2,0.4,1.0-uv.x);',
     '  col+=(1.0-smoothstep(0.0,0.02,abs(audio-d)))*theme*max(0.001,audio*5.0)*wm;',
     '  col+=pow(abs(0.025/d*audio),1.2)*theme*wm;',
     '  vec3 hl=hexLayer(uv,25.0,theme*1.5);col+=col*hl;',
-    '  float ga=atan(p.y,p.x)+PI-T;',
-    '  col*=hsb2rgb(vec3(ga/TAU,length(p)*1.25,0.8));',
-    '  col=(col*(2.51*col+0.03))/(col*(2.43*col+0.59)+0.14);',
-    '  col=pow(col,vec3(1.0/2.2));',
-    '  gl_FragColor=vec4(col,1.0);',
-    '}'
-  ].join('\n');
+    '  float ga=atan(p.y,p.x)+PI-T;col*=hsb2rgb(vec3(ga/TAU,length(p)*1.25,0.8));',
+    '  col=(col*(2.51*col+0.03))/(col*(2.43*col+0.59)+0.14);col=pow(col,vec3(1.0/2.2));',
+    '  gl_FragColor=vec4(col,1.0);}'].join('\n');
 
-  var fragBlit = [
-    'precision mediump float;',
-    'uniform sampler2D uT;uniform vec2 R;',
-    'void main(){gl_FragColor=texture2D(uT,gl_FragCoord.xy/R);}'
-  ].join('\n');
+  var fragBlit='precision mediump float;uniform sampler2D uT;uniform vec2 R;void main(){gl_FragColor=texture2D(uT,gl_FragCoord.xy/R);}';
 
-  function mkProg(fs) {
-    function sh(t, src) {
-      var s = gl.createShader(t);
-      gl.shaderSource(s, src); gl.compileShader(s); return s;
-    }
-    var p = gl.createProgram();
-    gl.attachShader(p, sh(gl.VERTEX_SHADER, vert));
-    gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs));
-    gl.linkProgram(p); return p;
+  function mkProg(fs){
+    function sh(t,src){var s=gl.createShader(t);gl.shaderSource(s,src);gl.compileShader(s);return s;}
+    var p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,vert));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);return p;
   }
-
-  var orbProg = mkProg(fragOrb);
-  var compProg = mkProg(fragComp);
-  var blitProg = mkProg(fragBlit);
-
-  var buf = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
-
-  function bindQ(prog) {
-    var loc = gl.getAttribLocation(prog, 'a');
-    gl.enableVertexAttribArray(loc);
-    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  var orbProg=mkProg(fragOrb),compProg=mkProg(fragComp),blitProg=mkProg(fragBlit);
+  var buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+  function bindQ(p){var l=gl.getAttribLocation(p,'a');gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,2,gl.FLOAT,false,0,0);}
+  function mkFBO(){
+    var tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    var fb=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tex,0);
+    return{tex:tex,fb:fb};
   }
-
-  function mkFBO() {
-    var tex = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    var fb = gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-    return {tex: tex, fb: fb};
-  }
-
-  var orbA = mkFBO(), orbB = mkFBO(), compFBO = mkFBO();
-
-  function resizeFBO(fbo) {
-    gl.bindTexture(gl.TEXTURE_2D, fbo.tex);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, W, H, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-  }
-
-  var oU = {
-    R: gl.getUniformLocation(orbProg,'R'), T: gl.getUniformLocation(orbProg,'T'),
-    C0: gl.getUniformLocation(orbProg,'C0')
+  var orbA=mkFBO(),orbB=mkFBO(),compFBO=mkFBO();
+  function resizeFBO(f){gl.bindTexture(gl.TEXTURE_2D,f.tex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,W,H,0,gl.RGBA,gl.UNSIGNED_BYTE,null);}
+  var oU={R:gl.getUniformLocation(orbProg,'R'),T:gl.getUniformLocation(orbProg,'T'),C0:gl.getUniformLocation(orbProg,'C0')};
+  var cU={R:gl.getUniformLocation(compProg,'R'),T:gl.getUniformLocation(compProg,'T'),AU:gl.getUniformLocation(compProg,'AU'),SPD:gl.getUniformLocation(compProg,'SPD'),C0:gl.getUniformLocation(compProg,'C0')};
+  var bU={uT:gl.getUniformLocation(blitProg,'uT'),R:gl.getUniformLocation(blitProg,'R')};
+  var analyser=null,dataArr=null,audioCtx=null,audioLevel=0;
+  window.orbInitAudio=function(){
+    if(audioCtx)return;
+    try{audioCtx=new AudioContext();navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){var src=audioCtx.createMediaStreamSource(s);analyser=audioCtx.createAnalyser();analyser.fftSize=256;dataArr=new Uint8Array(analyser.frequencyBinCount);src.connect(analyser);}).catch(function(){});}catch(e){}
   };
-  var cU = {
-    R: gl.getUniformLocation(compProg,'R'), T: gl.getUniformLocation(compProg,'T'),
-    AU: gl.getUniformLocation(compProg,'AU'), SPD: gl.getUniformLocation(compProg,'SPD'),
-    C0: gl.getUniformLocation(compProg,'C0')
-  };
-  var bU = {uT: gl.getUniformLocation(blitProg,'uT'), R: gl.getUniformLocation(blitProg,'R')};
-
-  // Analyser for mic input
-  var analyser = null, dataArr = null, audioCtx = null, audioLevel = 0;
-  window.orbInitAudio = function() {
-    if (audioCtx) return;
-    try {
-      audioCtx = new AudioContext();
-      navigator.mediaDevices.getUserMedia({audio: true}).then(function(stream) {
-        var src = audioCtx.createMediaStreamSource(stream);
-        analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 256;
-        dataArr = new Uint8Array(analyser.frequencyBinCount);
-        src.connect(analyser);
-      }).catch(function(){});
-    } catch(e) {}
-  };
-
-  function getMicLevel() {
-    if (!analyser) return 0;
-    analyser.getByteFrequencyData(dataArr);
-    var sum = 0;
-    for (var i = 0; i < dataArr.length; i++) sum += dataArr[i];
-    return (sum / dataArr.length) / 255;
-  }
-
-  // Orb state: 'idle' | 'listening' | 'thinking' | 'speaking'
-  window.orbState = 'idle';
-
-  var start = performance.now();
-  var interval = 1000 / 15;
-  var last = 0;
-  var lastW = 0, lastH = 0;
-
-  function draw(now) {
+  function getMicLevel(){if(!analyser)return 0;analyser.getByteFrequencyData(dataArr);var sum=0;for(var i=0;i<dataArr.length;i++)sum+=dataArr[i];return(sum/dataArr.length)/255;}
+  window.orbState='idle';
+  var start=performance.now(),interval=1000/15,last=0,lastW=0,lastH=0;
+  function draw(now){
     requestAnimationFrame(draw);
-    if (now - last < interval) return;
-    last = now;
-
-    var curW = canvas.offsetWidth, curH = canvas.offsetHeight;
-    if (curW !== lastW || curH !== lastH) {
-      W = canvas.width = curW; H = canvas.height = curH;
-      resizeFBO(orbA); resizeFBO(orbB); resizeFBO(compFBO);
-      lastW = curW; lastH = curH;
-    }
-    if (!W || !H) return;
-
-    var t = (now - start) / 1000;
-    var s = window.orbState || 'idle';
-
-    // Audio level
-    var a = 0;
-    if (s === 'listening') {
-      a = getMicLevel();
-      if (a < 0.02) a = 0.04 + 0.03 * Math.abs(Math.sin(t * 2.1));
-    } else if (s === 'speaking') {
-      a = 0.12 + 0.10 * Math.abs(Math.sin(t * 4.5)) + 0.06 * Math.abs(Math.sin(t * 7.3));
-    } else if (s === 'thinking') {
-      a = 0.06 + 0.04 * Math.abs(Math.sin(t * 3.0));
-    } else {
-      a = 0.03 + 0.02 * Math.abs(Math.sin(t * 1.3));
-    }
-    audioLevel = audioLevel * 0.75 + a * 0.25;
-
-    // Arc spin speed — faster when thinking
-    var spd = s === 'thinking' ? 3.0 : s === 'speaking' ? 1.8 : s === 'listening' ? 1.2 : 0.5;
-
-    // Pass 1: fibonacci orb with feedback blur
-    gl.useProgram(orbProg); bindQ(orbProg);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, orbB.fb);
-    gl.viewport(0, 0, W, H);
-    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, orbA.tex);
-    gl.uniform1i(oU.C0, 0); gl.uniform2f(oU.R, W, H); gl.uniform1f(oU.T, t);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    var tmp = orbA; orbA = orbB; orbB = tmp;
-
-    // Pass 2: composite
-    gl.useProgram(compProg); bindQ(compProg);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, compFBO.fb);
-    gl.viewport(0, 0, W, H);
-    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, orbA.tex);
-    gl.uniform1i(cU.C0, 0); gl.uniform2f(cU.R, W, H); gl.uniform1f(cU.T, t);
-    gl.uniform1f(cU.AU, audioLevel); gl.uniform1f(cU.SPD, spd);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
-    // Blit to screen
-    gl.useProgram(blitProg); bindQ(blitProg);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, W, H);
-    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, compFBO.tex);
-    gl.uniform1i(bU.uT, 0); gl.uniform2f(bU.R, W, H);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    if(now-last<interval)return;last=now;
+    var cW=canvas.offsetWidth,cH=canvas.offsetHeight;
+    if(cW!==lastW||cH!==lastH){W=canvas.width=cW;H=canvas.height=cH;resizeFBO(orbA);resizeFBO(orbB);resizeFBO(compFBO);lastW=cW;lastH=cH;}
+    if(!W||!H)return;
+    var t=(now-start)/1000,s=window.orbState||'idle',a=0;
+    if(s==='listening'){a=getMicLevel();if(a<0.02)a=0.04+0.03*Math.abs(Math.sin(t*2.1));}
+    else if(s==='speaking'){a=0.12+0.10*Math.abs(Math.sin(t*4.5))+0.06*Math.abs(Math.sin(t*7.3));}
+    else if(s==='thinking'){a=0.06+0.04*Math.abs(Math.sin(t*3.0));}
+    else{a=0.03+0.02*Math.abs(Math.sin(t*1.3));}
+    audioLevel=audioLevel*0.75+a*0.25;
+    var spd=s==='thinking'?3.0:s==='speaking'?1.8:s==='listening'?1.2:0.5;
+    gl.useProgram(orbProg);bindQ(orbProg);gl.bindFramebuffer(gl.FRAMEBUFFER,orbB.fb);gl.viewport(0,0,W,H);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,orbA.tex);gl.uniform1i(oU.C0,0);gl.uniform2f(oU.R,W,H);gl.uniform1f(oU.T,t);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+    var tmp=orbA;orbA=orbB;orbB=tmp;
+    gl.useProgram(compProg);bindQ(compProg);gl.bindFramebuffer(gl.FRAMEBUFFER,compFBO.fb);gl.viewport(0,0,W,H);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,orbA.tex);gl.uniform1i(cU.C0,0);gl.uniform2f(cU.R,W,H);gl.uniform1f(cU.T,t);gl.uniform1f(cU.AU,audioLevel);gl.uniform1f(cU.SPD,spd);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+    gl.useProgram(blitProg);bindQ(blitProg);gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,W,H);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,compFBO.tex);gl.uniform1i(bU.uT,0);gl.uniform2f(bU.R,W,H);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
   }
   requestAnimationFrame(draw);
 })();
 
-// ── State label updater ───────────────────────────────────
-function setOrbState(s) {
-  window.orbState = s;
-  var lbl = document.getElementById('orb-label');
-  if (lbl) lbl.textContent = s;
-}
+function setOrbState(s){window.orbState=s;var l=document.getElementById('orb-label');if(l)l.textContent=s;}
 
-function showOrb() {
-  document.getElementById('orb-wrap').classList.add('visible');
-}
-
-// ── App State ─────────────────────────────────────────────
-var state = {
-  history: [], busy: false, vaultHandle: null, vaultIndex: [],
-  vaultConnected: false, autoNotes: [], manualNotes: [], noteStore: {}, noteOutput: ''
+// ═══════════════════════════════════════════════════════════
+// APP STATE
+// ═══════════════════════════════════════════════════════════
+var state={
+  history:[],busy:false,vaultHandle:null,vaultIndex:[],
+  vaultConnected:false,autoNotes:[],manualNotes:[],noteStore:{},
+  skipHotWord:false  // from Concept Bytes: auto-continue after BAKER asks a question
 };
-var hasFS = ('showDirectoryPicker' in window);
-var voiceMode = false;
-var voiceRec = null;
-var voiceActive = false;
-var isSpeaking = false;
-var voiceFinal = '';
-var speechRate = 0.92;
-var silenceTimer = null;
-var wakeRec = null;
-var constantMic = localStorage.getItem('baker_constant_mic') === 'true';
+var hasFS=('showDirectoryPicker' in window);
+var voiceMode=false,voiceRec=null,voiceActive=false,isSpeaking=false;
+var voiceFinal='',speechRate=0.92,silenceTimer=null,wakeRec=null;
+var constantMic=localStorage.getItem('baker_constant_mic')==='true';
 
-// ── Boot ──────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('send-btn').addEventListener('click', sendMessage);
-  document.getElementById('vault-btn').addEventListener('click', handleVaultBtn);
-  document.getElementById('load-btn').addEventListener('click', function() {
-    document.getElementById('manual-file-input').click();
-  });
-  document.getElementById('manual-file-input').addEventListener('change', loadManualNotes);
-  document.getElementById('dl-btn').addEventListener('click', downloadNote);
-  document.getElementById('msg-input').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-  });
-  document.getElementById('msg-input').addEventListener('input', function() {
-    this.style.height = 'auto';
-    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-  });
+// From Concept Bytes: expanded hot words list
+var HOT_WORDS=['hey baker','baker','yo baker','ok baker'];
 
-  var starters = {
-    s1: 'Help me think through a project idea',
-    s2: 'I want to reflect on my day',
-    s3: 'Help me understand something I am studying',
-    s4: 'What do my notes say about my current projects?',
-    s5: 'Create a new project note for me'
+// Spotify state
+var spotifyToken=null,spotifyPlayer=null,spotifyDeviceId=null;
+var spotifyClientId=localStorage.getItem('baker_spotify_id')||'';
+
+// ═══════════════════════════════════════════════════════════
+// TIME-AWARE GREETING (from Concept Bytes assist_local.py)
+// ═══════════════════════════════════════════════════════════
+function getTimeGreeting(){
+  var h=new Date().getHours();
+  if(h>=5&&h<12) return 'Good morning, sir.';
+  if(h>=12&&h<17) return 'Good afternoon, sir.';
+  if(h>=17&&h<21) return 'Good evening, sir.';
+  return "You're up late, sir.";
+}
+
+function getContextBlock(){
+  var now=new Date();
+  var timeStr=now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  var dateStr=now.toLocaleDateString([],{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  return '[Current date: '+dateStr+' | Time: '+timeStr+']';
+}
+
+// ═══════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('send-btn').addEventListener('click',sendMessage);
+  document.getElementById('vault-btn').addEventListener('click',handleVaultBtn);
+  document.getElementById('load-btn').addEventListener('click',function(){document.getElementById('manual-file-input').click();});
+  document.getElementById('manual-file-input').addEventListener('change',loadManualNotes);
+  document.getElementById('dl-btn').addEventListener('click',downloadNote);
+  document.getElementById('msg-input').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}});
+  document.getElementById('msg-input').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';});
+
+  // Starters including weather + now playing
+  var starters={
+    s1:'Help me think through a project idea',
+    s2:'I want to reflect on my day',
+    s3:'Help me understand something I am studying',
+    s4:'What do my notes say about my current projects?',
+    s5:'Create a new project note for me',
+    s6:'__weather__',
+    s7:'__spotify__'
   };
-  Object.keys(starters).forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.addEventListener('click', function() { sendStarter(starters[id]); });
+  Object.keys(starters).forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.addEventListener('click',function(){
+      if(starters[id]==='__weather__') fetchWeatherAndReport();
+      else if(starters[id]==='__spotify__') fetchSpotifyAndReport();
+      else sendStarter(starters[id]);
+    });
   });
 
-  var effort = localStorage.getItem('baker_effort') || 'standard';
-  document.getElementById('effort-pill').textContent = effort;
+  var effort=localStorage.getItem('baker_effort')||'standard';
+  document.getElementById('effort-pill').textContent=effort;
 
-  // Show orb
-  showOrb();
+  // Time-aware welcome
+  var wt=document.getElementById('welcome-title');
+  var ws=document.getElementById('welcome-sub');
+  if(wt) wt.textContent=getTimeGreeting();
+  if(ws) ws.textContent='Vault and voice ready when you are, sir.';
 
-  if (constantMic) { startWakeWord(); setMode('voice'); }
+  // Persist speech rate
+  var sr=parseFloat(localStorage.getItem('baker_speech_rate'));
+  if(!isNaN(sr)) speechRate=sr;
 
-  if (hasFS) {
-    tryReconnectVault();
-  } else {
-    document.getElementById('vault-btn').textContent = '⬡ Vault (Chrome only)';
-    document.getElementById('vault-btn').disabled = true;
-    setSb('', 'Automatic vault scanning requires Chrome on desktop');
+  // Context intake from analyze.html / lecture.html "Discuss" button
+  var ctxRaw=sessionStorage.getItem('baker_convo_context');
+  if(ctxRaw){
+    sessionStorage.removeItem('baker_convo_context');
+    try{
+      var ctx=JSON.parse(ctxRaw);
+      if(ctx.topic) document.getElementById('topic').value=ctx.topic;
+      if(ctx.context){
+        // Inject as silent system context — user sees a sys message, not the raw dump
+        state.history.push({role:'user',content:'System information: I am bringing context from another BAKER tool. '+ctx.context+(ctx.instruction?' '+ctx.instruction:'')});
+        state.history.push({role:'assistant',content:'Understood, sir. I have the context loaded and am ready to discuss it.'});
+        appendSys('Context loaded from '+(ctx.source||'BAKER')+' — ready to discuss.');
+        document.getElementById('dl-btn').disabled=false;
+      }
+    }catch(e){}
   }
+
+  if(constantMic){startWakeWord();setMode('voice');}
+
+  if(hasFS){tryReconnectVault();}
+  else{document.getElementById('vault-btn').textContent='⬡ Vault (Chrome only)';document.getElementById('vault-btn').disabled=true;setSb('','Automatic vault scanning requires Chrome on desktop');}
 });
 
-// ── IndexedDB ─────────────────────────────────────────────
-function openDB() {
-  return new Promise(function(res, rej) {
-    var r = indexedDB.open('baker-vault', 1);
-    r.onupgradeneeded = function(e) { e.target.result.createObjectStore('handles', {keyPath:'id'}); };
-    r.onsuccess = function(e) { res(e.target.result); };
-    r.onerror = function() { rej(r.error); };
-  });
+// ═══════════════════════════════════════════════════════════
+// INDEXEDDB
+// ═══════════════════════════════════════════════════════════
+function openDB(){return new Promise(function(res,rej){var r=indexedDB.open('baker-vault',1);r.onupgradeneeded=function(e){e.target.result.createObjectStore('handles',{keyPath:'id'});};r.onsuccess=function(e){res(e.target.result);};r.onerror=function(){rej(r.error);};});}
+async function storeHandle(h){try{var db=await openDB();db.transaction('handles','readwrite').objectStore('handles').put({id:'vault',handle:h});}catch(e){}}
+async function getStoredHandle(){try{var db=await openDB();return new Promise(function(res){var r=db.transaction('handles','readonly').objectStore('handles').get('vault');r.onsuccess=function(){res(r.result?r.result.handle:null);};r.onerror=function(){res(null);};});}catch(e){return null;}}
+async function clearHandle(){try{var db=await openDB();db.transaction('handles','readwrite').objectStore('handles').delete('vault');}catch(e){}}
+
+// ═══════════════════════════════════════════════════════════
+// VAULT
+// ═══════════════════════════════════════════════════════════
+async function tryReconnectVault(){
+  var stored=await getStoredHandle();if(!stored)return;
+  setVaultBtn('scanning');setSb('amber','⟳ Reconnecting vault...');
+  try{var perm=await stored.requestPermission({mode:'readwrite'});if(perm==='granted'){await doConnect(stored);}else{await clearHandle();setVaultBtn('off');setSb('','Click Connect Vault to connect your BAKER folder');}}
+  catch(e){await clearHandle();setVaultBtn('off');setSb('','Click Connect Vault to connect your BAKER folder');}
 }
-async function storeHandle(h) {
-  try { var db = await openDB(); db.transaction('handles','readwrite').objectStore('handles').put({id:'vault',handle:h}); } catch(e){}
+async function handleVaultBtn(){
+  if(!hasFS){alert('Requires Chrome on desktop.');return;}
+  if(state.vaultConnected){state.vaultHandle=null;state.vaultIndex=[];state.vaultConnected=false;state.autoNotes=[];await clearHandle();setVaultBtn('off');setSb('','Vault disconnected');renderStatusBar();appendSys('Vault disconnected.');}
+  else{try{var handle=await window.showDirectoryPicker({mode:'readwrite'});await doConnect(handle);}catch(e){if(e.name!=='AbortError'){setSb('','Connection failed: '+e.message);}setVaultBtn('off');}}
 }
-async function getStoredHandle() {
-  try {
-    var db = await openDB();
-    return new Promise(function(res) {
-      var r = db.transaction('handles','readonly').objectStore('handles').get('vault');
-      r.onsuccess = function() { res(r.result ? r.result.handle : null); };
-      r.onerror = function() { res(null); };
-    });
-  } catch(e) { return null; }
+async function doConnect(handle){
+  state.vaultHandle=handle;await storeHandle(handle);setVaultBtn('scanning');setSb('amber','⟳ Scanning vault...');
+  state.vaultIndex=[];await scanDir(handle,'');state.vaultConnected=true;setVaultBtn('on');
+  setSb('ok','⬡ '+state.vaultIndex.length+' notes indexed · auto-retrieval on');
+  appendSys('Vault connected, sir. '+state.vaultIndex.length+' notes indexed and ready.');
 }
-async function clearHandle() {
-  try { var db = await openDB(); db.transaction('handles','readwrite').objectStore('handles').delete('vault'); } catch(e){}
+async function scanDir(dir,path){
+  try{for await(var entry of dir.values()){if(entry.name.startsWith('.'))continue;if(entry.kind==='file'&&entry.name.endsWith('.md')){try{var f=await entry.getFile();var content=await f.text();state.vaultIndex.push({name:entry.name,path:path?path+'/'+entry.name:entry.name,content:content});}catch(e){}}else if(entry.kind==='directory'){await scanDir(entry,path?path+'/'+entry.name:entry.name);}}}catch(e){}
+}
+async function writeToVault(relPath,content){
+  if(!state.vaultHandle)return false;
+  try{var parts=relPath.replace(/^\/+/,'').split('/');var fileName=parts.pop();var dir=state.vaultHandle;for(var i=0;i<parts.length;i++){dir=await dir.getDirectoryHandle(parts[i],{create:true});}var fh=await dir.getFileHandle(fileName,{create:true});var w=await fh.createWritable();await w.write(content);await w.close();var idx=state.vaultIndex.findIndex(function(n){return n.path===relPath;});if(idx>=0)state.vaultIndex[idx].content=content;else state.vaultIndex.push({name:fileName,path:relPath,content:content});return true;}catch(e){console.error('Write failed:',e);return false;}
 }
 
-// ── Vault ─────────────────────────────────────────────────
-async function tryReconnectVault() {
-  var stored = await getStoredHandle();
-  if (!stored) return;
-  setVaultBtn('scanning'); setSb('amber', '⟳ Reconnecting vault...');
-  try {
-    var perm = await stored.requestPermission({mode:'readwrite'});
-    if (perm === 'granted') { await doConnect(stored); }
-    else { await clearHandle(); setVaultBtn('off'); setSb('', 'Click Connect Vault to connect your BAKER folder'); }
-  } catch(e) { await clearHandle(); setVaultBtn('off'); setSb('', 'Click Connect Vault to connect your BAKER folder'); }
-}
-
-async function handleVaultBtn() {
-  if (!hasFS) { alert('Requires Chrome on desktop. Use Load note on iPhone.'); return; }
-  if (state.vaultConnected) {
-    state.vaultHandle = null; state.vaultIndex = []; state.vaultConnected = false; state.autoNotes = [];
-    await clearHandle(); setVaultBtn('off'); setSb('', 'Vault disconnected'); renderStatusBar(); appendSys('Vault disconnected.');
-  } else {
-    try {
-      var handle = await window.showDirectoryPicker({mode:'readwrite'});
-      await doConnect(handle);
-    } catch(e) {
-      if (e.name !== 'AbortError') { setSb('', 'Connection failed: ' + e.message); appendSys('Vault error: ' + e.message); }
-      setVaultBtn('off');
-    }
-  }
-}
-
-async function doConnect(handle) {
-  state.vaultHandle = handle; await storeHandle(handle);
-  setVaultBtn('scanning'); setSb('amber', '⟳ Scanning vault...');
-  state.vaultIndex = [];
-  await scanDir(handle, '');
-  state.vaultConnected = true; setVaultBtn('on');
-  setSb('ok', '⬡ ' + state.vaultIndex.length + ' notes indexed · auto-retrieval on');
-  appendSys('Vault connected, sir. ' + state.vaultIndex.length + ' notes indexed and ready.');
-}
-
-async function scanDir(dir, path) {
-  try {
-    for await (var entry of dir.values()) {
-      if (entry.name.startsWith('.')) continue;
-      if (entry.kind === 'file' && entry.name.endsWith('.md')) {
-        try { var f = await entry.getFile(); var content = await f.text(); state.vaultIndex.push({name: entry.name, path: path ? path+'/'+entry.name : entry.name, content: content}); } catch(e) {}
-      } else if (entry.kind === 'directory') { await scanDir(entry, path ? path+'/'+entry.name : entry.name); }
-    }
-  } catch(e) {}
-}
-
-async function writeToVault(relPath, content) {
-  if (!state.vaultHandle) return false;
-  try {
-    var parts = relPath.replace(/^\/+/, '').split('/');
-    var fileName = parts.pop();
-    var dir = state.vaultHandle;
-    for (var i = 0; i < parts.length; i++) { dir = await dir.getDirectoryHandle(parts[i], {create: true}); }
-    var fh = await dir.getFileHandle(fileName, {create: true});
-    var w = await fh.createWritable(); await w.write(content); await w.close();
-    var idx = state.vaultIndex.findIndex(function(n) { return n.path === relPath; });
-    if (idx >= 0) state.vaultIndex[idx].content = content;
-    else state.vaultIndex.push({name: fileName, path: relPath, content: content});
-    return true;
-  } catch(e) { console.error('Write failed:', e); return false; }
-}
-
-// ── Relevance ─────────────────────────────────────────────
-var STOP = new Set(['the','and','for','are','but','not','you','all','can','had','her','was','one','our','out','get','has','him','his','how','its','may','now','see','way','who','did','too','use','she','that','this','with','have','from','they','will','been','were','said','each','into','than','your','more','then','some','them','what','when','also','just','know','take','year','after','could','think','about','would','these','those','other','well','want','very','much','still','while','even','back','come','made','only','over','such','here','down','does','like','time','most']);
-
-function findRelevant(query) {
-  if (!state.vaultIndex.length) return [];
-  var words = query.toLowerCase().split(/\W+/).filter(function(w) { return w.length > 2 && !STOP.has(w); });
-  if (!words.length) return [];
-  var scored = state.vaultIndex.map(function(note) {
-    var text = (note.name + ' ' + note.content).toLowerCase();
-    var score = 0;
-    words.forEach(function(w) {
-      var m = text.match(new RegExp(w, 'g'));
-      if (m) { var tm = note.name.toLowerCase().match(new RegExp(w,'g')); score += m.length + (tm ? tm.length*3 : 0); }
-    });
-    return {note: note, score: score};
-  });
+// ═══════════════════════════════════════════════════════════
+// RELEVANCE
+// ═══════════════════════════════════════════════════════════
+var STOP=new Set(['the','and','for','are','but','not','you','all','can','had','her','was','one','our','out','get','has','him','his','how','its','may','now','see','way','who','did','too','use','she','that','this','with','have','from','they','will','been','were','said','each','into','than','your','more','then','some','them','what','when','also','just','know','take','year','after','could','think','about','would','these','those','other','well','want','very','much','still','while','even','back','come','made','only','over','such','here','down','does','like','time','most']);
+function findRelevant(query){
+  if(!state.vaultIndex.length)return[];
+  var words=query.toLowerCase().split(/\W+/).filter(function(w){return w.length>2&&!STOP.has(w);});
+  if(!words.length)return[];
+  var scored=state.vaultIndex.map(function(note){var text=(note.name+' '+note.content).toLowerCase();var score=0;words.forEach(function(w){var m=text.match(new RegExp(w,'g'));if(m){var tm=note.name.toLowerCase().match(new RegExp(w,'g'));score+=m.length+(tm?tm.length*3:0);}});return{note:note,score:score};});
   return scored.filter(function(s){return s.score>1;}).sort(function(a,b){return b.score-a.score;}).slice(0,5).map(function(s){return s.note;});
 }
 
-// ── Manual notes ──────────────────────────────────────────
-function loadManualNotes(e) {
-  Array.from(e.target.files).forEach(function(file) {
-    var r = new FileReader();
-    r.onload = function(ev) {
-      var i = state.manualNotes.findIndex(function(n){return n.name===file.name;});
-      if (i >= 0) state.manualNotes[i].content = ev.target.result;
-      else state.manualNotes.push({name: file.name, content: ev.target.result});
-      renderStatusBar();
-    };
-    r.readAsText(file);
-  });
-  e.target.value = '';
-}
+// ═══════════════════════════════════════════════════════════
+// MANUAL NOTES
+// ═══════════════════════════════════════════════════════════
+function loadManualNotes(e){Array.from(e.target.files).forEach(function(file){var r=new FileReader();r.onload=function(ev){var i=state.manualNotes.findIndex(function(n){return n.name===file.name;});if(i>=0)state.manualNotes[i].content=ev.target.result;else state.manualNotes.push({name:file.name,content:ev.target.result});renderStatusBar();};r.readAsText(file);});e.target.value='';}
+function removeManual(name){state.manualNotes=state.manualNotes.filter(function(n){return n.name!==name;});renderStatusBar();}
 
-function removeManual(name) {
-  state.manualNotes = state.manualNotes.filter(function(n){return n.name!==name;});
-  renderStatusBar();
-}
+// ═══════════════════════════════════════════════════════════
+// WEATHER — open-meteo (free, no API key)
+// ═══════════════════════════════════════════════════════════
+var WMO_CODES={0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',80:'Light showers',81:'Showers',82:'Heavy showers',95:'Thunderstorm',96:'Thunderstorm with hail',99:'Thunderstorm with heavy hail'};
 
-// ── UI helpers ────────────────────────────────────────────
-function setVaultBtn(s) {
-  var b = document.getElementById('vault-btn');
-  b.className = 'hbtn' + (s==='on'?' vault-on':s==='scanning'?' vault-scanning':'');
-  b.textContent = s==='on'?'⬡ Vault on':s==='scanning'?'⟳ Scanning...':'⬡ Connect Vault';
-}
-function setSb(cls, txt) {
-  var el = document.getElementById('sb-txt');
-  el.className = 'sb-txt' + (cls?' '+cls:'');
-  el.textContent = txt;
-}
-function renderStatusBar() {
-  var bar = document.getElementById('status-bar');
-  bar.querySelectorAll('.chip').forEach(function(e){e.remove();});
-  state.autoNotes.forEach(function(n) {
-    var c = document.createElement('div'); c.className='chip auto';
-    c.textContent='⬡ '+n.name.replace('.md',''); bar.appendChild(c);
-  });
-  state.manualNotes.forEach(function(n) {
-    var c = document.createElement('div'); c.className='chip manual';
-    var nm = n.name;
-    c.innerHTML='📄 '+nm.replace('.md','');
-    var x = document.createElement('button'); x.textContent='×';
-    x.addEventListener('click', function(){removeManual(nm);});
-    c.appendChild(x); bar.appendChild(c);
+async function fetchWeather(){
+  return new Promise(function(res,rej){
+    if(!navigator.geolocation){rej(new Error('Geolocation not available'));return;}
+    navigator.geolocation.getCurrentPosition(async function(pos){
+      try{
+        var lat=pos.coords.latitude.toFixed(4),lon=pos.coords.longitude.toFixed(4);
+        var url='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto';
+        var r=await fetch(url);var d=await r.json();
+        var c=d.current;
+        var desc=WMO_CODES[c.weather_code]||'Unknown';
+        var info={temp:Math.round(c.temperature_2m),feels:Math.round(c.apparent_temperature),desc:desc,wind:Math.round(c.wind_speed_10m),humidity:c.relative_humidity_2m,lat:lat,lon:lon};
+        res(info);
+      }catch(e){rej(e);}
+    },function(e){rej(new Error('Location denied'));});
   });
 }
-function removeWelcome(){var w=document.getElementById('welcome');if(w)w.remove();}
-function getTime(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
-function appendSys(txt) {
-  removeWelcome();
-  var msgs=document.getElementById('messages');
-  var d=document.createElement('div'); d.className='sys-msg'; d.textContent=txt;
-  msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight;
-}
-function sendStarter(msg){document.getElementById('msg-input').value=msg;sendMessage();}
 
-function appendMsg(role, txt, noteData) {
-  removeWelcome();
-  var msgs = document.getElementById('messages');
-  var wrap = document.createElement('div'); wrap.className='msg '+role;
-  var bub = document.createElement('div'); bub.className='bubble'; bub.textContent=txt;
-  var ts = document.createElement('div'); ts.className='msg-time';
-  ts.textContent = role==='user'?'You · '+getTime():'BAKER · '+getTime();
-  wrap.appendChild(bub); wrap.appendChild(ts);
-  if (noteData) {
-    var nid = 'nc' + Date.now(); state.noteStore[nid] = noteData;
-    var card = document.createElement('div'); card.className='note-card';
-    var t = document.createElement('div'); t.className='nc-title'; t.textContent='📄 '+noteData.filename;
-    var p = document.createElement('div'); p.className='nc-path'; p.textContent='→ '+noteData.path;
-    var prev = document.createElement('div'); prev.className='nc-preview';
-    prev.textContent = noteData.content.slice(0,300)+(noteData.content.length>300?'\n...':'');
-    var acts = document.createElement('div'); acts.className='nc-actions';
-    var dis = document.createElement('button'); dis.className='nc-btn'; dis.textContent='Dismiss';
-    dis.addEventListener('click',function(){card.remove();});
-    var sav = document.createElement('button'); sav.className='nc-btn primary'; sav.id=nid;
-    sav.textContent = state.vaultConnected?'Save to Vault':'Download .md';
-    (function(id){sav.addEventListener('click',function(){doSaveNote(id);});})(nid);
-    acts.appendChild(dis); acts.appendChild(sav);
-    card.appendChild(t); card.appendChild(p); card.appendChild(prev); card.appendChild(acts);
-    wrap.appendChild(card);
+async function fetchWeatherAndReport(){
+  appendSys('Fetching weather...');setOrbState('thinking');
+  try{
+    var w=await fetchWeather();
+    var sysInfo='System information: Current weather — '+w.temp+'°F (feels like '+w.feels+'°F), '+w.desc+', wind '+w.wind+' mph, humidity '+w.humidity+'%.';
+    showWeatherCard(w);
+    await sendSystemInfo(sysInfo,'Tell the user the current weather conditions in one natural sentence, as JARVIS would.');
+  }catch(e){
+    appendSys('Weather unavailable: '+e.message);setOrbState('idle');
+    if(voiceMode) speakText('Unable to retrieve weather data, sir. Location access may be required.');
   }
-  msgs.appendChild(wrap); msgs.scrollTop=msgs.scrollHeight;
 }
 
-async function doSaveNote(nid) {
-  var nd = state.noteStore[nid]; if (!nd) return;
-  var btn = document.getElementById(nid); if (!btn) return;
-  if (state.vaultConnected) {
-    btn.textContent='Saving...'; btn.disabled=true;
-    var ok = await writeToVault(nd.path, nd.content);
-    if (ok) { btn.className='nc-btn done'; btn.textContent='✓ Saved to vault'; appendSys('Saved: '+nd.path); }
-    else { btn.disabled=false; btn.textContent='⬇ Failed — click to download'; btn.addEventListener('click',function(){downloadBlob(nd.content,nd.filename);}); }
-  } else { downloadBlob(nd.content, nd.filename); btn.className='nc-btn done'; btn.textContent='✓ Downloaded'; }
-  delete state.noteStore[nid];
+function showWeatherCard(w){
+  var msgs=document.getElementById('messages');removeWelcome();
+  var card=document.createElement('div');card.className='weather-card';
+  card.innerHTML='<div class="weather-temp">'+w.temp+'°F</div><div class="weather-desc">'+w.desc+'<br>Feels like '+w.feels+'°F<br>Wind: '+w.wind+' mph · Humidity: '+w.humidity+'%</div>';
+  var wrap=document.createElement('div');wrap.className='msg baker';wrap.appendChild(card);
+  msgs.appendChild(wrap);msgs.scrollTop=msgs.scrollHeight;
 }
 
-function showThinking() {
-  var msgs=document.getElementById('messages');
-  var d=document.createElement('div'); d.className='msg baker'; d.id='thinking-msg';
-  d.innerHTML='<div class="thinking-wrap"><div class="dots"><span></span><span></span><span></span></div></div>';
-  msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight;
-}
-function removeThinking(){var t=document.getElementById('thinking-msg');if(t)t.remove();}
-
-// ── Note block parser ─────────────────────────────────────
-function parseNote(raw) {
-  var s=raw.indexOf('<<<NOTE_START>>>'), e=raw.indexOf('<<<NOTE_END>>>');
-  if(s===-1||e===-1) return {txt:raw,note:null};
-  var block=raw.slice(s+16,e).trim();
-  var chat=raw.slice(0,s).trim();
-  var fm=block.match(/FILENAME:\s*(.+)/), pm=block.match(/PATH:\s*(.+)/), ci=block.indexOf('<<<CONTENT>>>');
-  if(!fm||!pm||ci===-1) return {txt:raw,note:null};
-  return {txt:chat||raw, note:{filename:fm[1].trim(),path:pm[1].trim(),content:block.slice(ci+13).trim()}};
+// ═══════════════════════════════════════════════════════════
+// SPOTIFY WEB API
+// ═══════════════════════════════════════════════════════════
+function handleSpotifyBtn(){
+  if(spotifyToken){fetchSpotifyAndReport();}
+  else{initSpotify();}
 }
 
-// ── System prompt ─────────────────────────────────────────
-function buildSystem() {
-  var sys = 'You are BAKER, an intelligent AI assistant and second brain modelled after JARVIS from Iron Man.\n\n';
-  sys += 'Personality: precise, composed, quietly witty. Address the user as "sir" occasionally and naturally. ';
-  sys += 'Lead with the answer, follow with reasoning. Spot patterns and risks the user might miss. ';
-  sys += 'Dry humour when appropriate. Push back respectfully when you see a flaw. Do not pad responses.\n\n';
-  if (voiceMode) {
-    sys += 'IMPORTANT — VOICE MODE: You are running inside a voice-enabled web app. ';
-    sys += 'Your text responses are read aloud to the user via text-to-speech. ';
-    sys += 'Speak naturally as if having a real conversation. ';
-    sys += 'Keep responses concise and conversational — no markdown, no bullet points, no headers, no asterisks. ';
-    sys += 'Write in flowing spoken sentences. Avoid lists. Max 3-4 sentences unless the user asks for more detail.\n\n';
+function initSpotify(){
+  spotifyClientId=localStorage.getItem('baker_spotify_id')||'';
+  if(!spotifyClientId){
+    spotifyClientId=prompt('Enter your Spotify Client ID (from developer.spotify.com):');
+    if(!spotifyClientId)return;
+    localStorage.setItem('baker_spotify_id',spotifyClientId);
   }
-  sys += 'Creating or editing vault notes: when the user asks, generate the note and end your reply with:\n\n';
-  sys += '<<<NOTE_START>>>\nFILENAME: Title.md\nPATH: 01-Projects/Title.md\n<<<CONTENT>>>\n[full markdown note]\n<<<NOTE_END>>>\n\n';
-  sys += 'Vault folders: Projects->01-Projects/, Daily->07-System/Daily/, Lectures->00-Capture/Lectures/, ';
-  sys += 'Conversations->00-Capture/Conversations/, Ideas->05-Notes/Atomic/, General->00-Capture/Inbox/\n\n';
-  sys += 'Always include YAML frontmatter and [[HOME]] link. Reference vault notes by name when relevant.';
-  var all = state.autoNotes.concat(state.manualNotes);
-  if (all.length) {
-    sys += '\n\n--- VAULT NOTES IN CONTEXT ---\n';
-    all.forEach(function(n) {
-      var trimmed = n.content.length>2000 ? n.content.slice(0,2000)+'\n...[truncated]' : n.content;
-      sys += '\n### '+(n.path||n.name)+'\n'+trimmed+'\n';
-    });
-    sys += '\n--- END VAULT NOTES ---';
+  var scopes='user-read-currently-playing user-read-playback-state user-modify-playback-state';
+  var redirect=encodeURIComponent(window.location.href.split('?')[0]);
+  window.location.href='https://accounts.spotify.com/authorize?client_id='+spotifyClientId+'&response_type=token&redirect_uri='+redirect+'&scope='+encodeURIComponent(scopes);
+}
+
+function checkSpotifyCallback(){
+  var hash=window.location.hash;
+  if(!hash)return;
+  var params=new URLSearchParams(hash.replace('#','?').slice(1));
+  var token=params.get('access_token');
+  if(token){
+    spotifyToken=token;
+    localStorage.setItem('baker_spotify_token',token);
+    window.history.replaceState(null,'',window.location.pathname);
+    document.getElementById('spotify-btn').className='hbtn spotify-on';
+    document.getElementById('spotify-btn').textContent='♫ Spotify on';
+    appendSys('Spotify connected, sir.');
+  }
+}
+
+async function spotifyAPI(endpoint,method,body){
+  if(!spotifyToken)return null;
+  try{
+    var opts={method:method||'GET',headers:{Authorization:'Bearer '+spotifyToken}};
+    if(body){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body);}
+    var r=await fetch('https://api.spotify.com/v1/'+endpoint,opts);
+    if(r.status===401){spotifyToken=null;appendSys('Spotify token expired — reconnect.');return null;}
+    if(r.status===204||r.status===202||r.status===200&&r.headers.get('content-length')==='0')return{ok:true};
+    if(r.ok)return await r.json();
+    return null;
+  }catch(e){return null;}
+}
+
+async function getSpotifyCurrentTrack(){
+  var d=await spotifyAPI('me/player/currently-playing');
+  if(!d||!d.item)return null;
+  return{title:d.item.name,artist:d.item.artists.map(function(a){return a.name;}).join(', '),album:d.item.album.name,playing:d.is_playing};
+}
+
+async function fetchSpotifyAndReport(){
+  if(!spotifyToken){appendSys('Connect Spotify first using the ♫ button.');return;}
+  setOrbState('thinking');
+  var track=await getSpotifyCurrentTrack();
+  if(!track){appendSys('Nothing playing on Spotify right now.');setOrbState('idle');return;}
+  showSpotifyCard(track);
+  var sysInfo='System information: Spotify is currently '+(track.playing?'playing':'paused')+' "'+track.title+'" by '+track.artist+' from the album "'+track.album+'".';
+  await sendSystemInfo(sysInfo,'Comment on the currently playing track as JARVIS would — brief, witty, one sentence.');
+}
+
+function showSpotifyCard(track){
+  var msgs=document.getElementById('messages');removeWelcome();
+  var card=document.createElement('div');card.className='spotify-card';
+  card.innerHTML='<div class="spotify-track">♫ '+track.title+'</div><div class="spotify-artist">'+track.artist+' · '+track.album+'</div><div class="spotify-controls"><button class="sp-btn" onclick="spotifyControl(\'previous\')">⏮</button><button class="sp-btn" onclick="spotifyControl(\'toggle\')">'+( track.playing?'⏸':'▶')+'</button><button class="sp-btn" onclick="spotifyControl(\'next\')">⏭</button></div>';
+  var wrap=document.createElement('div');wrap.className='msg baker';wrap.appendChild(card);
+  var msgs2=document.getElementById('messages');msgs2.appendChild(wrap);msgs2.scrollTop=msgs2.scrollHeight;
+}
+
+async function spotifyControl(action){
+  if(!spotifyToken)return;
+  if(action==='next') await spotifyAPI('me/player/next','POST');
+  else if(action==='previous') await spotifyAPI('me/player/previous','POST');
+  else if(action==='toggle'){
+    var state2=await spotifyAPI('me/player');
+    if(state2&&state2.is_playing) await spotifyAPI('me/player/pause','PUT');
+    else await spotifyAPI('me/player/play','PUT');
+  }
+  setTimeout(fetchSpotifyAndReport,800);
+}
+
+// ═══════════════════════════════════════════════════════════
+// SYSTEM INFO INJECTION (from Concept Bytes tools.py pattern)
+// Feed live data back into BAKER as "System information:"
+// ═══════════════════════════════════════════════════════════
+async function sendSystemInfo(sysInfo,instruction){
+  var key=localStorage.getItem('baker_api_key');
+  if(!key){setOrbState('idle');return;}
+  var effort=localStorage.getItem('baker_effort')||'standard';
+  var maxTok={deep:1500,standard:800,quick:400,minimal:150}[effort]||800;
+  var injectedMsg=sysInfo+' '+instruction;
+  state.history.push({role:'user',content:injectedMsg});
+  showThinking();
+  try{
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTok,system:buildSystem(),messages:state.history})});
+    var data=await resp.json();
+    if(data.error)throw new Error(data.error.message);
+    var raw=data.content.map(function(b){return b.text||'';}).join('').trim();
+    var parsed=parseResponse(raw);
+    removeThinking();
+    appendMsg('baker',parsed.txt,parsed.note);
+    state.history.push({role:'assistant',content:raw});
+    document.getElementById('dl-btn').disabled=false;
+    if(voiceMode) speakText(parsed.txt);
+    else setOrbState('idle');
+    // From Concept Bytes: skip hot word if BAKER asked a question
+    state.skipHotWord=parsed.txt.trim().endsWith('?');
+  }catch(err){
+    removeThinking();appendMsg('baker','System info injection failed, sir. '+err.message);setOrbState('idle');
+  }
+  // Cap history at 40 messages
+  if(state.history.length>40) state.history=state.history.slice(-40);
+}
+
+// ═══════════════════════════════════════════════════════════
+// COMMAND TAG PARSER (extends NOTE pattern with BAKER commands)
+// From Concept Bytes: response.split('#') for command extraction
+// BAKER uses <<BAKER:cmd:args>> at END of response only
+// ═══════════════════════════════════════════════════════════
+function parseResponse(raw){
+  // Extract note block first
+  var noteResult=parseNote(raw);
+  var txt=noteResult.txt;
+
+  // Extract BAKER command tags — must be at end
+  var cmdMatch=txt.match(/<<BAKER:([^>]+)>>$/);
+  if(cmdMatch){
+    txt=txt.replace(/<<BAKER:[^>]+>>$/,'').trim();
+    var parts=cmdMatch[1].split(':');
+    var cmd=parts[0];
+    setTimeout(function(){dispatchBAKERCommand(cmd,parts.slice(1));},100);
+  }
+  return{txt:txt,note:noteResult.note};
+}
+
+function dispatchBAKERCommand(cmd,args){
+  if(cmd==='weather') fetchWeatherAndReport();
+  else if(cmd==='spotify') fetchSpotifyAndReport();
+  else if(cmd==='spotify_next') spotifyControl('next');
+  else if(cmd==='spotify_prev') spotifyControl('previous');
+  else if(cmd==='spotify_pause') spotifyControl('toggle');
+  else if(cmd==='search'&&args.length) appendSys('Search: '+args.join(' ')+' (open in your browser, sir)');
+}
+
+// ═══════════════════════════════════════════════════════════
+// NOTE BLOCK PARSER
+// ═══════════════════════════════════════════════════════════
+function parseNote(raw){
+  var s=raw.indexOf('<<<NOTE_START>>>'),e=raw.indexOf('<<<NOTE_END>>>');
+  if(s===-1||e===-1)return{txt:raw,note:null};
+  var block=raw.slice(s+16,e).trim(),chat=raw.slice(0,s).trim();
+  var fm=block.match(/FILENAME:\s*(.+)/),pm=block.match(/PATH:\s*(.+)/),ci=block.indexOf('<<<CONTENT>>>');
+  if(!fm||!pm||ci===-1)return{txt:raw,note:null};
+  return{txt:chat||raw,note:{filename:fm[1].trim(),path:pm[1].trim(),content:block.slice(ci+13).trim()}};
+}
+
+// ═══════════════════════════════════════════════════════════
+// SYSTEM PROMPT
+// ═══════════════════════════════════════════════════════════
+function buildSystem(){
+  var now=new Date();
+  var h=now.getHours();
+  var timeOfDay=h>=5&&h<12?'morning':h>=12&&h<17?'afternoon':h>=17&&h<21?'evening':'night';
+  var sys='You are BAKER, an intelligent AI assistant and second brain modelled after JARVIS from Iron Man.\n\n';
+  sys+='Personality: precise, composed, quietly witty. Address the user as "sir" occasionally and naturally. ';
+  sys+='Lead with the answer, follow with reasoning. Spot patterns and risks the user might miss. ';
+  sys+='Dry humour when appropriate. Push back respectfully when you see a flaw. Do not pad responses.\n\n';
+  sys+='Current time context: It is '+timeOfDay+'. Use time-aware greetings naturally (Good '+timeOfDay+', You\'re up late, etc.) but NEVER mention the specific time unless explicitly asked.\n\n';
+
+  if(voiceMode){
+    sys+='IMPORTANT — VOICE MODE: Responses are read aloud via TTS. ';
+    sys+='Speak naturally. No markdown, no bullet points, no headers, no asterisks. ';
+    sys+='Flowing spoken sentences only. Keep responses to 1-3 sentences unless the user asks for detail. ';
+    sys+='If you need more info to answer, ask one focused question and end with "?" so I know to keep listening.\n\n';
+  }
+
+  sys+='You can trigger live data by ending your response with a command tag (ONLY at the very end, never mid-sentence):\n';
+  sys+='<<BAKER:weather>> — fetch current weather\n';
+  sys+='<<BAKER:spotify>> — show current Spotify track\n';
+  sys+='<<BAKER:spotify_next>> — skip to next track\n';
+  sys+='<<BAKER:spotify_prev>> — go to previous track\n';
+  sys+='<<BAKER:spotify_pause>> — pause/resume playback\n';
+  sys+='Only use command tags when the user explicitly asks for these actions.\n\n';
+
+  sys+='Creating or editing vault notes: when the user asks, generate the note and end your reply with:\n\n';
+  sys+='<<<NOTE_START>>>\nFILENAME: Title.md\nPATH: 01-Projects/Title.md\n<<<CONTENT>>>\n[full markdown note]\n<<<NOTE_END>>>\n\n';
+  sys+='Vault folders: Projects->01-Projects/, Daily->07-System/Daily/, Lectures->00-Capture/Lectures/, Conversations->00-Capture/Conversations/, Ideas->05-Notes/Atomic/, General->00-Capture/Inbox/\n\n';
+  sys+='Always include YAML frontmatter and [[HOME]] link.';
+
+  var all=state.autoNotes.concat(state.manualNotes);
+  if(all.length){
+    sys+='\n\n--- VAULT NOTES IN CONTEXT ---\n';
+    all.forEach(function(n){var trimmed=n.content.length>2000?n.content.slice(0,2000)+'\n...[truncated]':n.content;sys+='\n### '+(n.path||n.name)+'\n'+trimmed+'\n';});
+    sys+='\n--- END VAULT NOTES ---';
   }
   return sys;
 }
 
-// ── Send ──────────────────────────────────────────────────
-var effortTokens = {deep:1500, standard:800, quick:400, minimal:150};
+// ═══════════════════════════════════════════════════════════
+// SEND MESSAGE
+// ═══════════════════════════════════════════════════════════
+var effortTokens={deep:1500,standard:800,quick:400,minimal:150};
 
-async function sendMessage() {
-  if (state.busy) return;
-  var input = document.getElementById('msg-input');
-  var txt = input.value.trim();
-  if (!txt) return;
-  var key = localStorage.getItem('baker_api_key');
-  if (!key) { alert('No API key — go to BAKER Settings first.'); return; }
-  input.value=''; input.style.height='auto';
-  appendMsg('user', txt);
-  state.history.push({role:'user', content:txt});
-  if (state.vaultConnected) {
-    var rel = findRelevant(txt);
-    var newN = rel.filter(function(r){return !state.autoNotes.find(function(a){return a.path===r.path;});});
-    if (newN.length) { state.autoNotes = state.autoNotes.concat(newN).slice(0,8); renderStatusBar(); appendSys(newN.length===1?'Pulled: '+newN[0].name.replace('.md',''):'Pulled '+newN.length+' relevant notes from vault'); }
+async function sendMessage(){
+  if(state.busy)return;
+  var input=document.getElementById('msg-input');
+  var txt=input.value.trim();if(!txt)return;
+  var key=localStorage.getItem('baker_api_key');
+  if(!key){alert('No API key — go to BAKER Settings first.');return;}
+  input.value='';input.style.height='auto';
+  appendMsg('user',txt);
+
+  // From Concept Bytes: append timestamp to every user message (silently in history)
+  var timedTxt=txt+' '+getContextBlock();
+  state.history.push({role:'user',content:timedTxt});
+
+  if(state.vaultConnected){
+    var rel=findRelevant(txt);
+    var newN=rel.filter(function(r){return !state.autoNotes.find(function(a){return a.path===r.path;});});
+    if(newN.length){state.autoNotes=state.autoNotes.concat(newN).slice(0,8);renderStatusBar();appendSys(newN.length===1?'Pulled: '+newN[0].name.replace('.md',''):'Pulled '+newN.length+' relevant notes from vault');}
   }
-  state.busy=true;
-  document.getElementById('send-btn').disabled=true;
-  showThinking();
-  setOrbState('thinking');
-  var effort = localStorage.getItem('baker_effort')||'standard';
-  var maxTok = effortTokens[effort]||800;
-  try {
-    var resp = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTok,system:buildSystem(),messages:state.history})
-    });
-    var data = await resp.json();
-    if (data.error) throw new Error(data.error.message);
-    var raw = data.content.map(function(b){return b.text||'';}).join('').trim();
-    var parsed = parseNote(raw);
-    removeThinking();
-    appendMsg('baker', parsed.txt, parsed.note);
-    state.history.push({role:'assistant', content:raw});
+
+  state.busy=true;document.getElementById('send-btn').disabled=true;
+  showThinking();setOrbState('thinking');
+  var effort=localStorage.getItem('baker_effort')||'standard';
+  var maxTok=effortTokens[effort]||800;
+  try{
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTok,system:buildSystem(),messages:state.history})});
+    var data=await resp.json();
+    if(data.error)throw new Error(data.error.message);
+    var raw=data.content.map(function(b){return b.text||'';}).join('').trim();
+    var parsed=parseResponse(raw);
+    removeThinking();appendMsg('baker',parsed.txt,parsed.note);
+    state.history.push({role:'assistant',content:raw});
     document.getElementById('dl-btn').disabled=false;
-  } catch(err) {
-    removeThinking();
-    appendMsg('baker','I appear to have encountered a fault, sir. '+err.message);
-  }
-  state.busy=false;
-  setOrbState('idle');
+    // From Concept Bytes: track if BAKER asked a question
+    state.skipHotWord=parsed.txt.trim().endsWith('?');
+  }catch(err){removeThinking();appendMsg('baker','I appear to have encountered a fault, sir. '+err.message);}
+  state.busy=false;setOrbState('idle');
   document.getElementById('send-btn').disabled=false;
   document.getElementById('msg-input').focus();
+  // Cap history at 40 entries
+  if(state.history.length>40) state.history=state.history.slice(-40);
 }
 
-// ── End convo ─────────────────────────────────────────────
-function openEnd(){
-  if(!state.history.length){alert('Nothing to save yet, sir.');return;}
-  document.getElementById('end-sub').textContent=state.vaultConnected
-    ?'BAKER will summarize and save directly to your vault at 00-Capture/Conversations/. The chat will then clear.'
-    :'No vault connected — BAKER will summarize and download the note for you.';
-  document.getElementById('end-overlay').classList.add('open');
-}
+// ═══════════════════════════════════════════════════════════
+// END CONVO
+// ═══════════════════════════════════════════════════════════
+function openEnd(){if(!state.history.length){alert('Nothing to save yet, sir.');return;}document.getElementById('end-sub').textContent=state.vaultConnected?'BAKER will summarize and save to your vault at 00-Capture/Conversations/. Chat will clear.':'No vault connected — BAKER will download the note for you.';document.getElementById('end-overlay').classList.add('open');}
 function closeEnd(){document.getElementById('end-overlay').classList.remove('open');}
 
-var endPrompts = {
-  deep:'Create a comprehensive vault note summary including: overview, key topics, important insights, decisions made, action items (checkbox format), and connections to other ideas.',
-  standard:'Create a vault note summary with: brief overview, key points discussed, and action items (checkbox format).',
-  quick:'Create a brief vault note summary with key points and any action items.',
-  minimal:'Create a 2-3 sentence summary and list any action items.'
-};
+var endPrompts={deep:'Create a comprehensive vault note summary including: overview, key topics, important insights, decisions made, action items (checkbox format), and connections to other ideas.',standard:'Create a vault note summary with: brief overview, key points discussed, and action items (checkbox format).',quick:'Create a brief vault note summary with key points and any action items.',minimal:'Create a 2-3 sentence summary and list any action items.'};
 
-async function endConvo() {
+async function endConvo(){
   closeEnd();
-  var key=localStorage.getItem('baker_api_key');
-  if(!key){alert('No API key set.');return;}
+  var key=localStorage.getItem('baker_api_key');if(!key){alert('No API key set.');return;}
   var topic=document.getElementById('topic').value.trim()||'Conversation';
   var effort=localStorage.getItem('baker_effort')||'standard';
   var date=new Date().toISOString().split('T')[0];
   var fname=date+'-Conversation-'+topic.replace(/\s+/g,'-')+'.md';
   var fpath='00-Capture/Conversations/'+fname;
-  appendSys('Generating summary...');
-  setOrbState('thinking');
-  var transcript=state.history.map(function(m){return (m.role==='user'?'User':'BAKER')+': '+m.content;}).join('\n\n');
-  try {
+  appendSys('Generating summary...');setOrbState('thinking');
+  var transcript=state.history.map(function(m){return(m.role==='user'?'User':'BAKER')+': '+m.content;}).join('\n\n');
+  try{
     var prompt=endPrompts[effort]||endPrompts.standard;
-    var sysMsg='You are BAKER. '+prompt+'\n\nStart with this YAML:\n---\ndate: '+date+'\ntype: conversation\nwith: BAKER\ncontext: '+topic+'\ntags: [conversation, baker]\n---\n\n# Conversation: '+topic+'\n\nThen your summary. End with:\n\n---\n*[[HOME]] - [[00-Capture/Conversations]]*';
-    var resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:sysMsg,messages:[{role:'user',content:'Summarize:\n\n'+transcript}]})
-    });
-    var data=await resp.json();
-    if(data.error) throw new Error(data.error.message);
+    var sysMsg='You are BAKER. '+prompt+'\n\nStart with:\n---\ndate: '+date+'\ntype: conversation\nwith: BAKER\ncontext: '+topic+'\ntags: [conversation, baker]\n---\n\n# Conversation: '+topic+'\n\nThen summary. End with:\n\n---\n*[[HOME]] - [[00-Capture/Conversations]]*';
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:sysMsg,messages:[{role:'user',content:'Summarize:\n\n'+transcript}]})});
+    var data=await resp.json();if(data.error)throw new Error(data.error.message);
     var note=data.content.map(function(b){return b.text||'';}).join('').trim();
-    if(state.vaultConnected){
-      var ok=await writeToVault(fpath,note);
-      appendSys(ok?'Saved to vault: '+fpath:'Vault write failed — downloading instead.');
-      if(!ok) downloadBlob(note,fname);
-    } else { downloadBlob(note,fname); appendSys('Downloaded — move to 00-Capture/Conversations/ in your vault.'); }
+    if(state.vaultConnected){var ok=await writeToVault(fpath,note);appendSys(ok?'Saved to vault: '+fpath:'Vault write failed — downloading instead.');if(!ok)downloadBlob(note,fname);}
+    else{downloadBlob(note,fname);appendSys('Downloaded — move to 00-Capture/Conversations/ in your vault.');}
     setTimeout(function(){
-      state.history=[]; state.autoNotes=[]; state.manualNotes=[]; state.noteStore={};
+      state.history=[];state.autoNotes=[];state.manualNotes=[];state.noteStore={};state.skipHotWord=false;
       renderStatusBar();
-      document.getElementById('messages').innerHTML='<div class="welcome" id="welcome"><div class="welcome-icon">◈</div><div class="welcome-title">BAKER online.</div><div class="welcome-sub">Conversation saved. What shall we work through next, sir?</div><div class="starters"><div class="starter" id="s1">💡 Project idea</div><div class="starter" id="s2">📅 Daily reflection</div><div class="starter" id="s3">📚 Study help</div><div class="starter" id="s4">📂 Check my notes</div><div class="starter" id="s5">✏ Create a note</div></div></div>';
-      document.getElementById('dl-btn').disabled=true;
-      document.getElementById('topic').value='';
-      setOrbState('idle');
-      rewireStarters();
+      document.getElementById('messages').innerHTML='<div class="welcome" id="welcome"><div class="welcome-icon">◈</div><div class="welcome-title">'+getTimeGreeting()+'</div><div class="welcome-sub">Conversation saved. What shall we work through next, sir?</div><div class="starters"><div class="starter" id="s1">💡 Project idea</div><div class="starter" id="s2">📅 Daily reflection</div><div class="starter" id="s3">📚 Study help</div><div class="starter" id="s4">📂 Check my notes</div><div class="starter" id="s5">✏ Create a note</div><div class="starter" id="s6">🌤 Weather</div><div class="starter" id="s7">🎵 Now playing</div></div></div>';
+      document.getElementById('dl-btn').disabled=true;document.getElementById('topic').value='';
+      setOrbState('idle');rewireStarters();
     },2000);
-  } catch(err){ appendSys('Summary failed: '+err.message); setOrbState('idle'); }
+  }catch(err){appendSys('Summary failed: '+err.message);setOrbState('idle');}
 }
 
-function rewireStarters() {
-  var map={'s1':'Help me think through a project idea','s2':'I want to reflect on my day','s3':'Help me understand something I am studying','s4':'What do my notes say about my current projects?','s5':'Create a new project note for me'};
-  Object.keys(map).forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('click',function(){sendStarter(map[id]);});});
+function rewireStarters(){
+  var map={s1:'Help me think through a project idea',s2:'I want to reflect on my day',s3:'Help me understand something I am studying',s4:'What do my notes say about my current projects?',s5:'Create a new project note for me',s6:'__weather__',s7:'__spotify__'};
+  Object.keys(map).forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('click',function(){if(map[id]==='__weather__')fetchWeatherAndReport();else if(map[id]==='__spotify__')fetchSpotifyAndReport();else sendStarter(map[id]);});});
 }
 
-function downloadBlob(content,filename){
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([content],{type:'text/markdown'}));
-  a.download=filename; a.click();
-}
-
-function downloadNote(){
-  if(!state.history.length)return;
-  var topic=document.getElementById('topic').value.trim()||'Conversation';
-  var date=new Date().toISOString().split('T')[0];
-  var t=state.history.map(function(m){return '**'+(m.role==='user'?'Me':'BAKER')+':** '+m.content;}).join('\n\n');
-  var note='---\ndate: '+date+'\ntype: conversation\nwith: BAKER\ncontext: '+topic+'\ntags: [conversation, baker]\n---\n\n# Conversation — '+topic+'\n\n'+t+'\n\n---\n*[[HOME]]*\n';
-  downloadBlob(note,date+'-Conversation-'+topic.replace(/\s+/g,'-')+'.md');
-}
+function downloadBlob(content,filename){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:'text/markdown'}));a.download=filename;a.click();}
+function downloadNote(){if(!state.history.length)return;var topic=document.getElementById('topic').value.trim()||'Conversation';var date=new Date().toISOString().split('T')[0];var t=state.history.map(function(m){return '**'+(m.role==='user'?'Me':'BAKER')+':** '+m.content;}).join('\n\n');var note='---\ndate: '+date+'\ntype: conversation\nwith: BAKER\ncontext: '+topic+'\ntags: [conversation, baker]\n---\n\n# Conversation — '+topic+'\n\n'+t+'\n\n---\n*[[HOME]]*\n';downloadBlob(note,date+'-Conversation-'+topic.replace(/\s+/g,'-')+'.md');}
 
 function clearChat(){
   if(state.history.length&&!confirm('Clear this conversation?'))return;
-  state.history=[]; state.autoNotes=[]; state.manualNotes=[]; state.noteStore={};
+  state.history=[];state.autoNotes=[];state.manualNotes=[];state.noteStore={};state.skipHotWord=false;
   renderStatusBar();
-  document.getElementById('messages').innerHTML='<div class="welcome" id="welcome"><div class="welcome-icon">◈</div><div class="welcome-title">BAKER online.</div><div class="welcome-sub">Good to have you, sir. Ready when you are.</div><div class="starters"><div class="starter" id="s1">💡 Project idea</div><div class="starter" id="s2">📅 Daily reflection</div><div class="starter" id="s3">📚 Study help</div><div class="starter" id="s4">📂 Check my notes</div><div class="starter" id="s5">✏ Create a note</div></div></div>';
-  document.getElementById('dl-btn').disabled=true;
-  document.getElementById('topic').value='';
-  setOrbState('idle');
-  rewireStarters();
+  document.getElementById('messages').innerHTML='<div class="welcome" id="welcome"><div class="welcome-icon">◈</div><div class="welcome-title">'+getTimeGreeting()+'</div><div class="welcome-sub">Good to have you, sir. Ready when you are.</div><div class="starters"><div class="starter" id="s1">💡 Project idea</div><div class="starter" id="s2">📅 Daily reflection</div><div class="starter" id="s3">📚 Study help</div><div class="starter" id="s4">📂 Check my notes</div><div class="starter" id="s5">✏ Create a note</div><div class="starter" id="s6">🌤 Weather</div><div class="starter" id="s7">🎵 Now playing</div></div></div>';
+  document.getElementById('dl-btn').disabled=true;document.getElementById('topic').value='';
+  setOrbState('idle');rewireStarters();
 }
 
-// ── Voice mode ────────────────────────────────────────────
-function setMode(mode) {
-  voiceMode = (mode === 'voice');
-  var tabText=document.getElementById('tab-text'), tabVoice=document.getElementById('tab-voice');
-  var inputArea=document.getElementById('input-area'), voiceArea=document.getElementById('voice-area');
-  if(tabText) tabText.className='mode-tab'+(voiceMode?'':' active');
-  if(tabVoice) tabVoice.className='mode-tab'+(voiceMode?' active':'');
-  if(inputArea) inputArea.style.display=voiceMode?'none':'flex';
-  if(voiceArea) voiceArea.style.display=voiceMode?'flex':'none';
-  if(voiceMode && window.orbInitAudio) window.orbInitAudio();
+// ═══════════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════════
+function setVaultBtn(s){var b=document.getElementById('vault-btn');b.className='hbtn'+(s==='on'?' vault-on':s==='scanning'?' vault-scanning':'');b.textContent=s==='on'?'⬡ Vault on':s==='scanning'?'⟳ Scanning...':'⬡ Connect Vault';}
+function setSb(cls,txt){var el=document.getElementById('sb-txt');el.className='sb-txt'+(cls?' '+cls:'');el.textContent=txt;}
+function renderStatusBar(){var bar=document.getElementById('status-bar');bar.querySelectorAll('.chip').forEach(function(e){e.remove();});state.autoNotes.forEach(function(n){var c=document.createElement('div');c.className='chip auto';c.textContent='⬡ '+n.name.replace('.md','');bar.appendChild(c);});state.manualNotes.forEach(function(n){var c=document.createElement('div');c.className='chip manual';var nm=n.name;c.innerHTML='📄 '+nm.replace('.md','');var x=document.createElement('button');x.textContent='×';x.addEventListener('click',function(){removeManual(nm);});c.appendChild(x);bar.appendChild(c);});}
+function removeWelcome(){var w=document.getElementById('welcome');if(w)w.remove();}
+function getTime(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+function appendSys(txt){removeWelcome();var msgs=document.getElementById('messages');var d=document.createElement('div');d.className='sys-msg';d.textContent=txt;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;}
+function sendStarter(msg){document.getElementById('msg-input').value=msg;sendMessage();}
+
+function appendMsg(role,txt,noteData){
+  removeWelcome();
+  var msgs=document.getElementById('messages');
+  var wrap=document.createElement('div');wrap.className='msg '+role;
+  var bub=document.createElement('div');bub.className='bubble';bub.textContent=txt;
+  var ts=document.createElement('div');ts.className='msg-time';ts.textContent=role==='user'?'You · '+getTime():'BAKER · '+getTime();
+  wrap.appendChild(bub);wrap.appendChild(ts);
+  if(noteData){
+    var nid='nc'+Date.now();state.noteStore[nid]=noteData;
+    var card=document.createElement('div');card.className='note-card';
+    var t=document.createElement('div');t.className='nc-title';t.textContent='📄 '+noteData.filename;
+    var p=document.createElement('div');p.className='nc-path';p.textContent='→ '+noteData.path;
+    var prev=document.createElement('div');prev.className='nc-preview';prev.textContent=noteData.content.slice(0,300)+(noteData.content.length>300?'\n...':'');
+    var acts=document.createElement('div');acts.className='nc-actions';
+    var dis=document.createElement('button');dis.className='nc-btn';dis.textContent='Dismiss';dis.addEventListener('click',function(){card.remove();});
+    var sav=document.createElement('button');sav.className='nc-btn primary';sav.id=nid;sav.textContent=state.vaultConnected?'Save to Vault':'Download .md';
+    (function(id){sav.addEventListener('click',function(){doSaveNote(id);});})(nid);
+    acts.appendChild(dis);acts.appendChild(sav);card.appendChild(t);card.appendChild(p);card.appendChild(prev);card.appendChild(acts);wrap.appendChild(card);
+  }
+  msgs.appendChild(wrap);msgs.scrollTop=msgs.scrollHeight;
+}
+
+async function doSaveNote(nid){var nd=state.noteStore[nid];if(!nd)return;var btn=document.getElementById(nid);if(!btn)return;if(state.vaultConnected){btn.textContent='Saving...';btn.disabled=true;var ok=await writeToVault(nd.path,nd.content);if(ok){btn.className='nc-btn done';btn.textContent='✓ Saved to vault';appendSys('Saved: '+nd.path);}else{btn.disabled=false;btn.textContent='⬇ Failed — click to download';btn.addEventListener('click',function(){downloadBlob(nd.content,nd.filename);});}}else{downloadBlob(nd.content,nd.filename);btn.className='nc-btn done';btn.textContent='✓ Downloaded';}delete state.noteStore[nid];}
+
+function showThinking(){var msgs=document.getElementById('messages');var d=document.createElement('div');d.className='msg baker';d.id='thinking-msg';d.innerHTML='<div class="thinking-wrap"><div class="dots"><span></span><span></span><span></span></div></div>';msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;}
+function removeThinking(){var t=document.getElementById('thinking-msg');if(t)t.remove();}
+
+// ═══════════════════════════════════════════════════════════
+// VOICE MODE
+// ═══════════════════════════════════════════════════════════
+function setMode(mode){
+  voiceMode=(mode==='voice');
+  var tT=document.getElementById('tab-text'),tV=document.getElementById('tab-voice');
+  var iA=document.getElementById('input-area'),vA=document.getElementById('voice-area');
+  if(tT)tT.className='mode-tab'+(voiceMode?'':' active');
+  if(tV)tV.className='mode-tab'+(voiceMode?' active':'');
+  if(iA)iA.style.display=voiceMode?'none':'flex';
+  if(vA)vA.style.display=voiceMode?'flex':'none';
+  if(voiceMode&&window.orbInitAudio)window.orbInitAudio();
   if(!voiceMode){stopVoice();stopSpeaking();if(constantMic)setTimeout(startWakeWord,500);}
 }
 
-function handleMicClick() {
-  if(isSpeaking){stopSpeaking();return;}
-  if(voiceActive){stopVoice();}else{startVoice();}
-}
+function handleMicClick(){if(isSpeaking){stopSpeaking();return;}if(voiceActive){stopVoice();}else{startVoice();}}
 
-function startVoice() {
+function startVoice(){
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){alert('Voice input requires Chrome.');return;}
   if(state.busy)return;
   try{var w=new SpeechSynthesisUtterance('');w.volume=0;speechSynthesis.speak(w);}catch(e){}
-  if(window.orbInitAudio) window.orbInitAudio();
+  if(window.orbInitAudio)window.orbInitAudio();
   voiceFinal='';
   document.getElementById('voice-live').textContent='';
   voiceRec=new SR();
-  voiceRec.continuous=true; voiceRec.interimResults=true; voiceRec.lang='en-US';
+  voiceRec.continuous=true;voiceRec.interimResults=true;voiceRec.lang='en-US';
+
   voiceRec.onstart=function(){voiceActive=true;setMicState('listening');setVoiceStatus('Listening...',true);setOrbState('listening');};
+
   voiceRec.onresult=function(e){
     var interim='';
-    for(var i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal) voiceFinal+=e.results[i][0].transcript+' ';
-      else interim+=e.results[i][0].transcript;
-    }
+    for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)voiceFinal+=e.results[i][0].transcript+' ';else interim+=e.results[i][0].transcript;}
     document.getElementById('voice-live').textContent=voiceFinal+interim;
+
+    // From Concept Bytes: tight silence detection (800ms instead of 2000ms)
     if(silenceTimer)clearTimeout(silenceTimer);
-    silenceTimer=setTimeout(function(){if(voiceActive)stopVoice();},2000);
-    if(/over\s*$/i.test(voiceFinal.trim())){
-      voiceFinal=voiceFinal.replace(/\s*over\s*$/i,'').trim()+' ';
-      if(silenceTimer)clearTimeout(silenceTimer);
-      stopVoice();
-    }
-  };
-  voiceRec.onend=function(){if(voiceActive){try{voiceRec.start();}catch(e){}}};
-  voiceRec.onerror=function(e){if(e.error==='not-allowed'){setVoiceStatus('Microphone access denied',false);stopVoice();}};
-  try{voiceRec.start();}catch(e){setVoiceStatus('Could not start — try Chrome',false);}
-}
+    silenceTimer=setTimeout(function(){if(voiceActive)stopVoice();},800);
 
-function stopVoice() {
-  voiceActive=false;
-  if(silenceTimer){clearTimeout(silenceTimer);silenceTimer=null;}
-  if(voiceRec){voiceRec.stop();voiceRec=null;}
-  var txt=voiceFinal.trim(); voiceFinal='';
-  document.getElementById('voice-live').textContent='';
-  setMicState('idle');
-  setOrbState('idle');
-  if(txt){setVoiceStatus('Sending...',true);sendVoiceMessage(txt);}
-  else{setVoiceStatus('Tap to speak',false);}
-}
-
-async function sendVoiceMessage(txt) {
-  if(state.busy)return;
-  var key=localStorage.getItem('baker_api_key');
-  if(!key){setVoiceStatus('No API key — check Settings',false);return;}
-  if(checkGoodbye(txt)){
-    appendMsg('user',txt);
-    var farewell='It has been a pleasure, sir. Saving our conversation now.';
-    appendMsg('baker',farewell); speakText(farewell);
-    setTimeout(function(){endConvo();},2000); return;
-  }
-  var speedChange=checkSpeedCommand(txt);
-  if(speedChange){
-    var msg=speedChange==='faster'
-      ?'Understood, sir. Speaking rate increased to '+Math.round(speechRate*100)+'.'
-      :'Of course, sir. Speaking rate decreased to '+Math.round(speechRate*100)+'.';
-    appendMsg('baker',msg); speakText(msg);
-    setMicState('idle'); setVoiceStatus('Tap to speak',false); return;
-  }
-  appendMsg('user',txt);
-  state.history.push({role:'user',content:txt});
-  if(state.vaultConnected){
-    var rel=findRelevant(txt);
-    var newN=rel.filter(function(r){return !state.autoNotes.find(function(a){return a.path===r.path;});});
-    if(newN.length){state.autoNotes=state.autoNotes.concat(newN).slice(0,8);renderStatusBar();}
-  }
-  state.busy=true;
-  setMicState('speaking'); setVoiceStatus('BAKER is thinking...',true);
-  setOrbState('thinking');
-  var effort=localStorage.getItem('baker_effort')||'standard';
-  var maxTok={deep:1500,standard:800,quick:400,minimal:150}[effort]||800;
-  try {
-    var resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTok,system:buildSystem(),messages:state.history})
-    });
-    var data=await resp.json();
-    if(data.error) throw new Error(data.error.message);
-    var raw=data.content.map(function(b){return b.text||'';}).join('').trim();
-    var parsed=parseNote(raw);
-    appendMsg('baker',parsed.txt,parsed.note);
-    state.history.push({role:'assistant',content:raw});
-    document.getElementById('dl-btn').disabled=false;
-    speakText(parsed.txt);
-  } catch(err){
-    appendMsg('baker','I appear to have encountered a fault, sir. '+err.message);
-    setMicState('idle'); setVoiceStatus('Tap to speak',false);
-    setOrbState('idle'); state.busy=false;
-  }
-}
-
-// ── Speed commands ────────────────────────────────────────
-function checkSpeedCommand(txt) {
-  var lower=txt.toLowerCase();
-  var faster=['talk faster','speak faster','faster','speed up','too slow','go faster','baker faster'];
-  var slower=['talk slower','speak slower','slower','slow down','too fast','go slower','baker slower','baker slow down'];
-  var matched=null;
-  faster.forEach(function(p){if(!matched&&lower.indexOf(p)!==-1){speechRate=Math.min(2.0,Math.round((speechRate+0.1)*10)/10);matched='faster';}});
-  slower.forEach(function(p){if(!matched&&lower.indexOf(p)!==-1){speechRate=Math.max(0.3,Math.round((speechRate-0.1)*10)/10);matched='slower';}});
-  return matched;
-}
-
-// ── Goodbye ───────────────────────────────────────────────
-var goodbyePhrases=['goodbye baker','goodnight baker','sign off baker','peace out baker','good night baker'];
-function checkGoodbye(txt){
-  var lower=txt.toLowerCase().trim();
-  return goodbyePhrases.some(function(p){return lower.indexOf(p)!==-1;});
-}
-
-// ── Speech synthesis ──────────────────────────────────────
-var cachedVoices=[];
-function loadVoices(){cachedVoices=speechSynthesis.getVoices();}
-loadVoices();
-if(speechSynthesis.onvoiceschanged!==undefined) speechSynthesis.onvoiceschanged=loadVoices;
-
-function speakText(txt) {
-  if(!voiceMode){state.busy=false;return;}
-  stopSpeaking();
-  var clean=txt.replace(/#{1,6} /g,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').replace(/\[\[([^\]]+)\]\]/g,'$1').replace(/`([^`]+)`/g,'$1').replace(/^[-*] /gm,'').trim();
-  var utt=new SpeechSynthesisUtterance(clean);
-  var voices=cachedVoices.length?cachedVoices:speechSynthesis.getVoices();
-  var preferred=['Daniel','Google UK English Male','Microsoft George','Microsoft David','Alex'];
-  var chosen=null;
-  preferred.forEach(function(pref){if(!chosen)chosen=voices.find(function(v){return v.name.indexOf(pref)!==-1;});});
-  if(!chosen)chosen=voices.find(function(v){return v.lang&&v.lang.indexOf('en')===0;});
-  if(chosen)utt.voice=chosen;
-  utt.rate=speechRate; utt.pitch=0.85; utt.volume=1;
-  isSpeaking=true;
-  setMicState('speaking'); setVoiceStatus('BAKER is speaking... tap to stop',true);
-  setOrbState('speaking');
-  utt.onend=function(){
-    isSpeaking=false; state.busy=false;
-    setMicState('idle'); setVoiceStatus('Listening again...',true);
-    setOrbState('listening');
-    if(voiceMode){
-      setTimeout(function(){if(voiceMode&&!state.busy&&!isSpeaking)startVoice();},600);
-    } else if(constantMic){
-      setTimeout(startWakeWord,600);
-    }
-  };
-  utt.onerror=function(e){
-    isSpeaking=false; state.busy=false;
-    setMicState('idle'); setVoiceStatus('Tap to speak',false);
-    setOrbState('idle');
-  };
-  speechSynthesis.speak(utt);
-}
-
-function stopSpeaking(){
-  if(isSpeaking){speechSynthesis.cancel();isSpeaking=false;}
-  setOrbState('idle');
-}
-
-function setMicState(s){
-  var ring=document.getElementById('mic-ring'), icon=document.getElementById('mic-icon');
-  ring.className='mic-ring'+(s==='listening'?' listening':s==='speaking'?' speaking':'');
-  icon.textContent=s==='listening'?'⏹':s==='speaking'?'🔊':'🎙';
-}
-
-// ── Wake word ─────────────────────────────────────────────
-function startWakeWord(){
-  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR||!constantMic)return;
-  stopWakeWord();
-  var el=document.getElementById('wake-status');
-  if(el)el.textContent='👂 Listening for "Hey BAKER"...';
-  wakeRec=new SR();
-  wakeRec.continuous=true; wakeRec.interimResults=false; wakeRec.lang='en-US';
-  wakeRec.onresult=function(e){
-    var txt=e.results[e.results.length-1][0].transcript.toLowerCase().trim();
-    if(txt.includes('hey baker')||txt.includes('hey, baker')){
-      stopWakeWord(); setMode('voice');
-      var el2=document.getElementById('wake-status'); if(el2)el2.textContent='';
-      setTimeout(function(){if(!voiceActive&&!state.busy)startVoice();},400);
-    }
-  };
-  wakeRec.onend=function(){if(constantMic&&!voiceMode){try{wakeRec.start();}catch(e){}}};
-  try{wakeRec.start();}catch(e){}
-}
-
-function stopWakeWord(){
-  if(wakeRec){wakeRec.stop();wakeRec=null;}
-  var el=document.getElementById('wake-status'); if(el)el.textContent='';
-}
-
-function setVoiceStatus(txt,active){
-  var el=document.getElementById('voice-status');
-  el.textContent=txt; el.className='voice-status'+(active?' active':'');
-}
-</script>
-</body>
-</html>
+    // "over" keyword immediate stop
+    if(/over\s*$/i
