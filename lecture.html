@@ -16,38 +16,36 @@
   --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
 }
 body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
-
 .hdr{border-bottom:1px solid var(--border);padding:11px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--surface)}
 .back{background:transparent;border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;text-decoration:none;transition:all .15s}
 .back:hover{border-color:var(--accent);color:var(--text)}
 .logo{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--accent);letter-spacing:.1em;background:rgba(124,106,247,.12);border:1px solid var(--accent-dim);padding:3px 8px;border-radius:4px}
 .hdr-sub{font-size:12px;color:var(--muted);font-weight:300}
-.no-key-warn{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--red);padding:3px 8px;border:1px solid rgba(248,113,113,.3);border-radius:4px;display:none}
-
+.hdr-right{margin-left:auto;display:flex;gap:7px;align-items:center}
+.no-key-warn{font-family:var(--mono);font-size:10px;color:var(--red);padding:3px 8px;border:1px solid rgba(248,113,113,.3);border-radius:4px;display:none}
+.hbtn{border:1px solid var(--border);border-radius:4px;padding:5px 10px;font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);white-space:nowrap}
+.hbtn:hover{border-color:var(--accent);color:var(--text)}
+.hbtn.convo{color:var(--green);border-color:rgba(74,222,128,.4);background:rgba(74,222,128,.06)}
+.hbtn.convo:hover{background:rgba(74,222,128,.12)}
 .mode-bar{display:flex;padding:10px 18px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface);gap:0}
 .m-btn{flex:1;padding:9px;border:1px solid var(--border);background:transparent;font-family:var(--mono);font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;letter-spacing:.1em;transition:all .15s}
 .m-btn:first-child{border-radius:4px 0 0 4px}
 .m-btn:last-child{border-radius:0 4px 4px 0;border-left:none}
 .m-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
 .m-btn:not(.active):hover{color:var(--text);background:var(--surface2)}
-
 .main{display:grid;grid-template-columns:1fr 1fr;flex:1;overflow:hidden}
-
 .panel{display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden}
 .p-hdr{padding:9px 15px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
 .p-lbl{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
 .pill{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:20px;border:1px solid var(--border);color:var(--muted)}
 .pill.ok{color:var(--green);border-color:var(--green)}
 .pill.err{color:var(--red);border-color:var(--red)}
-
 .fields{padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:7px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface)}
 label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:3px}
 input[type=text]{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-family:var(--sans);font-size:12px;color:var(--text);outline:none;transition:border-color .15s}
 input[type=text]:focus{border-color:var(--accent)}
 input[type=text]::placeholder{color:var(--muted);opacity:.4}
-
 .input-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
-
 .rec-view{flex:1;display:flex;flex-direction:column;align-items:center;padding:14px;gap:10px;overflow:hidden}
 .rec-top{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0}
 .rec-btn{width:52px;height:52px;border-radius:50%;border:2px solid var(--border);background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:20px}
@@ -61,18 +59,15 @@ input[type=text]::placeholder{color:var(--muted);opacity:.4}
 .live-tx::-webkit-scrollbar{width:3px}
 .live-tx::-webkit-scrollbar-thumb{background:var(--border)}
 .interim{color:var(--muted);font-style:italic}
-
 .tx-view{flex:1;padding:10px 14px;display:flex;flex-direction:column;gap:5px;overflow:hidden}
 textarea{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:9px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;resize:none;line-height:1.8;transition:border-color .15s}
 textarea:focus{border-color:var(--accent)}
 textarea::placeholder{color:var(--muted);opacity:.4}
 .cc{font-family:var(--mono);font-size:10px;color:var(--muted);text-align:right}
-
 .sum-btn{margin:0 14px 10px;padding:9px;background:var(--accent);border:none;border-radius:4px;font-family:var(--mono);font-size:11px;font-weight:500;color:#fff;cursor:pointer;letter-spacing:.08em;transition:opacity .15s,transform .1s;flex-shrink:0}
 .sum-btn:hover{opacity:.88}
 .sum-btn:active{transform:scale(.98)}
 .sum-btn:disabled{opacity:.35;cursor:not-allowed}
-
 .out-panel{display:flex;flex-direction:column;overflow:hidden}
 .out-body{flex:1;overflow-y:auto;padding:12px;font-family:var(--mono);font-size:11px;line-height:1.8;color:var(--text);white-space:pre-wrap;word-break:break-word}
 .out-body::-webkit-scrollbar{width:3px}
@@ -88,19 +83,23 @@ textarea::placeholder{color:var(--muted);opacity:.4}
 .d-btn{flex:1;background:rgba(124,106,247,.12);border:1px solid var(--accent-dim);border-radius:4px;padding:7px;font-family:var(--mono);font-size:10px;color:var(--accent);cursor:pointer;letter-spacing:.06em;transition:background .15s}
 .d-btn:hover:not(:disabled){background:rgba(124,106,247,.22)}
 .d-btn:disabled{opacity:.3;cursor:not-allowed}
-
+.convo-btn{flex:1;background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.3);border-radius:4px;padding:7px;font-family:var(--mono);font-size:10px;color:var(--green);cursor:pointer;letter-spacing:.06em;transition:background .15s}
+.convo-btn:hover:not(:disabled){background:rgba(74,222,128,.12)}
+.convo-btn:disabled{opacity:.3;cursor:not-allowed}
 .m-h1{color:var(--accent);font-weight:500}
 .m-h2{color:var(--amber)}
 .m-bl{color:var(--green)}
 .m-bo{color:var(--muted)}
 .m-sp{color:var(--border)}
 .m-lk{color:var(--accent)}
-
 .thinking{display:flex;align-items:center;gap:8px;padding:14px;color:var(--muted);font-family:var(--mono);font-size:11px}
 .dots span{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--accent);animation:bnc 1.2s infinite;margin-right:2px}
 .dots span:nth-child(2){animation-delay:.2s}
 .dots span:nth-child(3){animation-delay:.4s}
 @keyframes bnc{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-4px);opacity:1}}
+.followup-bar{padding:8px 14px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;display:none;align-items:center;gap:8px}
+.followup-txt{font-family:var(--mono);font-size:10px;color:var(--amber)}
+.followup-btn{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:4px;padding:4px 10px;font-family:var(--mono);font-size:10px;color:var(--amber);cursor:pointer}
 </style>
 </head>
 <body>
@@ -108,8 +107,11 @@ textarea::placeholder{color:var(--muted);opacity:.4}
 <div class="hdr">
   <a class="back" href="index.html">← BAKER</a>
   <span class="logo">🎓</span>
-  <span class="hdr-sub">lecture capture</span>
+  <span class="hdr-sub" id="hdr-sub">lecture capture</span>
   <span class="no-key-warn" id="key-warn">⚠ No API key — set in BAKER settings</span>
+  <div class="hdr-right">
+    <button class="hbtn convo" id="discuss-btn" onclick="sendToConversation()" style="display:none">💬 Discuss</button>
+  </div>
 </div>
 
 <div class="mode-bar">
@@ -134,7 +136,7 @@ textarea::placeholder{color:var(--muted);opacity:.4}
             <span id="rec-icon">🎙</span>
           </button>
           <span class="timer" id="timer">00:00</span>
-          <span class="rec-status" id="rec-status">click to start recording<br>works best in Chrome</span>
+          <span class="rec-status" id="rec-status" id="rec-status-el"></span>
         </div>
         <div class="live-tx" id="live-tx">
           <span style="color:var(--muted);opacity:.4;font-size:10px">transcript appears here as you speak...</span>
@@ -144,7 +146,7 @@ textarea::placeholder{color:var(--muted);opacity:.4}
       <div class="tx-view" id="tx-view">
         <textarea id="tx-input" placeholder="Paste your transcript or raw notes here...
 
-You can paste a recording transcript, live notes from class, or a mix of both. BAKER will keep your original text and add a summary below it."></textarea>
+BAKER will keep your original text and add a structured summary below it."></textarea>
         <div class="cc"><span id="cc">0</span> chars</div>
       </div>
     </div>
@@ -160,106 +162,184 @@ You can paste a recording transcript, live notes from class, or a mix of both. B
     <div class="out-body" id="out-body">
       <div class="ph">
         <div class="ico">◈</div>
-        <p>Your formatted note appears here.<br>Matches Lecture-Recording template.<br><br>Download → move to<br>BAKER / 00-Capture / Lectures</p>
+        <p id="ph-txt">Your formatted note appears here.<br>Matches Lecture-Recording template.<br><br>Download → move to<br>BAKER / 00-Capture / Lectures</p>
       </div>
+    </div>
+    <!-- From Concept Bytes: follow-up prompt when BAKER asks a question -->
+    <div class="followup-bar" id="followup-bar">
+      <span class="followup-txt" id="followup-txt">BAKER has a follow-up question →</span>
+      <button class="followup-btn" onclick="openFollowUp()">💬 Answer in Conversation</button>
     </div>
     <div class="out-foot">
       <button class="c-btn" id="c-btn" onclick="copyOut()" disabled>Copy markdown</button>
       <button class="d-btn" id="d-btn" onclick="dlNote()" disabled>Download .md → BAKER</button>
+      <button class="convo-btn" id="convo-foot-btn" onclick="sendToConversation()" disabled>💬 Discuss</button>
     </div>
   </div>
 </div>
 
 <script>
-let mode = 'transcript', isRec = false, recog = null;
-let finalTx = '', interimTx = '';
-let timerInt = null, secs = 0, outText = '';
+// ── Shared utilities ──────────────────────────────────────
+function getTimeGreeting() {
+  var h = new Date().getHours();
+  if (h >= 5 && h < 12) return 'Good morning, sir.';
+  if (h >= 12 && h < 17) return 'Good afternoon, sir.';
+  if (h >= 17 && h < 21) return 'Good evening, sir.';
+  return "You're up late, sir.";
+}
 
-document.getElementById('date').value = new Date().toISOString().split('T')[0];
-document.getElementById('tx-input').addEventListener('input', function() {
-  document.getElementById('cc').textContent = this.value.length.toLocaleString();
+function getContextBlock() {
+  var now = new Date();
+  var timeStr = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  var dateStr = now.toLocaleDateString([], {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  return '[Current date: ' + dateStr + ' | Time: ' + timeStr + ']';
+}
+
+// ── State ─────────────────────────────────────────────────
+var mode = 'transcript', isRec = false, recog = null;
+var finalTx = '', interimTx = '';
+var timerInt = null, secs = 0, outText = '';
+var silenceTimer = null; // From Concept Bytes: silence detection
+
+// ── Boot ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
+  // Time-aware rec status
+  var h = new Date().getHours();
+  var greeting = h >= 5 && h < 12 ? 'Good morning' : h >= 12 && h < 17 ? 'Good afternoon' : h >= 17 && h < 21 ? 'Good evening' : "You're up late";
+  document.getElementById('rec-status').textContent = greeting + ', sir. Click to start recording.';
+
+  // Time-aware placeholder
+  document.getElementById('ph-txt').innerHTML = 'Your formatted note appears here.<br>Matches Lecture-Recording template.<br><br>Download → move to<br>BAKER / 00-Capture / Lectures';
+
+  getKey();
 });
 
+document.getElementById('tx-input').addEventListener('input', function() {
+  document.getElementById('cc').textContent = this.value.length.toLocaleString();
+  // Auto-detect course/topic from pasted content
+  autoDetectMeta(this.value);
+});
+
+// Auto-detect metadata patterns from pasted transcript
+function autoDetectMeta(txt) {
+  if (!txt || txt.length < 20) return;
+  var lines = txt.split('\n').slice(0,10).join('\n');
+  var courseMatch = lines.match(/(?:course|class|subject):\s*([^\n]+)/i);
+  var profMatch = lines.match(/(?:prof(?:essor)?|instructor|teacher):\s*([^\n]+)/i);
+  var topicMatch = lines.match(/(?:topic|lecture|chapter|unit):\s*([^\n]+)/i);
+  if (courseMatch && !document.getElementById('course').value) {
+    document.getElementById('course').value = courseMatch[1].trim();
+  }
+  if (profMatch && !document.getElementById('professor').value) {
+    document.getElementById('professor').value = profMatch[1].trim();
+  }
+  if (topicMatch && !document.getElementById('topic').value) {
+    document.getElementById('topic').value = topicMatch[1].trim();
+  }
+}
+
 function getKey() {
-  const k = localStorage.getItem('baker_api_key');
+  var k = localStorage.getItem('baker_api_key');
   if (!k) document.getElementById('key-warn').style.display = 'block';
   return k;
 }
 
 function switchMode(m) {
   mode = m;
-  document.getElementById('btn-rec').classList.toggle('active', m === 'record');
-  document.getElementById('btn-tx').classList.toggle('active', m === 'transcript');
-  document.getElementById('rec-view').style.display = m === 'record' ? 'flex' : 'none';
-  document.getElementById('tx-view').style.display = m === 'transcript' ? 'flex' : 'none';
+  document.getElementById('btn-rec').classList.toggle('active', m==='record');
+  document.getElementById('btn-tx').classList.toggle('active', m==='transcript');
+  document.getElementById('rec-view').style.display = m==='record'?'flex':'none';
+  document.getElementById('tx-view').style.display = m==='transcript'?'flex':'none';
   if (m !== 'record' && isRec) stopRec();
 }
 
 function toggleRec() { isRec ? stopRec() : startRec(); }
 
 function startRec() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { document.getElementById('rec-status').textContent = 'speech recognition needs Chrome — use TRANSCRIPT mode'; return; }
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    document.getElementById('rec-status').textContent = 'Speech recognition needs Chrome — use TRANSCRIPT mode';
+    return;
+  }
   finalTx = ''; interimTx = '';
   document.getElementById('live-tx').innerHTML = '';
   recog = new SR();
   recog.continuous = true; recog.interimResults = true; recog.lang = 'en-US';
-  recog.onstart = () => {
+
+  recog.onstart = function() {
     isRec = true;
     document.getElementById('rec-btn').classList.add('on');
     document.getElementById('rec-icon').textContent = '⏹';
-    document.getElementById('rec-status').textContent = 'listening...';
+    document.getElementById('rec-status').textContent = 'Listening... ' + getContextBlock();
     document.getElementById('timer').classList.add('on');
     startTimer();
   };
-  recog.onresult = (e) => {
+
+  recog.onresult = function(e) {
     interimTx = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
+    for (var i = e.resultIndex; i < e.results.length; i++) {
       if (e.results[i].isFinal) finalTx += e.results[i][0].transcript + ' ';
       else interimTx += e.results[i][0].transcript;
     }
     updateLive();
+    // From Concept Bytes: tighter silence detection — 800ms
+    if (silenceTimer) clearTimeout(silenceTimer);
+    silenceTimer = setTimeout(function() {
+      // Don't auto-stop during lecture recording — just note the silence
+      document.getElementById('rec-status').textContent = 'Silence detected — still recording...';
+    }, 800);
   };
-  recog.onerror = (e) => {
-    if (e.error === 'not-allowed') { document.getElementById('rec-status').textContent = 'microphone access denied — check browser settings'; stopRec(); }
+
+  recog.onerror = function(e) {
+    if (e.error === 'not-allowed') {
+      document.getElementById('rec-status').textContent = 'Microphone access denied — check browser settings';
+      stopRec();
+    }
   };
-  recog.onend = () => { if (isRec) { try { recog.start(); } catch(e) {} } };
-  try { recog.start(); } catch(e) { document.getElementById('rec-status').textContent = 'could not start — try Chrome'; }
+
+  recog.onend = function() { if (isRec) { try { recog.start(); } catch(e) {} } };
+  try { recog.start(); } catch(e) {
+    document.getElementById('rec-status').textContent = 'Could not start — try Chrome';
+  }
 }
 
 function stopRec() {
   isRec = false;
+  if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
   if (recog) { recog.stop(); recog = null; }
   clearInterval(timerInt);
   document.getElementById('rec-btn').classList.remove('on');
   document.getElementById('rec-icon').textContent = '🎙';
   document.getElementById('timer').classList.remove('on');
-  const t = document.getElementById('timer').textContent;
-  document.getElementById('rec-status').textContent = `${t} recorded · ready to summarize`;
+  var t = document.getElementById('timer').textContent;
+  document.getElementById('rec-status').textContent = t + ' recorded · ready to summarize';
   updateLive(true);
 }
 
-function updateLive(final = false) {
-  const el = document.getElementById('live-tx');
-  el.innerHTML = finalTx.replace(/\n/g,'<br>') + (final ? '' : `<span class="interim">${interimTx}</span>`);
+function updateLive(final) {
+  var el = document.getElementById('live-tx');
+  el.innerHTML = finalTx.replace(/\n/g,'<br>') + (final ? '' : '<span class="interim">' + interimTx + '</span>');
   el.scrollTop = el.scrollHeight;
 }
 
 function startTimer() {
   secs = 0; clearInterval(timerInt);
-  timerInt = setInterval(() => {
+  timerInt = setInterval(function() {
     secs++;
-    const m = String(Math.floor(secs/60)).padStart(2,'0');
-    const s = String(secs%60).padStart(2,'0');
-    document.getElementById('timer').textContent = `${m}:${s}`;
+    var m = String(Math.floor(secs/60)).padStart(2,'0');
+    var s = String(secs%60).padStart(2,'0');
+    document.getElementById('timer').textContent = m + ':' + s;
   }, 1000);
 }
 
+// ── Summarize ─────────────────────────────────────────────
 async function summarize() {
-  const apiKey = getKey();
+  var apiKey = getKey();
   if (!apiKey) { alert('No API key found. Go back to BAKER and set it in Settings.'); return; }
 
-  let raw = '';
+  var raw = '';
   if (mode === 'record') {
     raw = finalTx.trim();
     if (!raw) { alert('No transcript yet — start recording first.'); return; }
@@ -268,81 +348,44 @@ async function summarize() {
     if (!raw) { alert('Paste a transcript first.'); return; }
   }
 
-  const course = document.getElementById('course').value.trim();
-  const prof = document.getElementById('professor').value.trim();
-  const date = document.getElementById('date').value.trim();
-  const topic = document.getElementById('topic').value.trim();
+  var course = document.getElementById('course').value.trim();
+  var prof = document.getElementById('professor').value.trim();
+  var date = document.getElementById('date').value.trim();
+  var topic = document.getElementById('topic').value.trim();
 
-  const btn = document.getElementById('sum-btn');
+  var btn = document.getElementById('sum-btn');
   btn.disabled = true; btn.textContent = '⟳ PROCESSING...';
   setPill('working','');
   document.getElementById('c-btn').disabled = true;
   document.getElementById('d-btn').disabled = true;
-  document.getElementById('out-body').innerHTML = `<div class="thinking"><div class="dots"><span></span><span></span><span></span></div>Claude is reading your lecture...</div>`;
+  document.getElementById('convo-foot-btn').disabled = true;
+  document.getElementById('discuss-btn').style.display = 'none';
+  document.getElementById('followup-bar').style.display = 'none';
+  document.getElementById('out-body').innerHTML = '<div class="thinking"><div class="dots"><span></span><span></span><span></span></div>BAKER is reading your lecture...</div>';
 
-  const depth = localStorage.getItem('baker_depth') || 'medium';
+  var depth = localStorage.getItem('baker_depth') || 'medium';
 
-  const depthPrompts = {
-    indepth: `You are BAKER's lecture analyzer. Return ONLY the analysis below — no preamble, no code fences, start directly with ## 🔑
+  // From Concept Bytes: inject system info as prefix
+  var sysInfo = 'System information: Lecture analysis requested ' + getContextBlock();
+  if (course) sysInfo += ' · Course: "' + course + '"';
+  if (prof) sysInfo += ' · Professor: "' + prof + '"';
+  if (topic) sysInfo += ' · Topic: "' + topic + '"';
+  sysInfo += '\n\n';
 
-## 🔑 Key points
-[8-12 specific, concrete bullet points — real facts, definitions, and arguments from the lecture]
+  var depthPrompts = {
+    indepth: 'You are BAKER\'s lecture analyzer. Return ONLY the analysis below — no preamble, no code fences, start directly with ## 🔑\n\n## 🔑 Key points\n[8-12 specific, concrete bullet points — real facts, definitions, and arguments from the lecture]\n\n## ❓ Questions to follow up\n[4-6 genuine questions this lecture raises worth researching or asking the professor]\n\n## 💡 Insights\n[2-4 observations about why this material matters, surprising implications, or connections to bigger ideas]\n\n## 🔗 Connects to\n[[02-Areas/College]] · [[05-Notes/Maps/College-MOC]]\n[3-5 more related topics as [[wikilinks]] where possible]\n\n## 📌 Key terms\n[Define 3-5 important terms or concepts introduced in this lecture]\n\n---\n*Status: reviewed · [[HOME]]*',
 
-## ❓ Questions to follow up
-[4-6 genuine questions this lecture raises worth researching or asking the professor]
+    medium: 'You are BAKER\'s lecture analyzer. Return ONLY the analysis below — no preamble, no code fences, start directly with ## 🔑\n\n## 🔑 Key points\n[5-8 specific, concrete bullet points — real facts from the lecture]\n\n## ❓ Questions to follow up\n[2-3 genuine questions this lecture raises]\n\n## 💡 Insights\n[1-2 observations about why this material matters]\n\n## 🔗 Connects to\n[[02-Areas/College]] · [[05-Notes/Maps/College-MOC]]\n[2-3 more related topics as [[wikilinks]] where possible]\n\n---\n*Status: reviewed · [[HOME]]*',
 
-## 💡 Insights
-[2-4 observations about why this material matters, surprising implications, or connections to bigger ideas]
+    concise: 'You are BAKER\'s lecture analyzer. Return ONLY the analysis below — no preamble, no code fences, start directly with ## 🔑\n\n## 🔑 Key points\n[4-5 bullet points — the most important facts only]\n\n## 💡 Insights\n[1 key takeaway from this lecture]\n\n## 🔗 Connects to\n[[02-Areas/College]] · [[05-Notes/Maps/College-MOC]]\n\n---\n*Status: reviewed · [[HOME]]*',
 
-## 🔗 Connects to
-[[02-Areas/College]] · [[05-Notes/Maps/College-MOC]]
-[3-5 more related topics — write each as a [[wikilink]] if it could be a note in the vault, otherwise plain text]
-
-## 📌 Key terms
-[Define 3-5 important terms or concepts introduced in this lecture]
-
----
-*Status: reviewed · [[HOME]]*`,
-
-    medium: `You are BAKER's lecture analyzer. Return ONLY the analysis below — no preamble, no code fences, start directly with ## 🔑
-
-## 🔑 Key points
-[5-8 specific, concrete bullet points — real facts from the lecture]
-
-## ❓ Questions to follow up
-[2-3 genuine questions this lecture raises]
-
-## 💡 Insights
-[1-2 observations about why this material matters]
-
-## 🔗 Connects to
-[[02-Areas/College]] · [[05-Notes/Maps/College-MOC]]
-[2-3 more related topics — write each as a [[wikilink]] if it could be a note in the vault, otherwise plain text]
-
----
-*Status: reviewed · [[HOME]]*`,
-
-    concise: `You are BAKER's lecture analyzer. Return ONLY the analysis below — no preamble, no code fences, start directly with ## 🔑
-
-## 🔑 Key points
-[4-5 bullet points — the most important facts only]
-
-## 💡 Insights
-[1 key takeaway from this lecture]
-
-## 🔗 Connects to
-[[02-Areas/College]] · [[05-Notes/Maps/College-MOC]]
-
----
-*Status: reviewed · [[HOME]]*`,
-
-    miniscule: `You are BAKER's lecture analyzer. Return ONLY 3 bullet points — the absolute most critical facts from this lecture. No headers, no preamble, no code fences. Just 3 bullets then a blank line then: *[[02-Areas/College]] · [[05-Notes/Maps/College-MOC]] · [[HOME]]*`
+    miniscule: 'You are BAKER\'s lecture analyzer. Return ONLY 3 bullet points — the absolute most critical facts from this lecture. No headers, no preamble, no code fences. Just 3 bullets then a blank line then: *[[02-Areas/College]] · [[05-Notes/Maps/College-MOC]] · [[HOME]]*'
   };
 
-  const system = depthPrompts[depth];
+  var system = depthPrompts[depth] || depthPrompts.medium;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    var res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -353,57 +396,46 @@ async function summarize() {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 1000,
-        system,
-        messages: [{ role: 'user', content: `Analyze this lecture:\n\n${raw}` }]
+        system: system,
+        messages: [{ role: 'user', content: sysInfo + 'Analyze this lecture:\n\n' + raw }]
       })
     });
-    const data = await res.json();
+
+    var data = await res.json();
     if (data.error) throw new Error(data.error.message);
-    const analysis = data.content.map(b => b.text||'').join('\n').trim();
+    var analysis = data.content.map(function(b){return b.text||'';}).join('\n').trim();
 
-    outText = `---
-date: ${date}
-type: lecture
-course: ${course||'Unknown'}
-professor: ${prof||'Unknown'}
-topic: ${topic||'Unknown'}
-status: reviewed
-tags: [lecture, college]
----
+    // From Concept Bytes: skipHotWord pattern — if analysis ends with "?", show follow-up prompt
+    var endsWithQuestion = analysis.trim().endsWith('?');
+    if (endsWithQuestion) {
+      document.getElementById('followup-txt').textContent = 'BAKER has a follow-up question — answer it in Conversation';
+      document.getElementById('followup-bar').style.display = 'flex';
+    }
 
-# 🎓 ${course||'Lecture'} — ${topic||'Notes'}
-
-**Date:** ${date}
-**Professor:** ${prof||'Unknown'}
-**Course:** ${course||'Unknown'}
-
----
-
-## 📝 Raw notes / transcript
-${raw}
-
----
-
-${analysis}`;
+    outText = '---\ndate: ' + date + '\ntype: lecture\ncourse: ' + (course||'Unknown') + '\nprofessor: ' + (prof||'Unknown') + '\ntopic: ' + (topic||'Unknown') + '\nstatus: reviewed\ntags: [lecture, college]\n---\n\n# 🎓 ' + (course||'Lecture') + ' — ' + (topic||'Notes') + '\n\n**Date:** ' + date + '\n**Professor:** ' + (prof||'Unknown') + '\n**Course:** ' + (course||'Unknown') + '\n\n---\n\n## 📝 Raw notes / transcript\n' + raw + '\n\n---\n\n' + analysis;
 
     renderOut(outText);
     setPill('done','ok');
     document.getElementById('c-btn').disabled = false;
     document.getElementById('d-btn').disabled = false;
+    document.getElementById('convo-foot-btn').disabled = false;
+    document.getElementById('discuss-btn').style.display = 'inline-block';
+
   } catch(err) {
-    document.getElementById('out-body').innerHTML = `<div class="thinking" style="color:var(--red)">Error: ${err.message}</div>`;
+    document.getElementById('out-body').innerHTML = '<div class="thinking" style="color:var(--red)">Error: ' + err.message + '</div>';
     setPill('error','err');
   }
+
   btn.disabled = false; btn.textContent = '▶ SUMMARIZE → BAKER';
 }
 
-function setPill(t,cls) {
-  const p = document.getElementById('out-pill');
-  p.textContent = t; p.className = 'pill'+(cls?' '+cls:'');
+function setPill(t, cls) {
+  var p = document.getElementById('out-pill');
+  p.textContent = t; p.className = 'pill' + (cls?' '+cls:'');
 }
 
 function renderOut(text) {
-  const esc = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  var esc = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   document.getElementById('out-body').innerHTML = esc
     .replace(/^(---)/gm,'<span class="m-sp">---</span>')
     .replace(/^(# .+)$/gm,'<span class="m-h1">$1</span>')
@@ -415,21 +447,39 @@ function renderOut(text) {
 
 function copyOut() {
   if (!outText) return;
-  navigator.clipboard.writeText(outText).then(() => {
-    const b = document.getElementById('c-btn');
+  navigator.clipboard.writeText(outText).then(function() {
+    var b = document.getElementById('c-btn');
     b.textContent = '✓ Copied!'; b.classList.add('copied');
-    setTimeout(()=>{ b.textContent='Copy markdown'; b.classList.remove('copied'); }, 2000);
+    setTimeout(function(){ b.textContent = 'Copy markdown'; b.classList.remove('copied'); }, 2000);
   });
 }
 
 function dlNote() {
   if (!outText) return;
-  const c = (document.getElementById('course').value.trim()||'Lecture').replace(/\s+/g,'-');
-  const d = document.getElementById('date').value.trim()||new Date().toISOString().split('T')[0];
-  const t = (document.getElementById('topic').value.trim()||'Note').replace(/\s+/g,'-');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([outText],{type:'text/markdown'}));
-  a.download = `${d}-${c}-${t}.md`; a.click();
+  var c = (document.getElementById('course').value.trim()||'Lecture').replace(/\s+/g,'-');
+  var d = document.getElementById('date').value.trim() || new Date().toISOString().split('T')[0];
+  var t = (document.getElementById('topic').value.trim()||'Note').replace(/\s+/g,'-');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([outText], {type:'text/markdown'}));
+  a.download = d + '-' + c + '-' + t + '.md'; a.click();
+}
+
+// ── Send to Conversation ──────────────────────────────────
+function sendToConversation() {
+  if (!outText) return;
+  var course = document.getElementById('course').value.trim() || 'Lecture';
+  var topic = document.getElementById('topic').value.trim() || 'Notes';
+  var payload = {
+    topic: course + ' — ' + topic,
+    context: outText,
+    source: 'lecture'
+  };
+  sessionStorage.setItem('baker_convo_context', JSON.stringify(payload));
+  window.location.href = 'conversation.html';
+}
+
+function openFollowUp() {
+  sendToConversation();
 }
 
 getKey();
