@@ -30,6 +30,20 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .setup-banner p{font-family:var(--mono);font-size:12px;color:var(--red);line-height:1.6}
 .setup-banner button{flex-shrink:0;background:var(--red);border:none;border-radius:4px;padding:8px 14px;font-family:var(--mono);font-size:11px;color:#fff;cursor:pointer}
 .content{padding:24px}
+
+/* Live widgets row */
+.widgets-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px}
+.widget-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;cursor:pointer;transition:all .2s}
+.widget-card:hover{border-color:var(--accent);background:var(--surface2)}
+.widget-card.loading{opacity:.6}
+.w-title{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.w-main{font-family:var(--mono);font-size:20px;font-weight:500;color:var(--text);line-height:1.2}
+.w-sub{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;line-height:1.6}
+.w-action{font-family:var(--mono);font-size:10px;color:var(--accent);margin-top:8px}
+.widget-card.spotify-card{border-color:rgba(29,185,84,.3)}
+.widget-card.spotify-card:hover{border-color:#1db954}
+.w-main.spotify{color:#1db954;font-size:13px;font-weight:400}
+
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:32px}
 .tool-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;transition:all .2s;position:relative;overflow:hidden}
 .tool-card.active{cursor:pointer;text-decoration:none;display:block;color:inherit}
@@ -50,7 +64,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .footer{padding:20px 24px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);display:flex;justify-content:space-between}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;padding:24px}
 .overlay.open{display:flex}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;width:100%;max-width:440px}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
 .modal-title{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--text);margin-bottom:6px}
 .modal-sub{font-size:12px;color:var(--muted);margin-bottom:22px;line-height:1.6}
 .field{margin-bottom:16px}
@@ -68,24 +82,51 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .depth-btn.active{background:rgba(124,106,247,.15);border-color:var(--accent);color:var(--accent)}
 .modal-note{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:14px;line-height:1.7;padding:10px;background:var(--bg);border-radius:4px;border:1px solid var(--border)}
 .modal-note a{color:var(--accent)}
+.greeting-bar{padding:12px 24px 0;font-family:var(--mono);font-size:12px;color:var(--muted)}
 @keyframes glow{0%,100%{opacity:1}50%{opacity:.4}}
 </style>
 </head>
 <body>
+
 <header class="hdr">
   <span class="logo">BAKER</span>
-  <span class="hdr-sub">second brain</span>
+  <span class="hdr-sub" id="hdr-greeting">second brain</span>
   <div class="hdr-right">
     <span class="api-badge" id="api-badge">checking...</span>
     <span id="global-mic-dot" style="display:none;width:8px;height:8px;border-radius:50%;background:#4ade80;box-shadow:0 0 6px #4ade80;animation:glow 1.5s infinite" title="Constant mic active"></span>
     <button class="settings-btn" onclick="openSettings()">⚙ Settings</button>
   </div>
 </header>
+
 <div id="setup-banner" class="setup-banner" style="display:none">
   <p>No API key set — BAKER needs your Anthropic API key to run AI tools.</p>
   <button onclick="openSettings()">Set up →</button>
 </div>
+
 <main class="content">
+
+  <!-- Live widgets: weather + spotify -->
+  <div class="widgets-row" id="widgets-row">
+    <div class="widget-card loading" id="weather-widget" onclick="openWeatherInConvo()">
+      <div class="w-title">⛅ Weather</div>
+      <div class="w-main" id="w-temp">—</div>
+      <div class="w-sub" id="w-desc">Fetching...</div>
+      <div class="w-action" id="w-action">Click to discuss with BAKER →</div>
+    </div>
+    <div class="widget-card" id="clock-widget">
+      <div class="w-title">🕐 Right now</div>
+      <div class="w-main" id="w-time">—</div>
+      <div class="w-sub" id="w-date">—</div>
+      <div class="w-action">—</div>
+    </div>
+    <div class="widget-card spotify-card" id="spotify-widget" style="display:none" onclick="openSpotifyInConvo()">
+      <div class="w-title">♫ Now playing</div>
+      <div class="w-main spotify" id="w-track">—</div>
+      <div class="w-sub" id="w-artist">—</div>
+      <div class="w-action">Discuss with BAKER →</div>
+    </div>
+  </div>
+
   <div class="phase-hdr">
     <span class="phase-tag">Phase 2 — AI tools</span>
     <div class="phase-line"></div>
@@ -101,7 +142,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <a class="tool-card active" href="conversation.html">
       <div class="tool-icon">💬</div>
       <div class="tool-name">Conversation</div>
-      <div class="tool-desc">Talk to BAKER. Voice or text, continuous hands-free mode, saves to your vault automatically.</div>
+      <div class="tool-desc">Talk to BAKER. Voice or text, continuous hands-free mode, weather and Spotify aware, saves to your vault automatically.</div>
       <span class="tool-badge badge-live">live</span>
       <span class="tool-arrow">→</span>
     </a>
@@ -131,6 +172,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <span class="tool-badge badge-soon">coming soon</span>
     </div>
   </div>
+
   <div class="phase-hdr">
     <span class="phase-tag">Phase 3 — Digital assistant</span>
     <div class="phase-line"></div>
@@ -150,10 +192,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     </div>
   </div>
 </main>
+
 <footer class="footer">
-  <span>BAKER v0.3 · Phase 2</span>
+  <span>BAKER v0.4 · Phase 2</span>
   <span>vault → G:/My Drive/BAKER</span>
 </footer>
+
+<!-- Settings modal -->
 <div class="overlay" id="overlay" onclick="closeIfOutside(event)">
   <div class="modal">
     <div class="modal-title">⚙ Settings</div>
@@ -184,166 +229,306 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       </div>
     </div>
     <div class="field">
+      <label>Voice Speed</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+        <input type="range" id="speech-rate-slider" min="30" max="200" step="5" style="flex:1">
+        <span class="depth-btn" id="speech-rate-display" style="cursor:default;min-width:40px;text-align:center">92</span>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px">Conversation voice speed. Changes take effect immediately.</div>
+    </div>
+    <div class="field">
       <label>Constant Mic</label>
       <div style="display:flex;gap:10px;margin-top:4px">
         <button class="depth-btn" id="mic-on" onclick="setConstantMic(true)" style="flex:1">🎙 On</button>
         <button class="depth-btn" id="mic-off" onclick="setConstantMic(false)" style="flex:1">🔇 Off</button>
       </div>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:8px">Say "Hey BAKER" then your command. Navigation only activates after wake word.</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:8px">Say "Hey BAKER", "Baker", "Yo Baker", or "Ok Baker" then your command.</div>
+    </div>
+    <div class="field">
+      <label>Spotify Client ID</label>
+      <input type="text" id="spotify-id-input" placeholder="Your Spotify app client ID" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:9px 10px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px">Optional. Get from <a href="https://developer.spotify.com/dashboard" target="_blank" style="color:var(--accent)">developer.spotify.com</a></div>
     </div>
     <div class="modal-note">
-      Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key.
+      Get your Anthropic key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key.
     </div>
     <div class="modal-actions">
       <button class="cancel-btn" onclick="closeSettings()">Cancel</button>
       <button class="clear-btn" onclick="clearKey()">Clear key</button>
-      <button class="save-btn" onclick="saveKey()">Save key</button>
+      <button class="save-btn" onclick="saveKey()">Save</button>
     </div>
   </div>
 </div>
+
 <script>
-if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
-function checkKey(){var k=localStorage.getItem('baker_api_key');var b=document.getElementById('api-badge');var bn=document.getElementById('setup-banner');if(k&&k.startsWith('sk-ant-')){b.textContent='API key set';b.className='api-badge set';bn.style.display='none';}else{b.textContent='no API key';b.className='api-badge unset';bn.style.display='flex';}}
-function openSettings(){document.getElementById('key-input').value=localStorage.getItem('baker_api_key')||'';document.getElementById('overlay').classList.add('open');loadDepth();loadEffort();loadConstantMic();}
-function closeSettings(){document.getElementById('overlay').classList.remove('open');}
-function closeIfOutside(e){if(e.target===document.getElementById('overlay'))closeSettings();}
-function toggleShow(){var i=document.getElementById('key-input');i.type=i.type==='password'?'text':'password';}
-function saveKey(){var k=document.getElementById('key-input').value.trim();if(!k){alert('Paste your API key first.');return;}localStorage.setItem('baker_api_key',k);closeSettings();checkKey();}
-function clearKey(){if(!confirm('Remove API key?'))return;localStorage.removeItem('baker_api_key');document.getElementById('key-input').value='';closeSettings();checkKey();}
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+
+// ── Shared utilities ──────────────────────────────────────
+function getTimeGreeting() {
+  var h = new Date().getHours();
+  if (h >= 5 && h < 12) return 'Good morning, sir.';
+  if (h >= 12 && h < 17) return 'Good afternoon, sir.';
+  if (h >= 17 && h < 21) return 'Good evening, sir.';
+  return "You're up late, sir.";
+}
+
+function getContextBlock() {
+  var now = new Date();
+  var timeStr = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  var dateStr = now.toLocaleDateString([], {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  return '[Current date: ' + dateStr + ' | Time: ' + timeStr + ']';
+}
+
+// ── Clock widget ──────────────────────────────────────────
+function updateClock() {
+  var now = new Date();
+  document.getElementById('w-time').textContent = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  document.getElementById('w-date').textContent = now.toLocaleDateString([], {weekday:'long', month:'long', day:'numeric'});
+  // Update greeting
+  document.getElementById('hdr-greeting').textContent = getTimeGreeting();
+}
+updateClock();
+setInterval(updateClock, 30000);
+
+// ── Weather widget (open-meteo, no API key) ───────────────
+var WMO_CODES = {0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',80:'Light showers',81:'Showers',82:'Heavy showers',95:'Thunderstorm',96:'Thunderstorm + hail',99:'Heavy thunderstorm'};
+var weatherData = null;
+
+function fetchWeather() {
+  if (!navigator.geolocation) { document.getElementById('w-desc').textContent = 'Location unavailable'; return; }
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    var lat = pos.coords.latitude.toFixed(4);
+    var lon = pos.coords.longitude.toFixed(4);
+    var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto';
+    fetch(url).then(function(r){return r.json();}).then(function(d) {
+      var c = d.current;
+      weatherData = {
+        temp: Math.round(c.temperature_2m),
+        feels: Math.round(c.apparent_temperature),
+        desc: WMO_CODES[c.weather_code] || 'Unknown',
+        wind: Math.round(c.wind_speed_10m),
+        humidity: c.relative_humidity_2m
+      };
+      document.getElementById('w-temp').textContent = weatherData.temp + '°F';
+      document.getElementById('w-desc').textContent = weatherData.desc + ' · Feels ' + weatherData.feels + '°F · Wind ' + weatherData.wind + 'mph';
+      document.getElementById('weather-widget').classList.remove('loading');
+    }).catch(function() {
+      document.getElementById('w-desc').textContent = 'Weather unavailable';
+      document.getElementById('weather-widget').classList.remove('loading');
+    });
+  }, function() {
+    document.getElementById('w-desc').textContent = 'Allow location for weather';
+    document.getElementById('weather-widget').classList.remove('loading');
+  });
+}
+fetchWeather();
+
+function openWeatherInConvo() {
+  if (!weatherData) return;
+  var sysInfo = 'System information: Current weather — ' + weatherData.temp + '°F (feels like ' + weatherData.feels + '°F), ' + weatherData.desc + ', wind ' + weatherData.wind + ' mph, humidity ' + weatherData.humidity + '%.';
+  sessionStorage.setItem('baker_convo_context', JSON.stringify({
+    topic: 'Weather',
+    context: sysInfo,
+    source: 'weather',
+    instruction: 'Tell the user the current weather conditions in one natural sentence as JARVIS would.'
+  }));
+  window.location.href = 'conversation.html';
+}
+
+// ── Spotify widget ────────────────────────────────────────
+function checkSpotifyToken() {
+  // Check for OAuth callback token in URL hash
+  var hash = window.location.hash;
+  if (hash) {
+    var params = new URLSearchParams(hash.replace('#','?').slice(1));
+    var token = params.get('access_token');
+    if (token) {
+      localStorage.setItem('baker_spotify_token', token);
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }
+  var token = localStorage.getItem('baker_spotify_token');
+  if (token) fetchSpotifyWidget(token);
+}
+
+async function fetchSpotifyWidget(token) {
+  try {
+    var r = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+      headers: {Authorization: 'Bearer ' + token}
+    });
+    if (r.status === 401) { localStorage.removeItem('baker_spotify_token'); return; }
+    if (r.status === 204) return; // Nothing playing
+    var d = await r.json();
+    if (!d || !d.item) return;
+    var track = d.item.name;
+    var artist = d.item.artists.map(function(a){return a.name;}).join(', ');
+    document.getElementById('w-track').textContent = track;
+    document.getElementById('w-artist').textContent = artist + (d.is_playing ? ' · playing' : ' · paused');
+    document.getElementById('spotify-widget').style.display = 'block';
+  } catch(e) {}
+}
+
+function openSpotifyInConvo() {
+  var track = document.getElementById('w-track').textContent;
+  var artist = document.getElementById('w-artist').textContent;
+  if (!track || track === '—') return;
+  sessionStorage.setItem('baker_convo_context', JSON.stringify({
+    topic: 'Spotify',
+    context: 'System information: Spotify is currently playing "' + track + '" by ' + artist + '.',
+    source: 'spotify',
+    instruction: 'Comment on the currently playing track as JARVIS would — brief, witty, one sentence.'
+  }));
+  window.location.href = 'conversation.html';
+}
+
+// ── API key ───────────────────────────────────────────────
+// Bug fix: removed startsWith('sk-ant-') check — just check key exists
+function checkKey() {
+  var k = localStorage.getItem('baker_api_key');
+  var b = document.getElementById('api-badge');
+  var bn = document.getElementById('setup-banner');
+  if (k && k.trim().length > 10) {
+    b.textContent = 'API key set'; b.className = 'api-badge set'; bn.style.display = 'none';
+  } else {
+    b.textContent = 'no API key'; b.className = 'api-badge unset'; bn.style.display = 'flex';
+  }
+}
+
+function openSettings() {
+  document.getElementById('key-input').value = localStorage.getItem('baker_api_key') || '';
+  document.getElementById('spotify-id-input').value = localStorage.getItem('baker_spotify_id') || '';
+  // Load speech rate
+  var sr = parseFloat(localStorage.getItem('baker_speech_rate')) || 0.92;
+  var sliderVal = Math.round(sr * 100);
+  document.getElementById('speech-rate-slider').value = sliderVal;
+  document.getElementById('speech-rate-display').textContent = sliderVal;
+  document.getElementById('overlay').classList.add('open');
+  loadDepth(); loadEffort(); loadConstantMic();
+}
+
+function closeSettings() { document.getElementById('overlay').classList.remove('open'); }
+function closeIfOutside(e) { if (e.target === document.getElementById('overlay')) closeSettings(); }
+function toggleShow() { var i = document.getElementById('key-input'); i.type = i.type==='password'?'text':'password'; }
+
+function saveKey() {
+  var k = document.getElementById('key-input').value.trim();
+  if (!k) { alert('Paste your API key first.'); return; }
+  localStorage.setItem('baker_api_key', k);
+  // Save Spotify ID
+  var sid = document.getElementById('spotify-id-input').value.trim();
+  if (sid) localStorage.setItem('baker_spotify_id', sid);
+  // Save speech rate from slider
+  var sr = parseInt(document.getElementById('speech-rate-slider').value) / 100;
+  localStorage.setItem('baker_speech_rate', sr.toString());
+  closeSettings(); checkKey();
+}
+
+function clearKey() {
+  if (!confirm('Remove API key?')) return;
+  localStorage.removeItem('baker_api_key');
+  document.getElementById('key-input').value = '';
+  closeSettings(); checkKey();
+}
+
+// Speech rate slider live update
+document.addEventListener('DOMContentLoaded', function() {
+  var slider = document.getElementById('speech-rate-slider');
+  if (slider) {
+    slider.addEventListener('input', function() {
+      document.getElementById('speech-rate-display').textContent = this.value;
+    });
+  }
+});
+
 checkKey();
-function setDepth(d){localStorage.setItem('baker_depth',d);document.querySelectorAll('[id^="depth-"]').forEach(function(b){b.classList.remove('active');});var el=document.getElementById('depth-'+d);if(el)el.classList.add('active');}
-function loadDepth(){setDepth(localStorage.getItem('baker_depth')||'medium');}
+
+// ── Settings helpers ──────────────────────────────────────
+function setDepth(d) {
+  localStorage.setItem('baker_depth', d);
+  document.querySelectorAll('[id^="depth-"]').forEach(function(b){ b.classList.remove('active'); });
+  var el = document.getElementById('depth-'+d); if (el) el.classList.add('active');
+}
+function loadDepth() { setDepth(localStorage.getItem('baker_depth') || 'medium'); }
 loadDepth();
-function setEffort(e){localStorage.setItem('baker_effort',e);document.querySelectorAll('[id^="effort-"]').forEach(function(b){b.classList.remove('active');});var el=document.getElementById('effort-'+e);if(el)el.classList.add('active');}
-function loadEffort(){setEffort(localStorage.getItem('baker_effort')||'standard');}
+
+function setEffort(e) {
+  localStorage.setItem('baker_effort', e);
+  document.querySelectorAll('[id^="effort-"]').forEach(function(b){ b.classList.remove('active'); });
+  var el = document.getElementById('effort-'+e); if (el) el.classList.add('active');
+}
+function loadEffort() { setEffort(localStorage.getItem('baker_effort') || 'standard'); }
 loadEffort();
-var globalMic=null;
-function setConstantMic(on){localStorage.setItem('baker_constant_mic',on?'true':'false');document.getElementById('mic-on').className='depth-btn'+(on?' active':'');document.getElementById('mic-off').className='depth-btn'+(!on?' active':'');on?startGlobalMic():stopGlobalMic();}
-function loadConstantMic(){var on=localStorage.getItem('baker_constant_mic')==='true';document.getElementById('mic-on').className='depth-btn'+(on?' active':'');document.getElementById('mic-off').className='depth-btn'+(!on?' active':'');if(on)startGlobalMic();}
-function startGlobalMic(){var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('Constant mic requires Chrome.');return;}stopGlobalMic();document.getElementById('global-mic-dot').style.display='inline-block';globalMic=new SR();globalMic.continuous=true;globalMic.interimResults=false;globalMic.lang='en-US';var awake=false;var awakeTimer=null;globalMic.onresult=function(e){var txt=e.results[e.results.length-1][0].transcript.toLowerCase().trim();if(txt.includes('hey baker')){awake=true;var dot=document.getElementById('global-mic-dot');dot.style.background='#7c6af7';if(awakeTimer)clearTimeout(awakeTimer);awakeTimer=setTimeout(function(){awake=false;dot.style.background='#4ade80';},5000);return;}if(!awake)return;awake=false;if(awakeTimer)clearTimeout(awakeTimer);document.getElementById('global-mic-dot').style.background='#4ade80';if(txt.includes('lecture'))window.location.href='lecture.html';else if(txt.includes('conversation')||txt.includes('chat'))window.location.href='conversation.html';else if(txt.includes('scan')||txt.includes('analyze'))window.location.href='analyze.html';else if(txt.includes('settings'))openSettings();};globalMic.onend=function(){if(localStorage.getItem('baker_constant_mic')==='true'){try{globalMic.start();}catch(e){}}};try{globalMic.start();}catch(e){}}
-function stopGlobalMic(){if(globalMic){globalMic.stop();globalMic=null;}document.getElementById('global-mic-dot').style.display='none';}
+
+// ── Constant mic (expanded hot words from Concept Bytes) ──
+var HOT_WORDS = ['hey baker', 'baker', 'yo baker', 'ok baker'];
+var globalMic = null;
+
+function setConstantMic(on) {
+  localStorage.setItem('baker_constant_mic', on ? 'true' : 'false');
+  document.getElementById('mic-on').className = 'depth-btn' + (on ? ' active' : '');
+  document.getElementById('mic-off').className = 'depth-btn' + (!on ? ' active' : '');
+  on ? startGlobalMic() : stopGlobalMic();
+}
+
+function loadConstantMic() {
+  var on = localStorage.getItem('baker_constant_mic') === 'true';
+  document.getElementById('mic-on').className = 'depth-btn' + (on ? ' active' : '');
+  document.getElementById('mic-off').className = 'depth-btn' + (!on ? ' active' : '');
+  if (on) startGlobalMic();
+}
+
+function startGlobalMic() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('Constant mic requires Chrome.'); return; }
+  stopGlobalMic();
+  document.getElementById('global-mic-dot').style.display = 'inline-block';
+  globalMic = new SR();
+  globalMic.continuous = true; globalMic.interimResults = false; globalMic.lang = 'en-US';
+  var awake = false, awakeTimer = null;
+  globalMic.onresult = function(e) {
+    var txt = e.results[e.results.length-1][0].transcript.toLowerCase().trim();
+    // From Concept Bytes: check expanded hot words list
+    var triggered = HOT_WORDS.some(function(w){ return txt.includes(w); });
+    if (triggered && !awake) {
+      awake = true;
+      var dot = document.getElementById('global-mic-dot');
+      dot.style.background = '#7c6af7';
+      if (awakeTimer) clearTimeout(awakeTimer);
+      awakeTimer = setTimeout(function(){ awake = false; dot.style.background = '#4ade80'; }, 5000);
+      return;
+    }
+    if (!awake) return;
+    awake = false;
+    if (awakeTimer) clearTimeout(awakeTimer);
+    document.getElementById('global-mic-dot').style.background = '#4ade80';
+    if (txt.includes('lecture')) window.location.href = 'lecture.html';
+    else if (txt.includes('conversation') || txt.includes('chat') || txt.includes('talk')) window.location.href = 'conversation.html';
+    else if (txt.includes('scan') || txt.includes('analyze') || txt.includes('analyse')) window.location.href = 'analyze.html';
+    else if (txt.includes('settings')) openSettings();
+    else if (txt.includes('weather')) { closeSettings(); fetchWeatherAndSpeak(); }
+  };
+  globalMic.onend = function() {
+    if (localStorage.getItem('baker_constant_mic') === 'true') {
+      try { globalMic.start(); } catch(e) {}
+    }
+  };
+  try { globalMic.start(); } catch(e) {}
+}
+
+function stopGlobalMic() {
+  if (globalMic) { globalMic.stop(); globalMic = null; }
+  document.getElementById('global-mic-dot').style.display = 'none';
+}
+
+// Voice-triggered weather — opens conversation with context
+function fetchWeatherAndSpeak() {
+  if (weatherData) { openWeatherInConvo(); return; }
+  fetchWeather();
+  setTimeout(function() { if (weatherData) openWeatherInConvo(); }, 2000);
+}
+
 loadConstantMic();
+checkSpotifyToken();
 </script>
 </body>
-</html>  <div class="grid">
-    <a class="tool-card active" href="lecture.html">
-      <div class="tool-icon">🎓</div>
-      <div class="tool-name">Lecture Capture</div>
-      <div class="tool-desc">Record or paste a lecture transcript. BAKER summarizes it and formats a note ready to drop into your vault.</div>
-      <span class="tool-badge badge-live">live</span>
-      <span class="tool-arrow">→</span>
-    </a>
-    <a class="tool-card active" href="conversation.html">
-      <div class="tool-icon">💬</div>
-      <div class="tool-name">Conversation</div>
-      <div class="tool-desc">Talk to BAKER. Voice or text, continuous hands-free mode, saves to your vault automatically.</div>
-      <span class="tool-badge badge-live">live</span>
-      <span class="tool-arrow">→</span>
-    </a>
-    <a class="tool-card active" href="analyze.html">
-      <div class="tool-icon">🔍</div>
-      <div class="tool-name">Scan / Analyze</div>
-      <div class="tool-desc">Drop a note, project, or photo. BAKER breaks it down — insights, gaps, risks, and next actions.</div>
-      <span class="tool-badge badge-live">live</span>
-      <span class="tool-arrow">→</span>
-    </a>
-    <div class="tool-card soon">
-      <div class="tool-icon">📥</div>
-      <div class="tool-name">Inbox Processor</div>
-      <div class="tool-desc">Drop a raw note. BAKER reads it and tells you where in the vault it belongs.</div>
-      <span class="tool-badge badge-soon">coming soon</span>
-    </div>
-    <div class="tool-card soon">
-      <div class="tool-icon">📊</div>
-      <div class="tool-name">Weekly Summary</div>
-      <div class="tool-desc">Feed in your daily logs. BAKER generates your weekly review automatically.</div>
-      <span class="tool-badge badge-soon">coming soon</span>
-    </div>
-    <div class="tool-card soon">
-      <div class="tool-icon">🔗</div>
-      <div class="tool-name">Note Linker</div>
-      <div class="tool-desc">Paste a note. BAKER suggests which existing vault notes it connects to.</div>
-      <span class="tool-badge badge-soon">coming soon</span>
-    </div>
-  </div>
-  <div class="phase-hdr">
-    <span class="phase-tag">Phase 3 — Digital assistant</span>
-    <div class="phase-line"></div>
-  </div>
-  <div class="grid">
-    <div class="tool-card soon">
-      <div class="tool-icon">🤖</div>
-      <div class="tool-name">Vault Chat</div>
-      <div class="tool-desc">Ask BAKER anything about your notes. It reads your vault and answers from your own knowledge.</div>
-      <span class="tool-badge badge-soon">phase 3</span>
-    </div>
-    <div class="tool-card soon">
-      <div class="tool-icon">📱</div>
-      <div class="tool-name">iPhone App</div>
-      <div class="tool-desc">Capture anywhere. Notes sync to your vault automatically.</div>
-      <span class="tool-badge badge-soon">phase 3</span>
-    </div>
-  </div>
-</main>
-<footer class="footer">
-  <span>BAKER v0.3 · Phase 2</span>
-  <span>vault → G:/My Drive/BAKER</span>
-</footer>
-<div class="overlay" id="overlay" onclick="closeIfOutside(event)">
-  <div class="modal">
-    <div class="modal-title">⚙ Settings</div>
-    <div class="modal-sub">Your API key is stored only in this browser. It never leaves your device.</div>
-    <div class="field">
-      <label>Anthropic API Key</label>
-      <div class="key-wrap">
-        <input type="password" id="key-input" placeholder="sk-ant-..." />
-        <button class="show-btn" onclick="toggleShow()">👁</button>
-      </div>
-    </div>
-    <div class="field">
-      <label>Summary Depth (Lecture)</label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:2px">
-        <button class="depth-btn" id="depth-indepth" onclick="setDepth('indepth')">🔬 In-depth</button>
-        <button class="depth-btn" id="depth-medium" onclick="setDepth('medium')">📄 Medium</button>
-        <button class="depth-btn" id="depth-concise" onclick="setDepth('concise')">⚡ Concise</button>
-        <button class="depth-btn" id="depth-miniscule" onclick="setDepth('miniscule')">🔹 Miniscule</button>
-      </div>
-    </div>
-    <div class="field">
-      <label>Conversation Effort</label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:2px">
-        <button class="depth-btn" id="effort-deep" onclick="setEffort('deep')">🔬 Deep</button>
-        <button class="depth-btn" id="effort-standard" onclick="setEffort('standard')">💬 Standard</button>
-        <button class="depth-btn" id="effort-quick" onclick="setEffort('quick')">⚡ Quick</button>
-        <button class="depth-btn" id="effort-minimal" onclick="setEffort('minimal')">🔹 Minimal</button>
-      </div>
-    </div>
-    <div class="field">
-      <label>Constant Mic</label>
-      <div style="display:flex;gap:10px;margin-top:4px">
-        <button class="depth-btn" id="mic-on" onclick="setConstantMic(true)" style="flex:1">🎙 On</button>
-        <button class="depth-btn" id="mic-off" onclick="setConstantMic(false)" style="flex:1">🔇 Off</button>
-      </div>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:8px">Say "Hey BAKER" then your command. Navigation only activates after wake word.</div>
-    </div>
-    <div class="modal-note">
-      Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key.
-    </div>
-    <div class="modal-actions">
-      <button class="cancel-btn" onclick="closeSettings()">Cancel</button>
-      <button class="clear-btn" onclick="clearKey()">Clear key</button>
-      <button class="save-btn" onclick="saveKey()">Save key</button>
-    </div>
-  </div>
-</div>
-<script>
-if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
-function checkKey(){var k=localStorage.getItem('baker_api_key');var b=document.getElementById('api-badge');var bn=document.getElementById('setup-banner');if(k&&k.startsWith('sk-ant-')){b.textContent='API key set';b.className='api-badge set';bn.style.display='none';}else{b.textContent='no API key';b.className='api-badge unset';bn.style.display='flex';}}
-function openSettings(){document.getElementById('key-input').value=localStorage.getItem('baker_api_key')||'';document.getElementById('overlay').classList.add('open');loadDepth();loadEffort();loadConstantMic();}
-function closeSettings(){document.getElementById('overlay').classList.remove('open');}
-function closeIfOutside(e){if(e.target===document.getElementById('overlay'))closeSettings();}
-function toggleShow(){var i=document.getElementById('key-input');i.type=i.type==='password'?'text':'password';}
-function saveKey(){var k=document.getElementById('key-input').value.trim();if(!k){alert('Paste your API key first.');return;}localStorage.setItem('baker_api_key',k);closeSettings();checkKey();}
-function clearKey(){if(!confirm('Remove API key?'))return;localStorage.removeItem('baker_api_key');document.getElementById('key-input').value='';closeSettings();checkKey();}
-checkKey();
-function setDepth(d){localStorage.setItem('baker_depth',d);document.querySelectorAll('[id^="depth-"]').fo
+</html>
