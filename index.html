@@ -211,4 +211,139 @@ function toggleShow(){var i=document.getElementById('key-input');i.type=i.type==
 function saveKey(){var k=document.getElementById('key-input').value.trim();if(!k){alert('Paste your API key first.');return;}localStorage.setItem('baker_api_key',k);closeSettings();checkKey();}
 function clearKey(){if(!confirm('Remove API key?'))return;localStorage.removeItem('baker_api_key');document.getElementById('key-input').value='';closeSettings();checkKey();}
 checkKey();
+function setDepth(d){localStorage.setItem('baker_depth',d);document.querySelectorAll('[id^="depth-"]').forEach(function(b){b.classList.remove('active');});var el=document.getElementById('depth-'+d);if(el)el.classList.add('active');}
+function loadDepth(){setDepth(localStorage.getItem('baker_depth')||'medium');}
+loadDepth();
+function setEffort(e){localStorage.setItem('baker_effort',e);document.querySelectorAll('[id^="effort-"]').forEach(function(b){b.classList.remove('active');});var el=document.getElementById('effort-'+e);if(el)el.classList.add('active');}
+function loadEffort(){setEffort(localStorage.getItem('baker_effort')||'standard');}
+loadEffort();
+var globalMic=null;
+function setConstantMic(on){localStorage.setItem('baker_constant_mic',on?'true':'false');document.getElementById('mic-on').className='depth-btn'+(on?' active':'');document.getElementById('mic-off').className='depth-btn'+(!on?' active':'');on?startGlobalMic():stopGlobalMic();}
+function loadConstantMic(){var on=localStorage.getItem('baker_constant_mic')==='true';document.getElementById('mic-on').className='depth-btn'+(on?' active':'');document.getElementById('mic-off').className='depth-btn'+(!on?' active':'');if(on)startGlobalMic();}
+function startGlobalMic(){var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('Constant mic requires Chrome.');return;}stopGlobalMic();document.getElementById('global-mic-dot').style.display='inline-block';globalMic=new SR();globalMic.continuous=true;globalMic.interimResults=false;globalMic.lang='en-US';var awake=false;var awakeTimer=null;globalMic.onresult=function(e){var txt=e.results[e.results.length-1][0].transcript.toLowerCase().trim();if(txt.includes('hey baker')){awake=true;var dot=document.getElementById('global-mic-dot');dot.style.background='#7c6af7';if(awakeTimer)clearTimeout(awakeTimer);awakeTimer=setTimeout(function(){awake=false;dot.style.background='#4ade80';},5000);return;}if(!awake)return;awake=false;if(awakeTimer)clearTimeout(awakeTimer);document.getElementById('global-mic-dot').style.background='#4ade80';if(txt.includes('lecture'))window.location.href='lecture.html';else if(txt.includes('conversation')||txt.includes('chat'))window.location.href='conversation.html';else if(txt.includes('scan')||txt.includes('analyze'))window.location.href='analyze.html';else if(txt.includes('settings'))openSettings();};globalMic.onend=function(){if(localStorage.getItem('baker_constant_mic')==='true'){try{globalMic.start();}catch(e){}}};try{globalMic.start();}catch(e){}}
+function stopGlobalMic(){if(globalMic){globalMic.stop();globalMic=null;}document.getElementById('global-mic-dot').style.display='none';}
+loadConstantMic();
+</script>
+</body>
+</html>  <div class="grid">
+    <a class="tool-card active" href="lecture.html">
+      <div class="tool-icon">🎓</div>
+      <div class="tool-name">Lecture Capture</div>
+      <div class="tool-desc">Record or paste a lecture transcript. BAKER summarizes it and formats a note ready to drop into your vault.</div>
+      <span class="tool-badge badge-live">live</span>
+      <span class="tool-arrow">→</span>
+    </a>
+    <a class="tool-card active" href="conversation.html">
+      <div class="tool-icon">💬</div>
+      <div class="tool-name">Conversation</div>
+      <div class="tool-desc">Talk to BAKER. Voice or text, continuous hands-free mode, saves to your vault automatically.</div>
+      <span class="tool-badge badge-live">live</span>
+      <span class="tool-arrow">→</span>
+    </a>
+    <a class="tool-card active" href="analyze.html">
+      <div class="tool-icon">🔍</div>
+      <div class="tool-name">Scan / Analyze</div>
+      <div class="tool-desc">Drop a note, project, or photo. BAKER breaks it down — insights, gaps, risks, and next actions.</div>
+      <span class="tool-badge badge-live">live</span>
+      <span class="tool-arrow">→</span>
+    </a>
+    <div class="tool-card soon">
+      <div class="tool-icon">📥</div>
+      <div class="tool-name">Inbox Processor</div>
+      <div class="tool-desc">Drop a raw note. BAKER reads it and tells you where in the vault it belongs.</div>
+      <span class="tool-badge badge-soon">coming soon</span>
+    </div>
+    <div class="tool-card soon">
+      <div class="tool-icon">📊</div>
+      <div class="tool-name">Weekly Summary</div>
+      <div class="tool-desc">Feed in your daily logs. BAKER generates your weekly review automatically.</div>
+      <span class="tool-badge badge-soon">coming soon</span>
+    </div>
+    <div class="tool-card soon">
+      <div class="tool-icon">🔗</div>
+      <div class="tool-name">Note Linker</div>
+      <div class="tool-desc">Paste a note. BAKER suggests which existing vault notes it connects to.</div>
+      <span class="tool-badge badge-soon">coming soon</span>
+    </div>
+  </div>
+  <div class="phase-hdr">
+    <span class="phase-tag">Phase 3 — Digital assistant</span>
+    <div class="phase-line"></div>
+  </div>
+  <div class="grid">
+    <div class="tool-card soon">
+      <div class="tool-icon">🤖</div>
+      <div class="tool-name">Vault Chat</div>
+      <div class="tool-desc">Ask BAKER anything about your notes. It reads your vault and answers from your own knowledge.</div>
+      <span class="tool-badge badge-soon">phase 3</span>
+    </div>
+    <div class="tool-card soon">
+      <div class="tool-icon">📱</div>
+      <div class="tool-name">iPhone App</div>
+      <div class="tool-desc">Capture anywhere. Notes sync to your vault automatically.</div>
+      <span class="tool-badge badge-soon">phase 3</span>
+    </div>
+  </div>
+</main>
+<footer class="footer">
+  <span>BAKER v0.3 · Phase 2</span>
+  <span>vault → G:/My Drive/BAKER</span>
+</footer>
+<div class="overlay" id="overlay" onclick="closeIfOutside(event)">
+  <div class="modal">
+    <div class="modal-title">⚙ Settings</div>
+    <div class="modal-sub">Your API key is stored only in this browser. It never leaves your device.</div>
+    <div class="field">
+      <label>Anthropic API Key</label>
+      <div class="key-wrap">
+        <input type="password" id="key-input" placeholder="sk-ant-..." />
+        <button class="show-btn" onclick="toggleShow()">👁</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Summary Depth (Lecture)</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:2px">
+        <button class="depth-btn" id="depth-indepth" onclick="setDepth('indepth')">🔬 In-depth</button>
+        <button class="depth-btn" id="depth-medium" onclick="setDepth('medium')">📄 Medium</button>
+        <button class="depth-btn" id="depth-concise" onclick="setDepth('concise')">⚡ Concise</button>
+        <button class="depth-btn" id="depth-miniscule" onclick="setDepth('miniscule')">🔹 Miniscule</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Conversation Effort</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:2px">
+        <button class="depth-btn" id="effort-deep" onclick="setEffort('deep')">🔬 Deep</button>
+        <button class="depth-btn" id="effort-standard" onclick="setEffort('standard')">💬 Standard</button>
+        <button class="depth-btn" id="effort-quick" onclick="setEffort('quick')">⚡ Quick</button>
+        <button class="depth-btn" id="effort-minimal" onclick="setEffort('minimal')">🔹 Minimal</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Constant Mic</label>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button class="depth-btn" id="mic-on" onclick="setConstantMic(true)" style="flex:1">🎙 On</button>
+        <button class="depth-btn" id="mic-off" onclick="setConstantMic(false)" style="flex:1">🔇 Off</button>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:8px">Say "Hey BAKER" then your command. Navigation only activates after wake word.</div>
+    </div>
+    <div class="modal-note">
+      Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key.
+    </div>
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeSettings()">Cancel</button>
+      <button class="clear-btn" onclick="clearKey()">Clear key</button>
+      <button class="save-btn" onclick="saveKey()">Save key</button>
+    </div>
+  </div>
+</div>
+<script>
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+function checkKey(){var k=localStorage.getItem('baker_api_key');var b=document.getElementById('api-badge');var bn=document.getElementById('setup-banner');if(k&&k.startsWith('sk-ant-')){b.textContent='API key set';b.className='api-badge set';bn.style.display='none';}else{b.textContent='no API key';b.className='api-badge unset';bn.style.display='flex';}}
+function openSettings(){document.getElementById('key-input').value=localStorage.getItem('baker_api_key')||'';document.getElementById('overlay').classList.add('open');loadDepth();loadEffort();loadConstantMic();}
+function closeSettings(){document.getElementById('overlay').classList.remove('open');}
+function closeIfOutside(e){if(e.target===document.getElementById('overlay'))closeSettings();}
+function toggleShow(){var i=document.getElementById('key-input');i.type=i.type==='password'?'text':'password';}
+function saveKey(){var k=document.getElementById('key-input').value.trim();if(!k){alert('Paste your API key first.');return;}localStorage.setItem('baker_api_key',k);closeSettings();checkKey();}
+function clearKey(){if(!confirm('Remove API key?'))return;localStorage.removeItem('baker_api_key');document.getElementById('key-input').value='';closeSettings();checkKey();}
+checkKey();
 function setDepth(d){localStorage.setItem('baker_depth',d);document.querySelectorAll('[id^="depth-"]').fo
