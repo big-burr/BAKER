@@ -201,10 +201,34 @@ async function pickDevice(){
   }
   // If only one device, use it
   if(devices.length===1){preferredDeviceId=devices[0].id;localStorage.setItem('baker_spotify_device',preferredDeviceId);return devices[0];}
-  // Show device picker card
+  // Show device picker card in chat
   showDevicePicker(devices);
   return null;
 }
+
+// Called from settings modal to populate device dropdown
+window.loadSpotifyDevicesForSettings=async function(){
+  var sel=document.getElementById('spotify-device-select');
+  if(!sel)return;
+  if(!spotifyToken){sel.innerHTML='<option>Connect Spotify first</option>';return;}
+  sel.innerHTML='<option>Loading...</option>';
+  var devices=await getSpotifyDevices();
+  if(!devices.length){sel.innerHTML='<option>No devices found — open Spotify first</option>';return;}
+  var saved=localStorage.getItem('baker_spotify_device')||'';
+  sel.innerHTML='<option value="">Auto (active device)</option>';
+  devices.forEach(function(d){
+    var opt=document.createElement('option');
+    opt.value=d.id;
+    opt.textContent=d.name+' ('+d.type+')'+(d.is_active?' ▶':'');
+    opt.selected=d.id===saved;
+    sel.appendChild(opt);
+  });
+  sel.onchange=function(){
+    preferredDeviceId=this.value||null;
+    if(preferredDeviceId)localStorage.setItem('baker_spotify_device',preferredDeviceId);
+    else localStorage.removeItem('baker_spotify_device');
+  };
+};
 
 function showDevicePicker(devices){
   removeWelcome();
