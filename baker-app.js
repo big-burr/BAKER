@@ -246,11 +246,8 @@ async function spotifySearch(query,type){
 async function spotifyPlay(uri){
   var device=await pickDevice();
   if(!device)return false;
-  // Transfer playback to chosen device first
-  await spotifyAPI('me/player','PUT',{device_ids:[device.id],play:false});
-  await new Promise(function(r){setTimeout(r,300);});
-  // Now play specific track
-  var result=await spotifyAPI('me/player/play?device_id='+device.id,'PUT',{uris:[uri]});
+  // Play specific track URI directly on device
+  var result=await spotifyAPI('me/player/play?device_id='+device.id,'PUT',{uris:[uri],position_ms:0});
   return result!==null;
 }
 
