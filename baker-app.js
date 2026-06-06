@@ -103,10 +103,83 @@ async function fetchWeather(){return new Promise(function(res,rej){if(!navigator
 async function fetchWeatherAndReport(){appendSys('Fetching weather...');setOrbState('thinking');try{var w=await fetchWeather();var sysInfo='System information: Current weather — '+w.temp+'°F (feels like '+w.feels+'°F), '+w.desc+', wind '+w.wind+' mph, humidity '+w.humidity+'%.';showWeatherCard(w);await sendSystemInfo(sysInfo,'Tell the user the current weather in one natural sentence as JARVIS would.');}catch(e){appendSys('Weather unavailable: '+e.message);setOrbState('idle');}}
 function showWeatherCard(w){var msgs=document.getElementById('messages');removeWelcome();var card=document.createElement('div');card.className='weather-card';card.innerHTML='<div class="weather-temp">'+w.temp+'°F</div><div class="weather-desc">'+w.desc+'<br>Feels like '+w.feels+'°F<br>Wind: '+w.wind+' mph · Humidity: '+w.humidity+'%</div>';var wrap=document.createElement('div');wrap.className='msg baker';wrap.appendChild(card);msgs.appendChild(wrap);msgs.scrollTop=msgs.scrollHeight;}
 
+// PKCE helpers
+async function generateCodeVerifier(){var array=new Uint8Array(32);window.crypto.getRandomValues(array);return btoa(String.fromCharCode.apply(null,array)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');}
+async function generateCodeChallenge(verifier){var data=new TextEncoder().encode(verifier);var digest=await window.crypto.subtle.digest('SHA-256',data);return btoa(String.fromCharCode.apply(null,new Uint8Array(digest))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');}
+
 function handleSpotifyBtn(){if(spotifyToken){fetchSpotifyAndReport();}else{initSpotify();}}
-function initSpotify(){spotifyClientId=localStorage.getItem('baker_spotify_id')||'';if(!spotifyClientId){spotifyClientId=prompt('Enter your Spotify Client ID (from developer.spotify.com):');if(!spotifyClientId)return;localStorage.setItem('baker_spotify_id',spotifyClientId);}var scopes='user-read-currently-playing user-read-playback-state user-modify-playback-state';var redirect=encodeURIComponent(window.location.href.split('?')[0]);window.location.href='https://accounts.spotify.com/authorize?client_id='+spotifyClientId+'&response_type=token&redirect_uri='+redirect+'&scope='+encodeURIComponent(scopes);}
-function checkSpotifyCallback(){var hash=window.location.hash;if(!hash)return;var params=new URLSearchParams(hash.replace('#','?').slice(1));var token=params.get('access_token');if(token){spotifyToken=token;localStorage.setItem('baker_spotify_token',token);window.history.replaceState(null,'',window.location.pathname);document.getElementById('spotify-btn').className='hbtn spotify-on';document.getElementById('spotify-btn').textContent='♫ Spotify on';appendSys('Spotify connected, sir.');}}
-async function spotifyAPI(endpoint,method,body){if(!spotifyToken)return null;try{var opts={method:method||'GET',headers:{Authorization:'Bearer '+spotifyToken}};if(body){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body);}var r=await fetch('https://api.spotify.com/v1/'+endpoint,opts);if(r.status===401){spotifyToken=null;appendSys('Spotify token expired — reconnect.');return null;}if(r.status===204||r.status===202)return{ok:true};if(r.ok)return await r.json();return null;}catch(e){return null;}}
+
+async function initSpotify(){
+  spotifyClientId=localStorage.getItem('baker_spotify_id')||'';
+  if(!spotifyClientId){spotifyClientId=prompt('Enter your Spotify Client ID (from developer.spotify.com):');if(!spotifyClientId)return;localStorage.setItem('baker_spotify_id',spotifyClientId);}
+  var verifier=await generateCodeVerifier();
+  var challenge=await generateCodeChallenge(verifier);
+  localStorage.setItem('spotify_verifier',verifier);
+  var redirect=encodeURIComponent('https://big-burr.github.io/BAKER/conversation.html');
+  var scopes=encodeURIComponent('user-read-currently-playing user-read-playback-state user-modify-playback-state');
+  window.location.href='https://accounts.spotify.com/authorize?client_id='+spotifyClientId+'&response_type=code&redirect_uri='+redirect+'&scope='+scopes+'&code_challenge_method=S256&code_challenge='+challenge;
+}
+
+async function checkSpotifyCallback(){
+  var params=new URLSearchParams(window.location.search);
+  var code=params.get('code');
+  if(!code)return;
+  window.history.replaceState(null,'',window.location.pathname);
+  var verifier=localStorage.getItem('spotify_verifier');
+  if(!verifier)return;
+  spotifyClientId=localStorage.getItem('baker_spotify_id')||'';
+  try{
+    var resp=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:spotifyClientId,grant_type:'authorization_code',code:code,redirect_uri:'https://big-burr.github.io/BAKER/conversation.html',code_verifier:verifier})});
+    var data=await resp.json();
+    if(data.access_token){
+      spotifyToken=data.access_token;
+      localStorage.setItem('baker_spotify_token',data.access_token);
+      if(data.refresh_token)localStorage.setItem('baker_spotify_refresh',data.refresh_token);
+      localStorage.setItem('baker_spotify_expiry',Date.now()+(data.expires_in*1000));
+      localStorage.removeItem('spotify_verifier');
+      document.getElementById('spotify-btn').className='hbtn spotify-on';
+      document.getElementById('spotify-btn').textContent='♫ Spotify on';
+      appendSys('Spotify connected, sir.');
+    }
+  }catch(e){appendSys('Spotify auth failed: '+e.message);}
+}
+
+async function refreshSpotifyToken(){
+  var refresh=localStorage.getItem('baker_spotify_refresh');
+  if(!refresh)return false;
+  spotifyClientId=localStorage.getItem('baker_spotify_id')||'';
+  try{
+    var resp=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:spotifyClientId,grant_type:'refresh_token',refresh_token:refresh})});
+    var data=await resp.json();
+    if(data.access_token){
+      spotifyToken=data.access_token;
+      localStorage.setItem('baker_spotify_token',data.access_token);
+      localStorage.setItem('baker_spotify_expiry',Date.now()+(data.expires_in*1000));
+      if(data.refresh_token)localStorage.setItem('baker_spotify_refresh',data.refresh_token);
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+async function spotifyAPI(endpoint,method,body){
+  if(!spotifyToken){
+    var saved=localStorage.getItem('baker_spotify_token');
+    var expiry=parseInt(localStorage.getItem('baker_spotify_expiry')||'0');
+    if(saved&&Date.now()<expiry){spotifyToken=saved;}
+    else if(localStorage.getItem('baker_spotify_refresh')){var ok=await refreshSpotifyToken();if(!ok)return null;}
+    else return null;
+  }
+  try{
+    var opts={method:method||'GET',headers:{Authorization:'Bearer '+spotifyToken}};
+    if(body){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body);}
+    var r=await fetch('https://api.spotify.com/v1/'+endpoint,opts);
+    if(r.status===401){var ok=await refreshSpotifyToken();if(!ok){appendSys('Spotify disconnected — reconnect.');return null;}return spotifyAPI(endpoint,method,body);}
+    if(r.status===204||r.status===202)return{ok:true};
+    if(r.ok)return await r.json();
+    return null;
+  }catch(e){return null;}
+}
 async function fetchSpotifyAndReport(){if(!spotifyToken){appendSys('Connect Spotify first using the ♫ button.');return;}setOrbState('thinking');var d=await spotifyAPI('me/player/currently-playing');if(!d||!d.item){appendSys('Nothing playing on Spotify right now.');setOrbState('idle');return;}var track={title:d.item.name,artist:d.item.artists.map(function(a){return a.name;}).join(', '),album:d.item.album.name,playing:d.is_playing};showSpotifyCard(track);var sysInfo='System information: Spotify is currently '+(track.playing?'playing':'paused')+' "'+track.title+'" by '+track.artist+'.';await sendSystemInfo(sysInfo,'Comment on the currently playing track as JARVIS would — brief, witty, one sentence.');}
 function showSpotifyCard(track){removeWelcome();var card=document.createElement('div');card.className='spotify-card';card.innerHTML='<div class="spotify-track">♫ '+track.title+'</div><div class="spotify-artist">'+track.artist+' · '+track.album+'</div><div class="spotify-controls"><button class="sp-btn" onclick="spotifyControl(\'previous\')">⏮</button><button class="sp-btn" onclick="spotifyControl(\'toggle\')">'+( track.playing?'⏸':'▶')+'</button><button class="sp-btn" onclick="spotifyControl(\'next\')">⏭</button></div>';var wrap=document.createElement('div');wrap.className='msg baker';wrap.appendChild(card);var msgs=document.getElementById('messages');msgs.appendChild(wrap);msgs.scrollTop=msgs.scrollHeight;}
 async function spotifyControl(action){if(!spotifyToken)return;if(action==='next')await spotifyAPI('me/player/next','POST');else if(action==='previous')await spotifyAPI('me/player/previous','POST');else if(action==='toggle'){var s=await spotifyAPI('me/player');if(s&&s.is_playing)await spotifyAPI('me/player/pause','PUT');else await spotifyAPI('me/player/play','PUT');}setTimeout(fetchSpotifyAndReport,800);}
