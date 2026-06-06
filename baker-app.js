@@ -1,4 +1,4 @@
-const CACHE = 'baker-v7';
+const CACHE = 'baker-v8';
 const BASE = '/BAKER';
 const ASSETS = [
   BASE + '/',
@@ -6,6 +6,7 @@ const ASSETS = [
   BASE + '/lecture.html',
   BASE + '/conversation.html',
   BASE + '/analyze.html',
+  BASE + '/baker-app.js',
   BASE + '/icon.svg',
   BASE + '/manifest.json'
 ];
