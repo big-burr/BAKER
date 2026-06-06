@@ -254,7 +254,21 @@ async function spotifyPlay(uri){
 async function spotifySearchAndPlay(query){
   appendSys('Searching Spotify for: '+query);
   setOrbState('thinking');
-  var track=await spotifySearch(query,'track');
+  // Use the API key to ask BAKER to extract a clean search query first
+  var key=localStorage.getItem('baker_api_key');
+  var searchQuery=query;
+  if(key){
+    try{
+      var r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:50,system:'Extract the song title and artist from the user request and return ONLY a Spotify search query in format: track:"song title" artist:"artist name". If no artist mentioned just return track:"song title". No explanation, no punctuation, just the query.',messages:[{role:'user',content:query}]})});
+      var d=await r.json();
+      if(d.content&&d.content[0])searchQuery=d.content[0].text.trim();
+    }catch(e){}
+  }
+  var track=await spotifySearch(searchQuery,'track');
+  if(!track){
+    // Fallback to raw query
+    track=await spotifySearch(query,'track');
+  }
   if(!track){appendSys('No results found for: '+query);setOrbState('idle');return;}
   var ok=await spotifyPlay(track.uri);
   if(ok){
