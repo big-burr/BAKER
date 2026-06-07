@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAKER — Weekly Summary</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7c6af7">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f10;--surface:#1a1a1d;--surface2:#222226;--border:#2e2e34;
+  --accent:#7c6af7;--accent-dim:#3d3578;--text:#e8e6f0;--muted:#7a7880;
+  --green:#4ade80;--amber:#fbbf24;--red:#f87171;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.hdr{border-bottom:1px solid var(--border);padding:11px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--surface)}
+a.back{background:transparent;border:1px solid var(--border);border-radius:4px;padding:4px 9px;font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;transition:all .15s}
+a.back:hover{border-color:var(--accent);color:var(--text)}
+.logo{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--accent);letter-spacing:.1em;background:rgba(124,106,247,.12);border:1px solid var(--accent-dim);padding:3px 8px;border-radius:4px}
+.hdr-sub{font-size:12px;color:var(--muted)}
+.hdr-right{margin-left:auto;display:flex;gap:7px;align-items:center}
+.hbtn{border:1px solid var(--border);border-radius:4px;padding:5px 10px;font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);white-space:nowrap}
+.hbtn:hover{border-color:var(--accent);color:var(--text)}
+.hbtn:disabled{opacity:.3;cursor:not-allowed}
+.hbtn.vault-on{color:var(--green);border-color:var(--green);background:rgba(74,222,128,.06)}
+.hbtn.vault-scanning{color:var(--amber);border-color:var(--amber)}
+.hbtn.save{color:var(--accent);border-color:var(--accent-dim);background:rgba(124,106,247,.07)}
+.hbtn.save:hover{background:rgba(124,106,247,.15)}
+.main{display:grid;grid-template-columns:1fr 1fr;flex:1;overflow:hidden}
+.panel{display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden}
+.p-hdr{padding:9px 16px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.p-lbl{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+.pill{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:20px;border:1px solid var(--border);color:var(--muted)}
+.pill.ok{color:var(--green);border-color:var(--green)}
+.pill.err{color:var(--red);border-color:var(--red)}
+.pill.amber{color:var(--amber);border-color:var(--amber)}
+.input-zone{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.input-zone::-webkit-scrollbar{width:3px}
+.input-zone::-webkit-scrollbar-thumb{background:var(--border)}
+.week-range{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0}
+.field-group{display:flex;flex-direction:column;gap:4px}
+label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+input[type=date]{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:6px 8px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;width:100%;cursor:pointer}
+input[type=date]:focus{border-color:var(--accent)}
+.logs-section{flex:1;display:flex;flex-direction:column;gap:8px}
+.logs-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.drop-zone{min-height:120px;border:2px dashed var(--border);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;transition:all .2s;padding:16px}
+.drop-zone:hover{border-color:var(--accent)}
+.drop-zone.drag-over{border-color:var(--accent);background:rgba(124,106,247,.05)}
+.dz-icon{font-size:24px;opacity:.3}
+.dz-txt{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;line-height:1.7}
+.log-list{display:flex;flex-direction:column;gap:5px}
+.log-item{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;display:flex;align-items:center;gap:8px}
+.li-date{font-family:var(--mono);font-size:10px;color:var(--accent)}
+.li-name{font-family:var(--mono);font-size:10px;color:var(--muted);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li-remove{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0;opacity:.6}
+.li-remove:hover{opacity:1;color:var(--red)}
+.vault-pull{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:all .15s}
+.vault-pull:hover{border-color:var(--accent)}
+.vault-pull.active{border-color:var(--green);background:rgba(74,222,128,.05)}
+.vp-icon{font-size:16px}
+.vp-txt{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.vp-txt.active{color:var(--green)}
+.summary-btn{padding:10px;background:var(--accent);border:none;border-radius:4px;font-family:var(--mono);font-size:12px;font-weight:500;color:#fff;cursor:pointer;letter-spacing:.08em;transition:opacity .15s,transform .1s;flex-shrink:0;margin-top:4px}
+.summary-btn:hover{opacity:.88}
+.summary-btn:active{transform:scale(.98)}
+.summary-btn:disabled{opacity:.35;cursor:not-allowed}
+.out-panel{display:flex;flex-direction:column;overflow:hidden}
+.out-body{flex:1;overflow-y:auto;padding:16px;font-family:var(--mono);font-size:11px;line-height:1.8;color:var(--text);white-space:pre-wrap;word-break:break-word}
+.out-body::-webkit-scrollbar{width:3px}
+.out-body::-webkit-scrollbar-thumb{background:var(--border)}
+.out-foot{padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;background:var(--surface);align-items:center}
+.ph{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--muted);text-align:center;padding:32px}
+.ph-icon{font-size:32px;opacity:.2}
+.ph-title{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--text);opacity:.6}
+.ph-sub{font-family:var(--mono);font-size:10px;line-height:1.9;opacity:.5;max-width:280px}
+.thinking{display:flex;align-items:center;gap:8px;padding:16px;color:var(--muted);font-family:var(--mono);font-size:11px}
+.dots span{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--accent);animation:bnc 1.2s infinite;margin-right:2px}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+@keyframes bnc{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-4px);opacity:1}}
+.m-h1{color:var(--accent);font-weight:500}
+.m-h2{color:var(--amber)}
+.m-bl{color:var(--green)}
+.m-sp{color:var(--border)}
+.m-lk{color:var(--accent-dim)}
+#file-input{display:none}
+</style>
+</head>
+<body>
+<input type="file" id="file-input" accept=".md,.txt" multiple>
+
+<div class="hdr">
+  <a class="back" href="index.html">← BAKER</a>
+  <span class="logo">📊</span>
+  <span class="hdr-sub">weekly summary</span>
+  <div class="hdr-right">
+    <button class="hbtn" id="vault-btn" onclick="handleVaultBtn()">⬡ Connect Vault</button>
+    <button class="hbtn save" id="dl-btn" onclick="downloadSummary()" disabled>⬇ Download</button>
+    <button class="hbtn save" id="vault-save-btn" onclick="saveToVault()" disabled style="display:none">⬡ Save to Vault</button>
+  </div>
+</div>
+
+<div class="main">
+  <!-- LEFT: Input -->
+  <div class="panel">
+    <div class="p-hdr">
+      <span class="p-lbl">Week config</span>
+      <span class="pill" id="log-count-pill">0 logs</span>
+    </div>
+
+    <div class="input-zone">
+      <!-- Date range -->
+      <div class="week-range">
+        <div class="field-group">
+          <label>Week start</label>
+          <input type="date" id="week-start">
+        </div>
+        <div class="field-group">
+          <label>Week end</label>
+          <input type="date" id="week-end">
+        </div>
+      </div>
+
+      <!-- Vault auto-pull -->
+      <div class="vault-pull" id="vault-pull" onclick="pullFromVault()">
+        <span class="vp-icon">⬡</span>
+        <span class="vp-txt" id="vp-txt">Auto-pull daily logs from vault</span>
+      </div>
+
+      <!-- Manual load -->
+      <div class="logs-section">
+        <div class="logs-label">Daily logs</div>
+        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+          <div class="dz-icon">📅</div>
+          <div class="dz-txt">Drop daily log files here<br>or click to load</div>
+        </div>
+        <div class="log-list" id="log-list"></div>
+      </div>
+
+      <button class="summary-btn" id="summary-btn" onclick="generateSummary()" disabled>▶ GENERATE WEEKLY REVIEW</button>
+    </div>
+  </div>
+
+  <!-- RIGHT: Output -->
+  <div class="out-panel">
+    <div class="p-hdr">
+      <span class="p-lbl">Weekly review</span>
+      <span class="pill" id="out-pill">ready</span>
+    </div>
+    <div class="out-body" id="out-body">
+      <div class="ph">
+        <div class="ph-icon">◈</div>
+        <div class="ph-title" id="ph-title">Ready when you are, sir.</div>
+        <div class="ph-sub">Load your daily logs for the week or connect your vault and BAKER will pull them automatically. Then generate your weekly review.</div>
+      </div>
+    </div>
+    <div class="out-foot">
+      <span class="pill" id="week-pill">—</span>
+      <span style="flex:1"></span>
+      <span class="pill" id="time-pill"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Utilities ─────────────────────────────────────────────
+function getTimeGreeting(){var h=new Date().getHours();if(h>=5&&h<12)return 'Good morning, sir.';if(h>=12&&h<17)return 'Good afternoon, sir.';if(h>=17&&h<21)return 'Good evening, sir.';return "You're up late, sir.";}
+function getContextBlock(){var now=new Date();return '[Date: '+now.toLocaleDateString([],{weekday:'long',year:'numeric',month:'long',day:'numeric'})+' | Time: '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+']';}
+
+function getWeekDates(){
+  var now=new Date();
+  var day=now.getDay();
+  var monday=new Date(now);monday.setDate(now.getDate()-(day===0?6:day-1));
+  var sunday=new Date(monday);sunday.setDate(monday.getDate()+6);
+  return{start:monday,end:sunday};
+}
+
+function formatDate(d){return d.toISOString().split('T')[0];}
+
+// ── State ─────────────────────────────────────────────────
+var loadedLogs = []; // [{name, date, content}]
+var summaryText = '';
+var vaultHandle = null;
+var vaultIndex = [];
+var vaultConnected = false;
+var hasFS = ('showDirectoryPicker' in window);
+
+// ── Boot ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function(){
+  var week = getWeekDates();
+  document.getElementById('week-start').value = formatDate(week.start);
+  document.getElementById('week-end').value = formatDate(week.end);
+  document.getElementById('ph-title').textContent = getTimeGreeting().replace(',','') + ' Ready.';
+  document.getElementById('time-pill').textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  updateWeekPill();
+
+  if(!hasFS){
+    document.getElementById('vault-btn').textContent='⬡ Vault (Chrome only)';
+    document.getElementById('vault-btn').disabled=true;
+    document.getElementById('vault-pull').style.opacity='0.4';
+    document.getElementById('vault-pull').style.cursor='default';
+  }
+
+  document.getElementById('week-start').addEventListener('change', updateWeekPill);
+  document.getElementById('week-end').addEventListener('change', updateWeekPill);
+
+  // Drag and drop
+  var dz = document.getElementById('drop-zone');
+  dz.addEventListener('dragover',function(e){e.preventDefault();this.classList.add('drag-over');});
+  dz.addEventListener('dragleave',function(){this.classList.remove('drag-over');});
+  dz.addEventListener('drop',function(e){e.preventDefault();this.classList.remove('drag-over');loadFiles(Array.from(e.dataTransfer.files));});
+
+  document.getElementById('file-input').addEventListener('change',function(e){loadFiles(Array.from(e.target.files));e.target.value='';});
+});
+
+function updateWeekPill(){
+  var s=document.getElementById('week-start').value;
+  var e=document.getElementById('week-end').value;
+  if(s&&e) document.getElementById('week-pill').textContent=s+' → '+e;
+}
+
+// ── File loading ──────────────────────────────────────────
+function loadFiles(files){
+  var mdFiles = files.filter(function(f){return f.name.endsWith('.md')||f.name.endsWith('.txt');});
+  var pending = mdFiles.length;
+  if(!pending)return;
+  mdFiles.forEach(function(file){
+    var r=new FileReader();
+    r.onload=function(e){
+      // Extract date from filename (expects YYYY-MM-DD pattern)
+      var dateMatch=file.name.match(/(\d{4}-\d{2}-\d{2})/);
+      var date=dateMatch?dateMatch[1]:'unknown';
+      // Avoid duplicates
+      if(!loadedLogs.find(function(l){return l.name===file.name;})){
+        loadedLogs.push({name:file.name,date:date,content:e.target.result});
+      }
+      pending--;
+      if(pending===0){
+        loadedLogs.sort(function(a,b){return a.date.localeCompare(b.date);});
+        renderLogList();
+      }
+    };
+    r.readAsText(file);
+  });
+}
+
+function renderLogList(){
+  var list=document.getElementById('log-list');
+  list.innerHTML='';
+  loadedLogs.forEach(function(log,idx){
+    var item=document.createElement('div');item.className='log-item';
+    item.innerHTML='<span class="li-date">'+log.date+'</span><span class="li-name">'+log.name+'</span><button class="li-remove" onclick="removeLog('+idx+')">×</button>';
+    list.appendChild(item);
+  });
+  document.getElementById('log-count-pill').textContent=loadedLogs.length+' log'+(loadedLogs.length!==1?'s':'');
+  document.getElementById('summary-btn').disabled=loadedLogs.length===0;
+}
+
+function removeLog(idx){
+  loadedLogs.splice(idx,1);
+  renderLogList();
+}
+
+// ── Vault ─────────────────────────────────────────────────
+function openDB(){return new Promise(function(res,rej){var r=indexedDB.open('baker-vault',1);r.onupgradeneeded=function(e){e.target.result.createObjectStore('handles',{keyPath:'id'});};r.onsuccess=function(e){res(e.target.result);};r.onerror=function(){rej(r.error);};});}
+async function storeHandle(h){try{var db=await openDB();db.transaction('handles','readwrite').objectStore('handles').put({id:'vault',handle:h});}catch(e){}}
+async function getStoredHandle(){try{var db=await openDB();return new Promise(function(res){var r=db.transaction('handles','readonly').objectStore('handles').get('vault');r.onsuccess=function(){res(r.result?r.result.handle:null);};r.onerror=function(){res(null);};});}catch(e){return null;}}
+
+async function handleVaultBtn(){
+  if(!hasFS){alert('Requires Chrome on desktop.');return;}
+  if(vaultConnected){
+    vaultHandle=null;vaultIndex=[];vaultConnected=false;
+    setVaultBtn('off');
+    document.getElementById('vp-txt').textContent='Auto-pull daily logs from vault';
+    document.getElementById('vault-pull').classList.remove('active');
+    document.getElementById('vault-save-btn').style.display='none';
+  } else {
+    try{
+      var handle=await window.showDirectoryPicker({mode:'readwrite'});
+      vaultHandle=handle;await storeHandle(handle);
+      setVaultBtn('scanning');
+      vaultIndex=[];await scanDir(handle,'');
+      vaultConnected=true;setVaultBtn('on');
+      document.getElementById('vp-txt').textContent='Vault connected — click to pull this week\'s logs';
+      document.getElementById('vault-pull').classList.add('active');
+      if(summaryText)document.getElementById('vault-save-btn').style.display='inline-block';
+    }catch(e){if(e.name!=='AbortError')alert('Connection failed: '+e.message);}
+  }
+}
+
+function setVaultBtn(s){
+  var b=document.getElementById('vault-btn');
+  b.className='hbtn'+(s==='on'?' vault-on':s==='scanning'?' vault-scanning':'');
+  b.textContent=s==='on'?'⬡ Vault on':s==='scanning'?'⟳ Scanning...':'⬡ Connect Vault';
+}
+
+async function scanDir(dir,path){
+  try{for await(var entry of dir.values()){if(entry.name.startsWith('.'))continue;if(entry.kind==='file'&&entry.name.endsWith('.md')){try{var f=await entry.getFile();var content=await f.text();vaultIndex.push({name:entry.name,path:path?path+'/'+entry.name:entry.name,content:content});}catch(e){}}else if(entry.kind==='directory'){await scanDir(entry,path?path+'/'+entry.name:entry.name);}}}catch(e){}
+}
+
+async function writeToVault(relPath,content){
+  if(!vaultHandle)return false;
+  try{var parts=relPath.replace(/^\/+/,'').split('/');var fileName=parts.pop();var dir=vaultHandle;for(var i=0;i<parts.length;i++)dir=await dir.getDirectoryHandle(parts[i],{create:true});var fh=await dir.getFileHandle(fileName,{create:true});var w=await fh.createWritable();await w.write(content);await w.close();return true;}catch(e){return false;}
+}
+
+async function pullFromVault(){
+  if(!vaultConnected){alert('Connect vault first, sir.');return;}
+  var startDate=document.getElementById('week-start').value;
+  var endDate=document.getElementById('week-end').value;
+  if(!startDate||!endDate){alert('Set the week date range first.');return;}
+
+  // Find daily logs in 07-System/Daily/ within the date range
+  var pulled=vaultIndex.filter(function(note){
+    var isDaily=note.path.includes('07-System/Daily')||note.path.includes('Daily');
+    var dateMatch=note.name.match(/(\d{4}-\d{2}-\d{2})/);
+    if(!isDaily||!dateMatch)return false;
+    var noteDate=dateMatch[1];
+    return noteDate>=startDate&&noteDate<=endDate;
+  });
+
+  if(!pulled.length){
+    alert('No daily logs found for '+startDate+' to '+endDate+' in 07-System/Daily/');
+    return;
+  }
+
+  // Add to loaded logs
+  pulled.forEach(function(note){
+    if(!loadedLogs.find(function(l){return l.name===note.name;})){
+      var dateMatch=note.name.match(/(\d{4}-\d{2}-\d{2})/);
+      loadedLogs.push({name:note.name,date:dateMatch?dateMatch[1]:'unknown',content:note.content});
+    }
+  });
+  loadedLogs.sort(function(a,b){return a.date.localeCompare(b.date);});
+  renderLogList();
+  document.getElementById('vp-txt').textContent='✓ Pulled '+pulled.length+' logs from vault';
+}
+
+// ── Generate Summary ──────────────────────────────────────
+async function generateSummary(){
+  var key=localStorage.getItem('baker_api_key');
+  if(!key){alert('No API key — go to BAKER Settings first.');return;}
+  if(!loadedLogs.length){alert('Load some daily logs first, sir.');return;}
+
+  var btn=document.getElementById('summary-btn');
+  btn.disabled=true;btn.textContent='⟳ GENERATING...';
+  setPill('working','amber');
+  document.getElementById('dl-btn').disabled=true;
+
+  document.getElementById('out-body').innerHTML='<div class="thinking"><div class="dots"><span></span><span></span><span></span></div>BAKER is reading your week and generating your review...</div>';
+
+  var startDate=document.getElementById('week-start').value;
+  var endDate=document.getElementById('week-end').value;
+  var weekLabel='Week of '+startDate+' to '+endDate;
+
+  var systemPrompt='You are BAKER, an intelligent second brain assistant modelled after JARVIS from Iron Man.\n\n'+
+    'Generate a comprehensive weekly review based on the daily logs provided.\n'+
+    'Match this exact Weekly-Review template format:\n\n'+
+    'Start with YAML frontmatter, then use these sections with ## headers:\n\n'+
+    '---\ndate: [end date]\ntype: weekly-review\nweek: [week label]\ntags: [weekly-review, reflection]\n---\n\n'+
+    '# 📊 Weekly Review — [week label]\n\n'+
+    '## 🌟 Week Overview\n[2-3 sentence summary of how the week went overall]\n\n'+
+    '## ✅ Wins\n[3-6 bullet points of genuine accomplishments and positive moments]\n\n'+
+    '## 🧱 Challenges\n[2-4 bullet points of difficulties faced or things that did not go as planned]\n\n'+
+    '## 🧠 Key Decisions Made\n[Important decisions or realizations from the week]\n\n'+
+    '## ⚡ Action Items Carried Forward\n[Checkbox format: - [ ] item — things not completed that roll into next week]\n\n'+
+    '## 💪 Habits & Health\n[Brief notes on habits, exercise, sleep, or wellness patterns this week]\n\n'+
+    '## 🎯 Next Week Priorities\n[3-5 checkbox items: - [ ] priority — what matters most next week]\n\n'+
+    '## 🔗 Connects To\n[[[relevant vault notes or projects this week touched]]\n\n'+
+    '---\n*[[HOME]] - [[07-System/Weekly]]*\n\n'+
+    'Be specific and use actual details from the logs. Tone: JARVIS — precise, observant, dry wit where appropriate. Address as "sir" once naturally.';
+
+  var logsContent = loadedLogs.map(function(log){
+    return '=== '+log.date+' ('+log.name+') ===\n'+log.content;
+  }).join('\n\n');
+
+  var userMsg='System information: Weekly review generation requested '+getContextBlock()+'\nWeek range: '+weekLabel+'\n\nDaily logs:\n\n'+logsContent;
+
+  try{
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,system:systemPrompt,messages:[{role:'user',content:userMsg}]})
+    });
+    var data=await resp.json();
+    if(data.error)throw new Error(data.error.message);
+    var raw=data.content.map(function(b){return b.text||'';}).join('').trim();
+    summaryText=raw;
+    renderOutput(raw);
+    setPill('done','ok');
+    document.getElementById('dl-btn').disabled=false;
+    if(vaultConnected)document.getElementById('vault-save-btn').style.display='inline-block';
+    document.getElementById('vault-save-btn').disabled=false;
+    document.getElementById('time-pill').textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  }catch(err){
+    document.getElementById('out-body').innerHTML='<div class="thinking" style="color:var(--red)">Error: '+err.message+'</div>';
+    setPill('error','err');
+  }
+  btn.disabled=false;btn.textContent='▶ GENERATE WEEKLY REVIEW';
+}
+
+function renderOutput(text){
+  var esc=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  document.getElementById('out-body').innerHTML=esc
+    .replace(/^(---)/gm,'<span class="m-sp">---</span>')
+    .replace(/^(# .+)$/gm,'<span class="m-h1">$1</span>')
+    .replace(/^(## .+)$/gm,'<span class="m-h2">$1</span>')
+    .replace(/^(- .+)$/gm,'<span class="m-bl">$1</span>')
+    .replace(/(\*\*[^*]+\*\*)/g,'<span style="color:var(--muted)">$1</span>')
+    .replace(/(\[\[.+?\]\])/g,'<span class="m-lk">$1</span>');
+}
+
+function setPill(t,cls){
+  var p=document.getElementById('out-pill');
+  p.textContent=t;p.className='pill'+(cls?' '+cls:'');
+}
+
+function downloadSummary(){
+  if(!summaryText)return;
+  var endDate=document.getElementById('week-end').value||new Date().toISOString().split('T')[0];
+  var fname='Weekly-Review-'+endDate+'.md';
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([summaryText],{type:'text/markdown'}));
+  a.download=fname;a.click();
+}
+
+async function saveToVault(){
+  if(!summaryText||!vaultConnected)return;
+  var endDate=document.getElementById('week-end').value||new Date().toISOString().split('T')[0];
+  var fname='Weekly-Review-'+endDate+'.md';
+  var path='07-System/Weekly/'+fname;
+  var btn=document.getElementById('vault-save-btn');
+  btn.textContent='Saving...';btn.disabled=true;
+  var ok=await writeToVault(path,summaryText);
+  if(ok){
+    btn.textContent='✓ Saved';btn.className='hbtn vault-on';
+  } else {
+    btn.textContent='⬡ Save to Vault';btn.disabled=false;
+    alert('Save failed — check vault connection.');
+  }
+}
+</script>
+</body>
+</html>
