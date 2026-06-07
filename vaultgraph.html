@@ -649,7 +649,7 @@ function previewLink(nameA,nameB){
 
 function toggleFilter(type,el){
   if(activeFilters.has(type)){activeFilters.delete(type);el.classList.remove('active');}
-  else{activeFilters.add(type);el.classList.add('active);}
+  else{activeFilters.add(type);el.classList.add('active');}
   if(selectedNote)showNoteConnections(selectedNote);
   else renderAllConnections();
 }
