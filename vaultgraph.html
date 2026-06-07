@@ -654,9 +654,9 @@ async function writeAllLinks(){
 }
 
 function previewLink(nameA,nameB){
-  alert('Would add to "'+nameA+'":\n[['+nameB+']]\n\nWould add to "'+nameB+'":\n[['+nameA+']]');
+  var msg=['Would add to "'+nameA+'":',' [['+nameB+']]','','Would add to "'+nameB+'":',' [['+nameA+']]'].join('\n');
+  alert(msg);
 }
-
 function toggleFilter(type,el){
   if(activeFilters.has(type)){activeFilters.delete(type);el.classList.remove('active');}
   else{activeFilters.add(type);el.classList.add('active');}
