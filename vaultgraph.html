@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAKER — Vault Graph</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7c6af7">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f10;--surface:#1a1a1d;--surface2:#222226;--border:#2e2e34;
+  --accent:#7c6af7;--accent-dim:#3d3578;--text:#e8e6f0;--muted:#7a7880;
+  --green:#4ade80;--amber:#fbbf24;--red:#f87171;
+  --blue:#60a5fa;--purple:#a78bfa;--orange:#fb923c;--yellow:#fde047;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.hdr{border-bottom:1px solid var(--border);padding:11px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--surface)}
+a.back{background:transparent;border:1px solid var(--border);border-radius:4px;padding:4px 9px;font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;transition:all .15s}
+a.back:hover{border-color:var(--accent);color:var(--text)}
+.logo{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--accent);letter-spacing:.1em;background:rgba(124,106,247,.12);border:1px solid var(--accent-dim);padding:3px 8px;border-radius:4px}
+.hdr-sub{font-size:12px;color:var(--muted)}
+.hdr-right{margin-left:auto;display:flex;gap:7px;align-items:center}
+.hbtn{border:1px solid var(--border);border-radius:4px;padding:5px 10px;font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);white-space:nowrap}
+.hbtn:hover{border-color:var(--accent);color:var(--text)}
+.hbtn:disabled{opacity:.3;cursor:not-allowed}
+.hbtn.vault-on{color:var(--green);border-color:var(--green);background:rgba(74,222,128,.06)}
+.hbtn.vault-scanning{color:var(--amber);border-color:var(--amber)}
+.hbtn.danger{color:var(--red);border-color:rgba(248,113,113,.4)}
+.hbtn.danger:hover{background:rgba(248,113,113,.07)}
+.main{display:grid;grid-template-columns:320px 1fr;flex:1;overflow:hidden}
+.sidebar{display:flex;flex-direction:column;border-right:1px solid var(--border);overflow-y:auto;background:var(--surface)}
+.sidebar::-webkit-scrollbar{width:3px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border)}
+.s-section{padding:14px 16px;border-bottom:1px solid var(--border)}
+.s-title{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px;text-align:center}
+.stat-val{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--accent)}
+.stat-lbl{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:3px;letter-spacing:.05em}
+.threshold-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.threshold-lbl{font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap}
+input[type=range]{flex:1;accent-color:var(--accent)}
+.threshold-val{font-family:var(--mono);font-size:11px;color:var(--accent);min-width:32px;text-align:right}
+.run-btn{width:100%;padding:10px;background:var(--accent);border:none;border-radius:4px;font-family:var(--mono);font-size:12px;font-weight:500;color:#fff;cursor:pointer;letter-spacing:.08em;transition:opacity .15s}
+.run-btn:hover{opacity:.88}
+.run-btn:disabled{opacity:.35;cursor:not-allowed}
+.run-btn.danger{background:var(--red)}
+.progress-wrap{margin-top:10px;display:none}
+.progress-bar{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-bottom:6px}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s;width:0%}
+.progress-txt{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.legend{display:flex;flex-direction:column;gap:6px}
+.legend-item{display:flex;align-items:center;gap:8px}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.legend-lbl{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.filter-chips{display:flex;flex-wrap:wrap;gap:5px}
+.fchip{font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:20px;cursor:pointer;transition:all .15s;border:1px solid var(--border);color:var(--muted);background:transparent}
+.fchip:hover{border-color:var(--accent)}
+.fchip.active{color:#fff}
+.fchip.conversation.active{background:rgba(167,139,250,.8);border-color:var(--purple)}
+.fchip.project.active{background:rgba(96,165,250,.8);border-color:var(--blue)}
+.fchip.lecture.active{background:rgba(253,224,71,.7);border-color:var(--yellow);color:#1a1a1d}
+.fchip.analyze.active{background:rgba(251,146,60,.8);border-color:var(--orange)}
+.fchip.general.active{background:rgba(124,106,247,.8);border-color:var(--accent)}
+.note-list{display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto}
+.note-list::-webkit-scrollbar{width:3px}
+.note-list::-webkit-scrollbar-thumb{background:var(--border)}
+.note-item{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:4px;cursor:pointer;transition:all .15s;border:1px solid transparent}
+.note-item:hover{background:var(--surface2);border-color:var(--border)}
+.note-item.selected{background:rgba(124,106,247,.1);border-color:var(--accent-dim)}
+.ni-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ni-name{font-family:var(--mono);font-size:10px;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ni-count{font-family:var(--mono);font-size:9px;color:var(--muted)}
+.content{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.conn-view{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px}
+.conn-view::-webkit-scrollbar{width:3px}
+.conn-view::-webkit-scrollbar-thumb{background:var(--border)}
+.conn-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px;transition:all .15s}
+.conn-card:hover{border-color:var(--accent);background:var(--surface2)}
+.cc-dots{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;padding-top:2px}
+.cc-dot{width:10px;height:10px;border-radius:50%}
+.cc-line{width:2px;flex:1;min-height:16px;background:var(--border);border-radius:1px}
+.cc-body{flex:1}
+.cc-names{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.cc-note{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--text)}
+.cc-arrow{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.cc-type{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:20px;border:1px solid var(--border);color:var(--muted)}
+.cc-strength{height:3px;border-radius:2px;background:var(--border);margin-bottom:6px;overflow:hidden;width:80px}
+.cc-strength-fill{height:100%;border-radius:2px}
+.cc-reason{font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:8px}
+.cc-action{display:flex;gap:6px}
+.cc-btn{background:transparent;border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-family:var(--mono);font-size:9px;color:var(--muted);cursor:pointer;transition:all .15s}
+.cc-btn:hover{border-color:var(--accent);color:var(--text)}
+.cc-btn.written{color:var(--green);border-color:var(--green)}
+.ph{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:32px}
+.ph-icon{font-size:36px;opacity:.2}
+.ph-title{font-family:var(--mono);font-size:14px;color:var(--text);opacity:.6}
+.ph-sub{font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.9;max-width:320px;opacity:.6}
+.content-hdr{padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.ch-lbl{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.pill{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:20px;border:1px solid var(--border);color:var(--muted)}
+.pill.ok{color:var(--green);border-color:var(--green)}
+.pill.amber{color:var(--amber);border-color:var(--amber)}
+.write-all-btn{font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:4px;border:1px solid var(--green);color:var(--green);background:rgba(74,222,128,.06);cursor:pointer;transition:all .15s}
+.write-all-btn:hover{background:rgba(74,222,128,.12)}
+.write-all-btn:disabled{opacity:.3;cursor:not-allowed}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <a class="back" href="index.html">← BAKER</a>
+  <span class="logo">🕸</span>
+  <span class="hdr-sub" id="hdr-sub">vault graph</span>
+  <div class="hdr-right">
+    <button class="hbtn" id="vault-btn" onclick="handleVaultBtn()">⬡ Connect Vault</button>
+    <button class="hbtn danger" id="write-btn" onclick="writeAllLinks()" disabled>⬡ Write links to vault</button>
+  </div>
+</div>
+
+<div class="main">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- Stats -->
+    <div class="s-section">
+      <div class="s-title">Vault stats</div>
+      <div class="stat-grid">
+        <div class="stat"><div class="stat-val" id="stat-notes">—</div><div class="stat-lbl">notes</div></div>
+        <div class="stat"><div class="stat-val" id="stat-links">—</div><div class="stat-lbl">connections</div></div>
+        <div class="stat"><div class="stat-val" id="stat-written">—</div><div class="stat-lbl">links written</div></div>
+        <div class="stat"><div class="stat-val" id="stat-orphans">—</div><div class="stat-lbl">unlinked</div></div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="s-section">
+      <div class="s-title">Auto-link settings</div>
+      <div class="threshold-row">
+        <span class="threshold-lbl">Min strength</span>
+        <input type="range" id="threshold" min="1" max="3" step="1" value="2">
+        <span class="threshold-val" id="threshold-val">moderate</span>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:10px;line-height:1.7">
+        BAKER scores every note pair using keyword matching. Only pairs above this threshold get sent to Claude for confirmation — keeping API calls minimal.
+      </div>
+      <button class="run-btn" id="run-btn" onclick="runSweep()" disabled>▶ Sweep vault</button>
+      <div class="progress-wrap" id="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <div class="progress-txt" id="progress-txt">Preparing...</div>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="s-section">
+      <div class="s-title">Note types</div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div><span class="legend-lbl">Conversation</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div><span class="legend-lbl">Project</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div><span class="legend-lbl">Lecture</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div><span class="legend-lbl">Analyze / Scan</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div><span class="legend-lbl">Daily log</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div><span class="legend-lbl">General / Other</span></div>
+      </div>
+    </div>
+
+    <!-- Filter -->
+    <div class="s-section">
+      <div class="s-title">Filter by type</div>
+      <div class="filter-chips">
+        <span class="fchip conversation active" onclick="toggleFilter('conversation',this)">Conversations</span>
+        <span class="fchip project active" onclick="toggleFilter('project',this)">Projects</span>
+        <span class="fchip lecture active" onclick="toggleFilter('lecture',this)">Lectures</span>
+        <span class="fchip analyze active" onclick="toggleFilter('analyze',this)">Analyze</span>
+        <span class="fchip general active" onclick="toggleFilter('general',this)">General</span>
+      </div>
+    </div>
+
+    <!-- Note list -->
+    <div class="s-section" style="flex:1">
+      <div class="s-title">Notes <span id="note-list-count" style="color:var(--accent)"></span></div>
+      <div class="note-list" id="note-list">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);opacity:.5">Connect vault to see notes</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="content">
+    <div class="content-hdr">
+      <span class="ch-lbl" id="content-lbl">Connections</span>
+      <span class="pill" id="content-pill">—</span>
+      <span style="flex:1"></span>
+      <button class="write-all-btn" id="write-all-btn" onclick="writeAllLinks()" disabled>⬡ Write all to vault</button>
+    </div>
+    <div class="conn-view" id="conn-view">
+      <div class="ph">
+        <div class="ph-icon">🕸</div>
+        <div class="ph-title" id="ph-title">Vault not connected, sir.</div>
+        <div class="ph-sub">Connect your vault and run a sweep. BAKER will score every note pair, identify strong connections, and let you write them back as wikilinks automatically.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Utilities ─────────────────────────────────────────────
+function getTimeGreeting(){var h=new Date().getHours();if(h>=5&&h<12)return 'Good morning, sir.';if(h>=12&&h<17)return 'Good afternoon, sir.';if(h>=17&&h<21)return 'Good evening, sir.';return "You're up late, sir.";}
+
+// ── State ─────────────────────────────────────────────────
+var vaultHandle=null,vaultIndex=[],vaultConnected=false;
+var hasFS=('showDirectoryPicker' in window);
+var allConnections=[];
+var writtenPairs=new Set();
+var activeFilters=new Set(['conversation','project','lecture','analyze','general']);
+var selectedNote=null;
+var sweepRunning=false;
+var thresholdMap={1:'weak',2:'moderate',3:'strong'};
+
+// ── Boot ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('ph-title').textContent=getTimeGreeting().replace(',','')+' Vault not connected.';
+  if(!hasFS){document.getElementById('vault-btn').textContent='⬡ Vault (Chrome only)';document.getElementById('vault-btn').disabled=true;}
+  document.getElementById('threshold').addEventListener('input',function(){
+    document.getElementById('threshold-val').textContent=thresholdMap[this.value];
+  });
+  // Try reconnect
+  tryReconnectVault();
+});
+
+// ── Vault ─────────────────────────────────────────────────
+function openDB(){return new Promise(function(res,rej){var r=indexedDB.open('baker-vault',1);r.onupgradeneeded=function(e){e.target.result.createObjectStore('handles',{keyPath:'id'});};r.onsuccess=function(e){res(e.target.result);};r.onerror=function(){rej(r.error);};});}
+async function storeHandle(h){try{var db=await openDB();db.transaction('handles','readwrite').objectStore('handles').put({id:'vault',handle:h});}catch(e){}}
+async function getStoredHandle(){try{var db=await openDB();return new Promise(function(res){var r=db.transaction('handles','readonly').objectStore('handles').get('vault');r.onsuccess=function(){res(r.result?r.result.handle:null);};r.onerror=function(){res(null);};});}catch(e){return null;}}
+async function clearHandle(){try{var db=await openDB();db.transaction('handles','readwrite').objectStore('handles').delete('vault');}catch(e){}}
+
+async function tryReconnectVault(){
+  var stored=await getStoredHandle();if(!stored)return;
+  setVaultBtn('scanning');
+  try{
+    var perm=await stored.requestPermission({mode:'readwrite'});
+    if(perm==='granted'){await doConnect(stored);}
+    else{await clearHandle();setVaultBtn('off');}
+  }catch(e){await clearHandle();setVaultBtn('off');}
+}
+
+async function handleVaultBtn(){
+  if(!hasFS){alert('Requires Chrome on desktop.');return;}
+  if(vaultConnected){
+    vaultHandle=null;vaultIndex=[];vaultConnected=false;allConnections=[];
+    setVaultBtn('off');updateStats();renderNoteList();
+    document.getElementById('run-btn').disabled=true;
+    document.getElementById('conn-view').innerHTML='<div class="ph"><div class="ph-icon">🕸</div><div class="ph-title">Vault disconnected.</div></div>';
+  } else {
+    try{
+      var handle=await window.showDirectoryPicker({mode:'readwrite'});
+      await doConnect(handle);
+    }catch(e){if(e.name!=='AbortError')alert('Connection failed: '+e.message);setVaultBtn('off');}
+  }
+}
+
+async function doConnect(handle){
+  vaultHandle=handle;await storeHandle(handle);
+  setVaultBtn('scanning');
+  vaultIndex=[];await scanDir(handle,'');
+  vaultConnected=true;setVaultBtn('on');
+  updateStats();renderNoteList();
+  document.getElementById('run-btn').disabled=false;
+  document.getElementById('ph-title').textContent='Vault connected. '+vaultIndex.length+' notes ready to link.';
+  document.getElementById('conn-view').innerHTML='<div class="ph"><div class="ph-icon">🕸</div><div class="ph-title">'+vaultIndex.length+' notes indexed.</div><div class="ph-sub">Set your strength threshold and click Sweep vault to find connections. BAKER will score every note pair and only send strong candidates to Claude.</div></div>';
+}
+
+function setVaultBtn(s){
+  var b=document.getElementById('vault-btn');
+  b.className='hbtn'+(s==='on'?' vault-on':s==='scanning'?' vault-scanning':'');
+  b.textContent=s==='on'?'⬡ Vault on':s==='scanning'?'⟳ Scanning...':'⬡ Connect Vault';
+}
+
+async function scanDir(dir,path){
+  try{for await(var entry of dir.values()){if(entry.name.startsWith('.'))continue;if(entry.kind==='file'&&entry.name.endsWith('.md')){try{var f=await entry.getFile();var content=await f.text();vaultIndex.push({name:entry.name,path:path?path+'/'+entry.name:entry.name,content:content,type:detectType(path,entry.name,null)});}catch(e){}}else if(entry.kind==='directory'){await scanDir(entry,path?path+'/'+entry.name:entry.name);}}}catch(e){}
+}
+
+async function writeNoteToVault(relPath,content){
+  if(!vaultHandle)return false;
+  try{
+    var parts=relPath.replace(/^\/+/,'').split('/');
+    var fileName=parts.pop();var dir=vaultHandle;
+    for(var i=0;i<parts.length;i++)dir=await dir.getDirectoryHandle(parts[i],{create:true});
+    var fh=await dir.getFileHandle(fileName,{create:true});
+    var w=await fh.createWritable();await w.write(content);await w.close();
+    return true;
+  }catch(e){return false;}
+}
+
+// ── Note type detection ───────────────────────────────────
+function detectType(path,name,content){
+  var p=(path||'').toLowerCase();
+  var n=(name||'').toLowerCase();
+  var c=(content||'').toLowerCase();
+  if(p.includes('conversation')||c.includes('type: conversation'))return 'conversation';
+  if(p.includes('01-projects')||p.includes('project')||c.includes('type: project'))return 'project';
+  if(p.includes('lecture')||c.includes('type: lecture'))return 'lecture';
+  if(p.includes('analysis')||c.includes('type: analysis')||c.includes('type: analyze'))return 'analyze';
+  if(p.includes('daily')||p.includes('weekly')||c.includes('type: daily'))return 'general';
+  return 'general';
+}
+
+function typeColor(type){
+  var colors={conversation:'var(--purple)',project:'var(--blue)',lecture:'var(--yellow)',analyze:'var(--orange)',general:'var(--accent)'};
+  return colors[type]||'var(--accent)';
+}
+
+// ── Stats ─────────────────────────────────────────────────
+function updateStats(){
+  document.getElementById('stat-notes').textContent=vaultIndex.length||'—';
+  document.getElementById('stat-links').textContent=allConnections.length||'—';
+  document.getElementById('stat-written').textContent=writtenPairs.size||'—';
+  var withLinks=new Set();
+  allConnections.forEach(function(c){withLinks.add(c.noteA);withLinks.add(c.noteB);});
+  var orphans=vaultIndex.filter(function(n){return !withLinks.has(n.name);}).length;
+  document.getElementById('stat-orphans').textContent=vaultConnected?(vaultIndex.length-withLinks.size)||'0':'—';
+}
+
+// ── Note list ─────────────────────────────────────────────
+function renderNoteList(){
+  var list=document.getElementById('note-list');
+  list.innerHTML='';
+  if(!vaultIndex.length){list.innerHTML='<div style="font-family:var(--mono);font-size:10px;color:var(--muted);opacity:.5">No notes found</div>';return;}
+  document.getElementById('note-list-count').textContent='('+vaultIndex.length+')';
+  vaultIndex.forEach(function(note){
+    var item=document.createElement('div');item.className='note-item';
+    var connCount=allConnections.filter(function(c){return c.noteA===note.name||c.noteB===note.name;}).length;
+    item.innerHTML='<div class="ni-dot" style="background:'+typeColor(note.type)+'"></div>'+
+      '<span class="ni-name">'+note.name.replace('.md','')+'</span>'+
+      (connCount?'<span class="ni-count">'+connCount+'</span>':'');
+    item.addEventListener('click',function(){
+      document.querySelectorAll('.note-item').forEach(function(i){i.classList.remove('selected');});
+      item.classList.add('selected');
+      selectedNote=note.name;
+      showNoteConnections(note.name);
+    });
+    list.appendChild(item);
+  });
+}
+
+// ── Relevance scoring ─────────────────────────────────────
+var STOP=new Set(['the','and','for','are','but','not','you','all','can','had','was','one','our','out','get','has','how','its','may','now','see','who','did','too','use','that','this','with','have','from','they','will','been','were','said','each','into','than','your','more','then','some','them','what','when','also','just','know','take','after','could','think','about','would','these','those','other','well','want','much','still','while','even','back','come','made','only','over','here','down','does','like','time','most','date','type','tags','status']);
+
+function getKeywords(text){
+  return new Set(text.toLowerCase().split(/\W+/).filter(function(w){return w.length>3&&!STOP.has(w);}));
+}
+
+function jaccardScore(setA,setB){
+  if(!setA.size||!setB.size)return 0;
+  var intersection=0;
+  setA.forEach(function(w){if(setB.has(w))intersection++;});
+  var union=new Set([...setA,...setB]).size;
+  return union>0?intersection/union:0;
+}
+
+// ── Sweep ─────────────────────────────────────────────────
+async function runSweep(){
+  if(!vaultConnected){alert('Connect vault first, sir.');return;}
+  if(sweepRunning)return;
+  var key=localStorage.getItem('baker_api_key');
+  if(!key){alert('No API key — go to BAKER Settings first.');return;}
+
+  var minStrength=thresholdMap[document.getElementById('threshold').value];
+  var strengthOrder={strong:3,moderate:2,weak:1};
+  var minScore=strengthOrder[minStrength]||2;
+
+  sweepRunning=true;
+  allConnections=[];writtenPairs=new Set();
+  var btn=document.getElementById('run-btn');
+  btn.disabled=true;btn.textContent='⟳ Sweeping...';
+  document.getElementById('progress-wrap').style.display='block';
+  document.getElementById('write-all-btn').disabled=true;
+  document.getElementById('conn-view').innerHTML='';
+
+  var notes=vaultIndex;
+  var totalPairs=(notes.length*(notes.length-1))/2;
+  var candidates=[];
+
+  // Step 1: Score all pairs with Jaccard similarity (free, instant)
+  setProgress(0,'Scoring '+totalPairs+' note pairs...');
+  for(var i=0;i<notes.length;i++){
+    for(var j=i+1;j<notes.length;j++){
+      var kwA=getKeywords(notes[i].name+' '+notes[i].content);
+      var kwB=getKeywords(notes[j].name+' '+notes[j].content);
+      var score=jaccardScore(kwA,kwB);
+      // Use different thresholds: strong>0.15, moderate>0.08, weak>0.04
+      var thresholds={3:0.15,2:0.08,1:0.04};
+      if(score>=thresholds[minScore]){
+        candidates.push({noteA:notes[i],noteB:notes[j],score:score});
+      }
+    }
+  }
+
+  candidates.sort(function(a,b){return b.score-a.score;});
+  // Cap at 30 pairs to keep API cost reasonable
+  var topCandidates=candidates.slice(0,30);
+
+  if(!topCandidates.length){
+    setProgress(100,'No strong candidates found — try lowering the threshold.');
+    btn.disabled=false;btn.textContent='▶ Sweep vault';
+    sweepRunning=false;
+    document.getElementById('conn-view').innerHTML='<div class="ph"><div class="ph-icon">◈</div><div class="ph-title">No connections found above threshold.</div><div class="ph-sub">Try lowering the strength threshold and sweeping again.</div></div>';
+    return;
+  }
+
+  setProgress(20,'Found '+topCandidates.length+' candidates — asking BAKER to confirm...');
+
+  // Step 2: Send candidates to Claude in batches of 5
+  var batchSize=5;
+  var confirmed=[];
+  for(var b=0;b<topCandidates.length;b+=batchSize){
+    var batch=topCandidates.slice(b,b+batchSize);
+    var pct=20+Math.round((b/topCandidates.length)*70);
+    setProgress(pct,'Confirming batch '+(Math.floor(b/batchSize)+1)+' of '+Math.ceil(topCandidates.length/batchSize)+'...');
+    var results=await confirmBatch(batch,key,minStrength);
+    confirmed=confirmed.concat(results);
+    // Small delay to avoid rate limiting
+    await new Promise(function(r){setTimeout(r,200);});
+  }
+
+  allConnections=confirmed;
+  setProgress(100,'Done — found '+confirmed.length+' confirmed connections.');
+
+  renderNoteList();
+  updateStats();
+  renderAllConnections();
+
+  if(confirmed.length){
+    document.getElementById('write-all-btn').disabled=false;
+  }
+
+  btn.disabled=false;btn.textContent='▶ Sweep vault';
+  sweepRunning=false;
+}
+
+async function confirmBatch(batch,key,minStrength){
+  var results=[];
+  var prompt='You are BAKER analyzing note pairs for a knowledge vault. For each pair below, determine if there is a genuine meaningful connection worth linking.\n\n'+
+    'For each pair respond with EXACTLY this format:\n'+
+    'PAIR: [number]\n'+
+    'CONNECT: yes|no\n'+
+    'TYPE: extends|supports|related|contradicts|example|prereq\n'+
+    'STRENGTH: strong|moderate|weak\n'+
+    'REASON: [one specific sentence]\n'+
+    '---\n\n'+
+    'Only return yes if there is a real connection. Be selective. Minimum strength should be '+minStrength+'.\n\n';
+
+  batch.forEach(function(c,idx){
+    var previewA=c.noteA.content.replace(/---[\s\S]*?---/,'').trim().slice(0,200);
+    var previewB=c.noteB.content.replace(/---[\s\S]*?---/,'').trim().slice(0,200);
+    prompt+='PAIR '+(idx+1)+':\nNote A: '+c.noteA.name+'\n'+previewA+'\n\nNote B: '+c.noteB.name+'\n'+previewB+'\n\n---\n\n';
+  });
+
+  try{
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:'You are a knowledge graph analyst. Be concise and precise.',messages:[{role:'user',content:prompt}]})
+    });
+    var data=await resp.json();
+    if(data.error)throw new Error(data.error.message);
+    var raw=data.content.map(function(b){return b.text||'';}).join('');
+
+    // Parse responses
+    var blocks=raw.split('---').map(function(b){return b.trim();}).filter(Boolean);
+    blocks.forEach(function(block){
+      var pairMatch=block.match(/PAIR:\s*(\d+)/);
+      var connectMatch=block.match(/CONNECT:\s*(yes|no)/i);
+      var typeMatch=block.match(/TYPE:\s*(\w+)/i);
+      var strengthMatch=block.match(/STRENGTH:\s*(\w+)/i);
+      var reasonMatch=block.match(/REASON:\s*(.+)/i);
+      if(pairMatch&&connectMatch&&connectMatch[1].toLowerCase()==='yes'){
+        var idx=parseInt(pairMatch[1])-1;
+        if(batch[idx]){
+          results.push({
+            noteA:batch[idx].noteA.name,
+            noteAPath:batch[idx].noteA.path,
+            noteAType:batch[idx].noteA.type,
+            noteB:batch[idx].noteB.name,
+            noteBPath:batch[idx].noteB.path,
+            noteBType:batch[idx].noteB.type,
+            type:(typeMatch?typeMatch[1]:'related').toLowerCase(),
+            strength:(strengthMatch?strengthMatch[1]:'moderate').toLowerCase(),
+            reason:reasonMatch?reasonMatch[1].trim():'Related concepts',
+            wikilinkA:'[['+batch[idx].noteA.name.replace('.md','')+']]',
+            wikilinkB:'[['+batch[idx].noteB.name.replace('.md','')+']]',
+            writtenA:false,
+            writtenB:false
+          });
+        }
+      }
+    });
+  }catch(e){console.error('Batch error:',e);}
+  return results;
+}
+
+function setProgress(pct,txt){
+  document.getElementById('progress-fill').style.width=pct+'%';
+  document.getElementById('progress-txt').textContent=txt;
+}
+
+// ── Render connections ────────────────────────────────────
+function renderAllConnections(){
+  var view=document.getElementById('conn-view');
+  view.innerHTML='';
+  document.getElementById('content-lbl').textContent='All connections';
+  document.getElementById('content-pill').textContent=allConnections.length+' found';
+  document.getElementById('content-pill').className='pill ok';
+
+  if(!allConnections.length){
+    view.innerHTML='<div class="ph"><div class="ph-icon">◈</div><div class="ph-title">No connections found.</div><div class="ph-sub">Try lowering the strength threshold.</div></div>';
+    return;
+  }
+
+  // Sort strong first
+  var sorted=[...allConnections].sort(function(a,b){
+    var o={strong:0,moderate:1,weak:2};
+    return (o[a.strength]||1)-(o[b.strength]||1);
+  });
+
+  sorted.forEach(function(conn){
+    if(!passesFilter(conn))return;
+    view.appendChild(makeConnCard(conn));
+  });
+}
+
+function showNoteConnections(noteName){
+  var view=document.getElementById('conn-view');
+  view.innerHTML='';
+  var noteName2=noteName.replace('.md','');
+  document.getElementById('content-lbl').textContent=noteName2;
+  var conns=allConnections.filter(function(c){return c.noteA===noteName||c.noteB===noteName;});
+  document.getElementById('content-pill').textContent=conns.length+' connections';
+  document.getElementById('content-pill').className=conns.length?'pill ok':'pill';
+
+  if(!conns.length){
+    view.innerHTML='<div class="ph"><div class="ph-icon">◈</div><div class="ph-title">No connections for this note.</div><div class="ph-sub">Run a sweep to find connections, or lower the threshold.</div></div>';
+    return;
+  }
+  conns.forEach(function(conn){view.appendChild(makeConnCard(conn,noteName));});
+}
+
+function passesFilter(conn){
+  return activeFilters.has(conn.noteAType)||activeFilters.has(conn.noteBType);
+}
+
+function makeConnCard(conn,focusNote){
+  var card=document.createElement('div');card.className='conn-card';
+  var strengthColors={strong:'var(--accent)',moderate:'var(--amber)',weak:'var(--muted)'};
+  var strengthPct={strong:'100%',moderate:'60%',weak:'30%'};
+  var typeLabel={extends:'↑ extends',supports:'✓ supports',related:'~ related',contradicts:'✗ contradicts',example:'eg example',prereq:'← prereq'};
+  var pairId=conn.noteA+'||'+conn.noteB;
+  var isWritten=writtenPairs.has(pairId);
+
+  var nameA=conn.noteA.replace('.md','');
+  var nameB=conn.noteB.replace('.md','');
+
+  card.innerHTML=
+    '<div class="cc-dots">'+
+      '<div class="cc-dot" style="background:'+typeColor(conn.noteAType)+'"></div>'+
+      '<div class="cc-line"></div>'+
+      '<div class="cc-dot" style="background:'+typeColor(conn.noteBType)+'"></div>'+
+    '</div>'+
+    '<div class="cc-body">'+
+      '<div class="cc-names">'+
+        '<span class="cc-note">'+nameA+'</span>'+
+        '<span class="cc-arrow">↔</span>'+
+        '<span class="cc-note">'+nameB+'</span>'+
+        '<span class="cc-type">'+(typeLabel[conn.type]||conn.type)+'</span>'+
+      '</div>'+
+      '<div class="cc-strength"><div class="cc-strength-fill" style="width:'+strengthPct[conn.strength]+';background:'+strengthColors[conn.strength]+'"></div></div>'+
+      '<div class="cc-reason">'+conn.reason+'</div>'+
+      '<div class="cc-action">'+
+        '<button class="cc-btn'+(isWritten?' written':'')+'" id="write-btn-'+sanitizeId(pairId)+'" onclick="writeLink(\''+escapeStr(pairId)+'\')">'+
+          (isWritten?'✓ Written':'⬡ Write links')+
+        '</button>'+
+        '<button class="cc-btn" onclick="previewLink(\''+escapeStr(nameA)+'\',\''+escapeStr(nameB)+'\')">Preview</button>'+
+      '</div>'+
+    '</div>';
+  return card;
+}
+
+function sanitizeId(str){return str.replace(/[^a-zA-Z0-9]/g,'_');}
+function escapeStr(str){return str.replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+
+// ── Write links ───────────────────────────────────────────
+async function writeLink(pairId){
+  var conn=allConnections.find(function(c){return c.noteA+'||'+c.noteB===pairId;});
+  if(!conn)return;
+  var btn=document.getElementById('write-btn-'+sanitizeId(pairId));
+  if(btn){btn.textContent='Writing...';btn.disabled=true;}
+
+  var noteA=vaultIndex.find(function(n){return n.name===conn.noteA;});
+  var noteB=vaultIndex.find(function(n){return n.name===conn.noteB;});
+  var ok=true;
+
+  // Add wikilink to note A if not already there
+  if(noteA&&!noteA.content.includes(conn.wikilinkB)){
+    var newContent=noteA.content.trimEnd()+'\n\n'+conn.wikilinkB+'\n';
+    var written=await writeNoteToVault(noteA.path,newContent);
+    if(written)noteA.content=newContent;else ok=false;
+  }
+  // Add wikilink to note B if not already there
+  if(noteB&&!noteB.content.includes(conn.wikilinkA)){
+    var newContent2=noteB.content.trimEnd()+'\n\n'+conn.wikilinkA+'\n';
+    var written2=await writeNoteToVault(noteB.path,newContent2);
+    if(written2)noteB.content=newContent2;else ok=false;
+  }
+
+  if(ok){
+    writtenPairs.add(pairId);
+    if(btn){btn.textContent='✓ Written';btn.className='cc-btn written';btn.disabled=false;}
+    updateStats();
+  } else {
+    if(btn){btn.textContent='✗ Failed';btn.disabled=false;}
+  }
+}
+
+async function writeAllLinks(){
+  if(!allConnections.length)return;
+  var unwritten=allConnections.filter(function(c){return !writtenPairs.has(c.noteA+'||'+c.noteB);});
+  if(!unwritten.length){alert('All connections already written, sir.');return;}
+  if(!confirm('Write '+unwritten.length+' wikilinks to your vault? This modifies your actual note files.'))return;
+  var btn=document.getElementById('write-all-btn');
+  btn.disabled=true;btn.textContent='Writing...';
+  var done=0;
+  for(var i=0;i<unwritten.length;i++){
+    await writeLink(unwritten[i].noteA+'||'+unwritten[i].noteB);
+    done++;
+    btn.textContent='Writing '+done+'/'+unwritten.length+'...';
+  }
+  btn.textContent='✓ All written';
+  btn.style.color='var(--green)';
+  updateStats();
+}
+
+function previewLink(nameA,nameB){
+  alert('Would add to "'+nameA+'":\n[['+nameB+']]\n\nWould add to "'+nameB+'":\n[['+nameA+']]');
+}
+
+function toggleFilter(type,el){
+  if(activeFilters.has(type)){activeFilters.delete(type);el.classList.remove('active');}
+  else{activeFilters.add(type);el.classList.add('active);}
+  if(selectedNote)showNoteConnections(selectedNote);
+  else renderAllConnections();
+}
+</script>
+</body>
+</html>
