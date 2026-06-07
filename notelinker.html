@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAKER — Note Linker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7c6af7">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f10;--surface:#1a1a1d;--surface2:#222226;--border:#2e2e34;
+  --accent:#7c6af7;--accent-dim:#3d3578;--text:#e8e6f0;--muted:#7a7880;
+  --green:#4ade80;--amber:#fbbf24;--red:#f87171;
+  --blue:#60a5fa;--purple:#a78bfa;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.hdr{border-bottom:1px solid var(--border);padding:11px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--surface)}
+a.back{background:transparent;border:1px solid var(--border);border-radius:4px;padding:4px 9px;font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;transition:all .15s}
+a.back:hover{border-color:var(--accent);color:var(--text)}
+.logo{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--accent);letter-spacing:.1em;background:rgba(124,106,247,.12);border:1px solid var(--accent-dim);padding:3px 8px;border-radius:4px}
+.hdr-sub{font-size:12px;color:var(--muted)}
+.hdr-right{margin-left:auto;display:flex;gap:7px;align-items:center}
+.hbtn{border:1px solid var(--border);border-radius:4px;padding:5px 10px;font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);white-space:nowrap}
+.hbtn:hover{border-color:var(--accent);color:var(--text)}
+.hbtn:disabled{opacity:.3;cursor:not-allowed}
+.hbtn.vault-on{color:var(--green);border-color:var(--green);background:rgba(74,222,128,.06)}
+.hbtn.vault-scanning{color:var(--amber);border-color:var(--amber)}
+.hbtn.save{color:var(--accent);border-color:var(--accent-dim);background:rgba(124,106,247,.07)}
+.hbtn.save:hover{background:rgba(124,106,247,.15)}
+.hbtn.convo{color:var(--green);border-color:rgba(74,222,128,.4);background:rgba(74,222,128,.06)}
+.hbtn.convo:hover{background:rgba(74,222,128,.12)}
+.main{display:grid;grid-template-columns:1fr 1fr;flex:1;overflow:hidden}
+.panel{display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden}
+.p-hdr{padding:9px 16px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.p-lbl{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+.pill{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:20px;border:1px solid var(--border);color:var(--muted)}
+.pill.ok{color:var(--green);border-color:var(--green)}
+.pill.err{color:var(--red);border-color:var(--red)}
+.pill.amber{color:var(--amber);border-color:var(--amber)}
+.pill.blue{color:var(--blue);border-color:var(--blue)}
+.input-zone{flex:1;padding:12px 16px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+textarea{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:10px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;resize:none;line-height:1.8;transition:border-color .15s}
+textarea:focus{border-color:var(--accent)}
+textarea::placeholder{color:var(--muted);opacity:.4}
+.char-row{display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.char-count{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.vault-status{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid var(--border);color:var(--muted)}
+.vault-status.on{color:var(--green);border-color:var(--green)}
+.link-btn{padding:10px;background:var(--accent);border:none;border-radius:4px;font-family:var(--mono);font-size:12px;font-weight:500;color:#fff;cursor:pointer;letter-spacing:.08em;transition:opacity .15s,transform .1s;flex-shrink:0}
+.link-btn:hover{opacity:.88}
+.link-btn:active{transform:scale(.98)}
+.link-btn:disabled{opacity:.35;cursor:not-allowed}
+.out-panel{display:flex;flex-direction:column;overflow:hidden}
+.out-hdr{padding:9px 16px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.type-counts{display:flex;gap:5px;flex-wrap:wrap}
+.tc{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:20px}
+.tc.extends{background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3);color:var(--purple)}
+.tc.supports{background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.3);color:var(--blue)}
+.tc.related{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:var(--amber)}
+.tc.contradicts{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--red)}
+.tc.example{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.3);color:var(--green)}
+.tc.prereq{background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+.out-body{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.out-body::-webkit-scrollbar{width:3px}
+.out-body::-webkit-scrollbar-thumb{background:var(--border)}
+.conn-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;transition:all .15s;position:relative}
+.conn-card:hover{border-color:var(--accent);background:var(--surface2)}
+.conn-card.strong{border-left:3px solid var(--accent)}
+.conn-card.moderate{border-left:3px solid var(--amber)}
+.conn-card.weak{border-left:3px solid var(--border)}
+.conn-top{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
+.conn-name{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--text);flex:1;line-height:1.4}
+.conn-path{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px}
+.type-badge{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.type-badge.extends{background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3);color:var(--purple)}
+.type-badge.supports{background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.3);color:var(--blue)}
+.type-badge.related{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:var(--amber)}
+.type-badge.contradicts{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--red)}
+.type-badge.example{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.3);color:var(--green)}
+.type-badge.prereq{background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+.strength-bar{height:3px;border-radius:2px;background:var(--border);margin-bottom:8px;overflow:hidden}
+.strength-fill{height:100%;border-radius:2px;transition:width .3s}
+.strength-fill.strong{width:100%;background:var(--accent)}
+.strength-fill.moderate{width:60%;background:var(--amber)}
+.strength-fill.weak{width:30%;background:var(--muted)}
+.conn-reason{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:10px}
+.conn-actions{display:flex;gap:6px;align-items:center}
+.wikilink-chip{font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(124,106,247,.1);border:1px solid var(--accent-dim);color:var(--accent);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.copy-btn{background:transparent;border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-family:var(--mono);font-size:10px;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0}
+.copy-btn:hover{border-color:var(--accent);color:var(--text)}
+.copy-btn.copied{color:var(--green);border-color:var(--green)}
+.already-linked{position:absolute;top:10px;right:10px;font-family:var(--mono);font-size:9px;color:var(--green);opacity:.7}
+.out-foot{padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;background:var(--surface);align-items:center}
+.ph{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--muted);text-align:center;padding:32px}
+.ph-icon{font-size:32px;opacity:.2}
+.ph-title{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--text);opacity:.6}
+.ph-sub{font-family:var(--mono);font-size:10px;line-height:1.9;opacity:.5;max-width:300px}
+.thinking{display:flex;align-items:center;gap:8px;padding:20px;color:var(--muted);font-family:var(--mono);font-size:11px}
+.dots span{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--accent);animation:bnc 1.2s infinite;margin-right:2px}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+@keyframes bnc{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-4px);opacity:1}}
+.section-divider{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;padding:4px 0;border-bottom:1px solid var(--border);margin-bottom:2px}
+#file-input{display:none}
+</style>
+</head>
+<body>
+<input type="file" id="file-input" accept=".md,.txt">
+
+<div class="hdr">
+  <a class="back" href="index.html">← BAKER</a>
+  <span class="logo">🔗</span>
+  <span class="hdr-sub">note linker</span>
+  <div class="hdr-right">
+    <button class="hbtn" id="vault-btn" onclick="handleVaultBtn()">⬡ Connect Vault</button>
+    <button class="hbtn" id="load-btn" onclick="document.getElementById('file-input').click()">📁 Load note</button>
+    <button class="hbtn convo" id="convo-btn" onclick="sendToConversation()" disabled>💬 Discuss</button>
+    <button class="hbtn save" id="dl-btn" onclick="downloadLinked()" disabled>⬇ Download</button>
+  </div>
+</div>
+
+<div class="main">
+  <!-- LEFT: Input -->
+  <div class="panel">
+    <div class="p-hdr">
+      <span class="p-lbl">Note to link</span>
+      <span class="pill" id="vault-pill">no vault</span>
+    </div>
+
+    <div class="input-zone">
+      <textarea id="note-input" placeholder="Paste the note you want to find connections for...
+
+BAKER will analyze it and suggest which of your vault notes it connects to — and exactly why.
+
+Connect your vault first for the most accurate results."></textarea>
+      <div class="char-row">
+        <span class="char-count"><span id="char-count">0</span> characters</span>
+        <span class="char-count" id="vault-note-count"></span>
+      </div>
+    </div>
+
+    <button class="link-btn" id="link-btn" onclick="findLinks()" style="margin:0 16px 12px">🔗 FIND CONNECTIONS</button>
+  </div>
+
+  <!-- RIGHT: Output -->
+  <div class="out-panel">
+    <div class="out-hdr">
+      <span class="p-lbl">Connections</span>
+      <div class="type-counts" id="type-counts" style="display:none"></div>
+      <span style="flex:1"></span>
+      <span class="pill" id="out-pill">ready</span>
+    </div>
+    <div class="out-body" id="out-body">
+      <div class="ph">
+        <div class="ph-icon">◈</div>
+        <div class="ph-title" id="ph-title">No note loaded yet, sir.</div>
+        <div class="ph-sub">Paste any note and BAKER will map it to your knowledge graph — finding which vault notes support, extend, contradict, or relate to it.</div>
+      </div>
+    </div>
+    <div class="out-foot">
+      <button class="hbtn" id="insert-strong-btn" onclick="insertAllStrong()" disabled style="font-size:10px">⬡ Insert strong links</button>
+      <span style="flex:1"></span>
+      <span class="pill" id="conn-count-pill"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Utilities ─────────────────────────────────────────────
+function getTimeGreeting(){var h=new Date().getHours();if(h>=5&&h<12)return 'Good morning, sir.';if(h>=12&&h<17)return 'Good afternoon, sir.';if(h>=17&&h<21)return 'Good evening, sir.';return "You're up late, sir.";}
+function getContextBlock(){var now=new Date();return '[Date: '+now.toLocaleDateString([],{weekday:'long',year:'numeric',month:'long',day:'numeric'})+' | Time: '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+']';}
+
+// ── State ─────────────────────────────────────────────────
+var vaultHandle=null,vaultIndex=[],vaultConnected=false;
+var hasFS=('showDirectoryPicker' in window);
+var connections=[];
+var noteText='';
+
+// ── Boot ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('ph-title').textContent=getTimeGreeting().replace(',','')+' Ready to link.';
+  if(!hasFS){
+    document.getElementById('vault-btn').textContent='⬡ Vault (Chrome only)';
+    document.getElementById('vault-btn').disabled=true;
+  }
+  document.getElementById('note-input').addEventListener('input',function(){
+    noteText=this.value;
+    document.getElementById('char-count').textContent=this.value.length.toLocaleString();
+  });
+  document.getElementById('file-input').addEventListener('change',function(e){
+    var file=e.target.files[0];if(!file)return;
+    var r=new FileReader();
+    r.onload=function(ev){
+      document.getElementById('note-input').value=ev.target.result;
+      noteText=ev.target.result;
+      document.getElementById('char-count').textContent=ev.target.result.length.toLocaleString();
+    };
+    r.readAsText(file);e.target.value='';
+  });
+});
+
+// ── Vault ─────────────────────────────────────────────────
+function openDB(){return new Promise(function(res,rej){var r=indexedDB.open('baker-vault',1);r.onupgradeneeded=function(e){e.target.result.createObjectStore('handles',{keyPath:'id'});};r.onsuccess=function(e){res(e.target.result);};r.onerror=function(){rej(r.error);};});}
+async function storeHandle(h){try{var db=await openDB();db.transaction('handles','readwrite').objectStore('handles').put({id:'vault',handle:h});}catch(e){}}
+async function getStoredHandle(){try{var db=await openDB();return new Promise(function(res){var r=db.transaction('handles','readonly').objectStore('handles').get('vault');r.onsuccess=function(){res(r.result?r.result.handle:null);};r.onerror=function(){res(null);};});}catch(e){return null;}}
+
+async function handleVaultBtn(){
+  if(!hasFS){alert('Requires Chrome on desktop.');return;}
+  if(vaultConnected){
+    vaultHandle=null;vaultIndex=[];vaultConnected=false;
+    setVaultBtn('off');
+    document.getElementById('vault-pill').textContent='no vault';
+    document.getElementById('vault-pill').className='pill';
+    document.getElementById('vault-note-count').textContent='';
+  } else {
+    try{
+      var handle=await window.showDirectoryPicker({mode:'readwrite'});
+      vaultHandle=handle;await storeHandle(handle);
+      setVaultBtn('scanning');
+      document.getElementById('vault-pill').textContent='scanning...';
+      vaultIndex=[];await scanDir(handle,'');
+      vaultConnected=true;setVaultBtn('on');
+      document.getElementById('vault-pill').textContent=vaultIndex.length+' notes';
+      document.getElementById('vault-pill').className='pill ok';
+      document.getElementById('vault-note-count').textContent=vaultIndex.length+' vault notes available';
+    }catch(e){if(e.name!=='AbortError')alert('Connection failed: '+e.message);setVaultBtn('off');}
+  }
+}
+
+function setVaultBtn(s){
+  var b=document.getElementById('vault-btn');
+  b.className='hbtn'+(s==='on'?' vault-on':s==='scanning'?' vault-scanning':'');
+  b.textContent=s==='on'?'⬡ Vault on':s==='scanning'?'⟳ Scanning...':'⬡ Connect Vault';
+}
+
+async function scanDir(dir,path){
+  try{for await(var entry of dir.values()){if(entry.name.startsWith('.'))continue;if(entry.kind==='file'&&entry.name.endsWith('.md')){try{var f=await entry.getFile();var content=await f.text();vaultIndex.push({name:entry.name,path:path?path+'/'+entry.name:entry.name,content:content});}catch(e){}}else if(entry.kind==='directory'){await scanDir(entry,path?path+'/'+entry.name:entry.name);}}}catch(e){}
+}
+
+// ── Relevance pre-filter ──────────────────────────────────
+var STOP=new Set(['the','and','for','are','but','not','you','all','can','had','was','one','our','out','get','has','how','its','may','now','see','who','did','too','use','that','this','with','have','from','they','will','been','were','said','each','into','than','your','more','then','some','them','what','when','also','just','know','take','after','could','think','about','would','these','those','other','well','want','much','still','while','even','back','come','made','only','over','here','down','does','like','time','most']);
+
+function scoreRelevance(noteContent,vaultNote){
+  var words=noteContent.toLowerCase().split(/\W+/).filter(function(w){return w.length>3&&!STOP.has(w);});
+  var text=(vaultNote.name+' '+vaultNote.content).toLowerCase();
+  var score=0;
+  var unique=new Set(words);
+  unique.forEach(function(w){
+    var m=text.match(new RegExp('\\b'+w+'\\b','g'));
+    if(m){var nm=vaultNote.name.toLowerCase().match(new RegExp('\\b'+w+'\\b','g'));score+=m.length+(nm?nm.length*5:0);}
+  });
+  return score;
+}
+
+// ── Find links ────────────────────────────────────────────
+async function findLinks(){
+  var key=localStorage.getItem('baker_api_key');
+  if(!key){alert('No API key — go to BAKER Settings first.');return;}
+  var content=document.getElementById('note-input').value.trim();
+  if(!content){alert('Paste a note first, sir.');return;}
+
+  var btn=document.getElementById('link-btn');
+  btn.disabled=true;btn.textContent='⟳ ANALYZING...';
+  setPill('working','amber');
+  document.getElementById('insert-strong-btn').disabled=true;
+  document.getElementById('dl-btn').disabled=true;
+  document.getElementById('convo-btn').disabled=true;
+  document.getElementById('type-counts').style.display='none';
+
+  var thinkingMsg = vaultConnected
+    ? 'BAKER is reading your vault and mapping connections...'
+    : 'BAKER is analyzing themes and suggesting connections...';
+  document.getElementById('out-body').innerHTML='<div class="thinking"><div class="dots"><span></span><span></span><span></span></div>'+thinkingMsg+'</div>';
+
+  // Build vault context
+  var vaultContext = '';
+  if(vaultConnected && vaultIndex.length){
+    // Score and take top 15 most relevant notes
+    var scored = vaultIndex.map(function(note){
+      return {note:note, score:scoreRelevance(content, note)};
+    });
+    scored.sort(function(a,b){return b.score-a.score;});
+    var top = scored.slice(0,15).filter(function(s){return s.score>0;});
+
+    if(top.length){
+      vaultContext = '\n\nVAULT NOTES AVAILABLE FOR LINKING (top '+top.length+' most relevant):\n';
+      top.forEach(function(s){
+        var preview = s.note.content.slice(0,300).replace(/---[\s\S]*?---/,'').trim();
+        vaultContext += '\n--- NOTE: '+s.note.name+' | PATH: '+s.note.path+' ---\n'+preview+(s.note.content.length>300?'\n...[truncated]':'')+'\n';
+      });
+    }
+  }
+
+  var systemPrompt = 'You are BAKER, an intelligent second brain assistant modelled after JARVIS from Iron Man.\n\n'+
+    'Your task is to analyze a note and find meaningful connections to other vault notes (or suggest conceptual connections if no vault notes are provided).\n\n'+
+    'For each connection return EXACTLY this format, one per connection, separated by ---LINK---:\n\n'+
+    'NAME: [note name without .md]\n'+
+    'PATH: [full path including filename]\n'+
+    'TYPE: [one of: extends|supports|related|contradicts|example|prereq]\n'+
+    'STRENGTH: [one of: strong|moderate|weak]\n'+
+    'REASON: [one precise sentence explaining the connection — be specific, not generic]\n'+
+    'WIKILINK: [[Note Name]]\n\n'+
+    'Type definitions:\n'+
+    '- extends: this note builds on, deepens, or continues the linked note\n'+
+    '- supports: this note provides evidence or validation for the linked note\n'+
+    '- related: broadly related topic worth knowing together\n'+
+    '- contradicts: tension, conflict, or opposing perspective\n'+
+    '- example: this note is a concrete example of something in the linked note\n'+
+    '- prereq: the linked note should be read/understood before this one\n\n'+
+    'Rules:\n'+
+    '- Only return REAL connections, not forced ones\n'+
+    '- Aim for 4-10 connections depending on how many genuinely exist\n'+
+    '- Be SPECIFIC in the reason — reference actual content from both notes\n'+
+    '- Strong = direct explicit connection, Moderate = thematic overlap, Weak = tangential\n'+
+    '- If no vault notes provided, suggest connections based on themes and concepts that WOULD likely be in a second brain vault\n'+
+    '- Sort by strength (strong first)\n'+
+    (vaultConnected ? '- Use ONLY the vault notes provided above — do not invent note names' : '- Suggest plausible vault note names the user might have or should create');
+
+  var userMsg = 'System information: Note linking analysis '+getContextBlock()+
+    (vaultConnected ? '\nVault connected: '+vaultIndex.length+' notes indexed.' : '\nNo vault connected — suggesting conceptual connections.')+
+    '\n\nAnalyze this note and find connections:\n\n'+content+vaultContext;
+
+  try{
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,system:systemPrompt,messages:[{role:'user',content:userMsg}]})
+    });
+    var data=await resp.json();
+    if(data.error)throw new Error(data.error.message);
+    var raw=data.content.map(function(b){return b.text||'';}).join('').trim();
+    connections=parseConnections(raw,content);
+    renderConnections(connections,content);
+    setPill('done','ok');
+    document.getElementById('insert-strong-btn').disabled=false;
+    document.getElementById('dl-btn').disabled=false;
+    document.getElementById('convo-btn').disabled=false;
+  }catch(err){
+    document.getElementById('out-body').innerHTML='<div class="thinking" style="color:var(--red)">Error: '+err.message+'</div>';
+    setPill('error','err');
+  }
+  btn.disabled=false;btn.textContent='🔗 FIND CONNECTIONS';
+}
+
+// ── Parse connections ─────────────────────────────────────
+function parseConnections(raw, noteContent){
+  var blocks = raw.split('---LINK---').map(function(b){return b.trim();}).filter(Boolean);
+  var results = [];
+  var existingLinks = extractExistingLinks(noteContent);
+
+  blocks.forEach(function(block){
+    var lines = block.split('\n');
+    var conn = {name:'',path:'',type:'related',strength:'moderate',reason:'',wikilink:'',alreadyLinked:false};
+    lines.forEach(function(line){
+      if(line.startsWith('NAME:'))conn.name=line.replace('NAME:','').trim();
+      else if(line.startsWith('PATH:'))conn.path=line.replace('PATH:','').trim();
+      else if(line.startsWith('TYPE:'))conn.type=line.replace('TYPE:','').trim().toLowerCase();
+      else if(line.startsWith('STRENGTH:'))conn.strength=line.replace('STRENGTH:','').trim().toLowerCase();
+      else if(line.startsWith('REASON:'))conn.reason=line.replace('REASON:','').trim();
+      else if(line.startsWith('WIKILINK:'))conn.wikilink=line.replace('WIKILINK:','').trim();
+    });
+    if(conn.name){
+      // Check if already linked in the note
+      conn.alreadyLinked = existingLinks.some(function(l){
+        return l.toLowerCase().includes(conn.name.toLowerCase());
+      });
+      results.push(conn);
+    }
+  });
+
+  // Sort: strong first, then moderate, then weak
+  var order = {strong:0,moderate:1,weak:2};
+  results.sort(function(a,b){return (order[a.strength]||1)-(order[b.strength]||1);});
+  return results;
+}
+
+function extractExistingLinks(noteContent){
+  var matches = noteContent.match(/\[\[([^\]]+)\]\]/g)||[];
+  return matches.map(function(m){return m.replace(/[\[\]]/g,'');});
+}
+
+// ── Render connections ────────────────────────────────────
+function renderConnections(conns, noteContent){
+  var body = document.getElementById('out-body');
+  body.innerHTML='';
+
+  if(!conns.length){
+    body.innerHTML='<div class="ph"><div class="ph-icon">◈</div><div class="ph-title">No connections found</div><div class="ph-sub">Try connecting your vault for more accurate results, or add more content to the note.</div></div>';
+    return;
+  }
+
+  // Type counts
+  var typeCounts={};
+  conns.forEach(function(c){typeCounts[c.type]=(typeCounts[c.type]||0)+1;});
+  var tcEl=document.getElementById('type-counts');
+  tcEl.innerHTML='';tcEl.style.display='flex';
+  var typeLabels={extends:'↑ extends',supports:'✓ supports',related:'~ related',contradicts:'✗ contradicts',example:'eg example',prereq:'← prereq'};
+  Object.keys(typeCounts).forEach(function(type){
+    var tc=document.createElement('span');
+    tc.className='tc '+type;
+    tc.textContent=typeCounts[type]+' '+( typeLabels[type]||type);
+    tcEl.appendChild(tc);
+  });
+
+  document.getElementById('conn-count-pill').textContent=conns.length+' connection'+(conns.length!==1?'s':'');
+
+  // Group by strength
+  var groups={strong:[],moderate:[],weak:[]};
+  conns.forEach(function(c){(groups[c.strength]||groups.moderate).push(c);});
+
+  ['strong','moderate','weak'].forEach(function(strength){
+    if(!groups[strength].length)return;
+    if(strength!=='strong'){
+      var div=document.createElement('div');
+      div.className='section-divider';
+      div.textContent=strength+' connections';
+      body.appendChild(div);
+    }
+    groups[strength].forEach(function(conn,idx){
+      body.appendChild(makeCard(conn));
+    });
+  });
+}
+
+function makeCard(conn){
+  var card=document.createElement('div');
+  card.className='conn-card '+conn.strength;
+
+  var alreadyHtml=conn.alreadyLinked?'<span class="already-linked">✓ already linked</span>':'';
+
+  var typeEmoji={extends:'↑',supports:'✓',related:'~',contradicts:'✗',example:'eg',prereq:'←'};
+  var typeLabel={extends:'extends',supports:'supports',related:'related',contradicts:'contradicts',example:'example of',prereq:'prerequisite'};
+
+  card.innerHTML=
+    alreadyHtml+
+    '<div class="conn-top">'+
+      '<div>'+
+        '<div class="conn-name">'+conn.name+'</div>'+
+        '<div class="conn-path">'+conn.path+'</div>'+
+      '</div>'+
+      '<span class="type-badge '+conn.type+'">'+(typeEmoji[conn.type]||'~')+' '+(typeLabel[conn.type]||conn.type)+'</span>'+
+    '</div>'+
+    '<div class="strength-bar"><div class="strength-fill '+conn.strength+'"></div></div>'+
+    '<div class="conn-reason">'+conn.reason+'</div>'+
+    '<div class="conn-actions">'+
+      '<span class="wikilink-chip">'+conn.wikilink+'</span>'+
+      '<button class="copy-btn" onclick="copyWikilink(this,\''+conn.wikilink.replace(/'/g,"\\'")+'\')">'+(conn.alreadyLinked?'✓ linked':'Copy link')+'</button>'+
+      '<button class="copy-btn" onclick="insertWikilink(\''+conn.wikilink.replace(/'/g,"\\'")+'\')" style="display:'+(conn.alreadyLinked?'none':'inline')+'">Insert</button>'+
+    '</div>';
+
+  return card;
+}
+
+function copyWikilink(btn, wikilink){
+  navigator.clipboard.writeText(wikilink).then(function(){
+    var orig=btn.textContent;
+    btn.textContent='✓ Copied!';btn.classList.add('copied');
+    setTimeout(function(){btn.textContent=orig;btn.classList.remove('copied');},1500);
+  });
+}
+
+function insertWikilink(wikilink){
+  var ta=document.getElementById('note-input');
+  var pos=ta.selectionEnd||ta.value.length;
+  var before=ta.value.slice(0,pos);
+  var after=ta.value.slice(pos);
+  // Add on new line if not at start of line
+  var insert = (before.length&&!before.endsWith('\n')?' ':'')+wikilink;
+  ta.value=before+insert+after;
+  ta.selectionStart=ta.selectionEnd=pos+insert.length;
+  ta.dispatchEvent(new Event('input'));
+  ta.focus();
+}
+
+function insertAllStrong(){
+  if(!connections.length)return;
+  var strong=connections.filter(function(c){return c.strength==='strong'&&!c.alreadyLinked;});
+  if(!strong.length){alert('No new strong connections to insert, sir.');return;}
+  var ta=document.getElementById('note-input');
+  var links=strong.map(function(c){return c.wikilink;}).join(' ');
+  ta.value=ta.value+'\n\n'+links;
+  ta.dispatchEvent(new Event('input'));
+  // Re-render to update already-linked status
+  connections.forEach(function(c){
+    if(strong.find(function(s){return s.name===c.name;}))c.alreadyLinked=true;
+  });
+  renderConnections(connections,ta.value);
+  alert('Inserted '+strong.length+' strong link'+(strong.length!==1?'s':'')+' at the end of your note, sir.');
+}
+
+function setPill(t,cls){
+  var p=document.getElementById('out-pill');
+  p.textContent=t;p.className='pill'+(cls?' '+cls:'');
+}
+
+function downloadLinked(){
+  var content=document.getElementById('note-input').value;
+  if(!content)return;
+  var date=new Date().toISOString().split('T')[0];
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type:'text/markdown'}));
+  a.download=date+'-linked-note.md';a.click();
+}
+
+function sendToConversation(){
+  var content=document.getElementById('note-input').value.trim();
+  if(!content||!connections.length)return;
+  var connSummary=connections.slice(0,5).map(function(c){
+    return c.wikilink+' ('+c.type+', '+c.strength+'): '+c.reason;
+  }).join('\n');
+  sessionStorage.setItem('baker_convo_context',JSON.stringify({
+    topic:'Note connections',
+    context:'Note content:\n\n'+content+'\n\nFound connections:\n'+connSummary,
+    source:'notelinker',
+    instruction:'Discuss these note connections and help the user understand how their knowledge fits together.'
+  }));
+  window.location.href='conversation.html';
+}
+</script>
+</body>
+</html>
