@@ -251,10 +251,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     </div>
     <div class="field">
       <label>Spotify Playback Device</label>
-      <select id="spotify-device-select" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:8px 10px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;cursor:pointer" onclick="if(window.loadSpotifyDevicesForSettings)window.loadSpotifyDevicesForSettings()">
-        <option>Click to load devices</option>
+      <select id="spotify-device-select" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:8px 10px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;cursor:pointer">
+        <option>Loading devices...</option>
       </select>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px">Open Spotify on a device first, then click the dropdown to select it.</div>
+      <div id="device-saved-note" style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px">Open Spotify on any device first, then your devices appear automatically.</div>
     </div>
     <div class="modal-note">
       Get your Anthropic key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key.
@@ -410,6 +410,8 @@ function openSettings() {
   document.getElementById('speech-rate-slider').value = sliderVal;
   document.getElementById('speech-rate-display').textContent = sliderVal;
   document.getElementById('overlay').classList.add('open');
+  // Auto-load Spotify devices
+  setTimeout(loadSpotifyDevicesForSettings, 150);
   loadDepth(); loadEffort(); loadConstantMic();
 }
 
@@ -536,6 +538,39 @@ function fetchWeatherAndSpeak() {
 
 loadConstantMic();
 checkSpotifyToken();
+
+// ── Spotify device selector for settings ─────────────────
+async function loadSpotifyDevicesForSettings(){
+  var sel=document.getElementById('spotify-device-select');
+  if(!sel)return;
+  var token=localStorage.getItem('baker_spotify_token');
+  var expiry=parseInt(localStorage.getItem('baker_spotify_expiry')||'0');
+  if(!token||Date.now()>expiry){sel.innerHTML='<option>Connect Spotify first</option>';return;}
+  sel.innerHTML='<option>Loading...</option>';
+  try{
+    var r=await fetch('https://api.spotify.com/v1/me/player/devices',{headers:{Authorization:'Bearer '+token}});
+    if(r.status===401){sel.innerHTML='<option>Token expired — reconnect Spotify</option>';return;}
+    var d=await r.json();
+    if(!d.devices||!d.devices.length){sel.innerHTML='<option>No devices found — open Spotify first</option>';return;}
+    var saved=localStorage.getItem('baker_spotify_device')||'';
+    sel.innerHTML='<option value="">Auto (active device)</option>';
+    d.devices.forEach(function(dev){
+      var opt=document.createElement('option');
+      opt.value=dev.id;
+      opt.textContent=dev.name+' ('+dev.type+')'+(dev.is_active?' ▶':'');
+      opt.selected=dev.id===saved;
+      sel.appendChild(opt);
+    });
+    sel.onchange=function(){
+      var chosen=this.value||null;
+      if(chosen)localStorage.setItem('baker_spotify_device',chosen);
+      else localStorage.removeItem('baker_spotify_device');
+      var label=this.options[this.selectedIndex].textContent;
+      var note=document.getElementById('device-saved-note');
+      if(note){note.textContent='✓ Saved: '+label;note.style.color='var(--green)';}
+    };
+  }catch(e){sel.innerHTML='<option>Error loading devices</option>';}
+}
 </script>
 </body>
 </html>
