@@ -1,4 +1,4 @@
-const CACHE = 'baker-v10';
+const CACHE = 'baker-v11';
 const BASE = '/BAKER';
 const ASSETS = [
   BASE + '/',
@@ -9,6 +9,7 @@ const ASSETS = [
   BASE + '/inbox.html',
   BASE + '/weekly.html',
   BASE + '/notelinker.html',
+  BASE + '/vaultgraph.html',
   BASE + '/baker-app.js',
   BASE + '/icon.svg',
   BASE + '/manifest.json'
