@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAKER — Inbox Processor</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7c6af7">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f10;--surface:#1a1a1d;--surface2:#222226;--border:#2e2e34;
+  --accent:#7c6af7;--accent-dim:#3d3578;--text:#e8e6f0;--muted:#7a7880;
+  --green:#4ade80;--amber:#fbbf24;--red:#f87171;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.hdr{border-bottom:1px solid var(--border);padding:11px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--surface)}
+a.back{background:transparent;border:1px solid var(--border);border-radius:4px;padding:4px 9px;font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;transition:all .15s}
+a.back:hover{border-color:var(--accent);color:var(--text)}
+.logo{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--accent);letter-spacing:.1em;background:rgba(124,106,247,.12);border:1px solid var(--accent-dim);padding:3px 8px;border-radius:4px}
+.hdr-sub{font-size:12px;color:var(--muted)}
+.hdr-right{margin-left:auto;display:flex;gap:7px;align-items:center}
+.hbtn{border:1px solid var(--border);border-radius:4px;padding:5px 10px;font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);white-space:nowrap}
+.hbtn:hover{border-color:var(--accent);color:var(--text)}
+.hbtn:disabled{opacity:.3;cursor:not-allowed}
+.hbtn.vault-on{color:var(--green);border-color:var(--green);background:rgba(74,222,128,.06)}
+.hbtn.vault-scanning{color:var(--amber);border-color:var(--amber)}
+.hbtn.save{color:var(--accent);border-color:var(--accent-dim);background:rgba(124,106,247,.07)}
+.hbtn.save:hover{background:rgba(124,106,247,.15)}
+.main{display:grid;grid-template-columns:1fr 1fr;flex:1;overflow:hidden}
+.panel{display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden}
+.p-hdr{padding:9px 16px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.p-lbl{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+.pill{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:20px;border:1px solid var(--border);color:var(--muted)}
+.pill.ok{color:var(--green);border-color:var(--green)}
+.pill.err{color:var(--red);border-color:var(--red)}
+.pill.amber{color:var(--amber);border-color:var(--amber)}
+.input-zone{flex:1;padding:14px 16px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.drop-zone{flex:1;border:2px dashed var(--border);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.drop-zone.has-content{border-style:solid;border-color:var(--accent)}
+.drop-zone:hover{border-color:var(--accent)}
+.drop-zone.drag-over{border-color:var(--accent);background:rgba(124,106,247,.05)}
+.dz-icon{font-size:28px;opacity:.3}
+.dz-txt{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;line-height:1.8}
+.dz-sub{font-family:var(--mono);font-size:10px;color:var(--muted);opacity:.5;text-align:center}
+textarea{position:absolute;inset:0;background:transparent;border:none;padding:12px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;resize:none;line-height:1.8;opacity:0;transition:opacity .2s}
+textarea.visible{opacity:1}
+.meta-row{display:flex;gap:6px;flex-shrink:0}
+.meta-chip{font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:20px;border:1px solid var(--border);color:var(--muted);background:var(--surface2)}
+.meta-chip.type{border-color:var(--accent-dim);color:var(--accent);background:rgba(124,106,247,.08)}
+.meta-chip.path{border-color:rgba(74,222,128,.3);color:var(--green);background:rgba(74,222,128,.05)}
+.process-btn{margin:0 0 0;padding:10px;background:var(--accent);border:none;border-radius:4px;font-family:var(--mono);font-size:12px;font-weight:500;color:#fff;cursor:pointer;letter-spacing:.08em;transition:opacity .15s,transform .1s;flex-shrink:0}
+.process-btn:hover{opacity:.88}
+.process-btn:active{transform:scale(.98)}
+.process-btn:disabled{opacity:.35;cursor:not-allowed}
+.out-panel{display:flex;flex-direction:column;overflow:hidden}
+.out-body{flex:1;overflow-y:auto;padding:16px;font-family:var(--mono);font-size:11px;line-height:1.8;color:var(--text);white-space:pre-wrap;word-break:break-word}
+.out-body::-webkit-scrollbar{width:3px}
+.out-body::-webkit-scrollbar-thumb{background:var(--border)}
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px}
+.rc-title{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.rc-val{font-family:var(--mono);font-size:12px;color:var(--text);line-height:1.6}
+.rc-val.accent{color:var(--accent)}
+.rc-val.green{color:var(--green)}
+.rc-val.amber{color:var(--amber)}
+.tag-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.tag{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:20px;border:1px solid var(--accent-dim);color:var(--accent);background:rgba(124,106,247,.08)}
+.note-preview{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;font-family:var(--mono);font-size:10px;color:var(--text);max-height:280px;overflow-y:auto;white-space:pre-wrap;line-height:1.8;margin-top:8px}
+.note-preview::-webkit-scrollbar{width:3px}
+.note-preview::-webkit-scrollbar-thumb{background:var(--border)}
+.out-foot{padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;background:var(--surface);align-items:center}
+.ph{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--muted);text-align:center;padding:32px}
+.ph-icon{font-size:32px;opacity:.2}
+.ph-title{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--text);opacity:.6}
+.ph-sub{font-family:var(--mono);font-size:10px;line-height:1.9;opacity:.5;max-width:280px}
+.thinking{display:flex;align-items:center;gap:8px;padding:16px;color:var(--muted);font-family:var(--mono);font-size:11px}
+.dots span{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--accent);animation:bnc 1.2s infinite;margin-right:2px}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+@keyframes bnc{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-4px);opacity:1}}
+.inbox-items{display:flex;flex-direction:column;gap:6px;padding:8px 0}
+.inbox-item{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px}
+.inbox-item:hover{border-color:var(--accent);background:var(--surface)}
+.inbox-item.selected{border-color:var(--accent);background:rgba(124,106,247,.08)}
+.ii-name{font-family:var(--mono);font-size:11px;color:var(--text);flex:1}
+.ii-size{font-family:var(--mono);font-size:10px;color:var(--muted)}
+#file-input{display:none}
+</style>
+</head>
+<body>
+<input type="file" id="file-input" accept=".md,.txt" multiple>
+
+<div class="hdr">
+  <a class="back" href="index.html">← BAKER</a>
+  <span class="logo">📥</span>
+  <span class="hdr-sub" id="hdr-sub">inbox processor</span>
+  <div class="hdr-right">
+    <button class="hbtn" id="vault-btn" onclick="handleVaultBtn()">⬡ Connect Vault</button>
+    <button class="hbtn" id="load-btn" onclick="document.getElementById('file-input').click()">📁 Load files</button>
+    <button class="hbtn save" id="save-btn" onclick="saveProcessed()" disabled>⬇ Download</button>
+    <button class="hbtn save" id="vault-save-btn" onclick="saveToVault()" disabled style="display:none">⬡ Save to Vault</button>
+  </div>
+</div>
+
+<div class="main">
+  <!-- LEFT: Input -->
+  <div class="panel">
+    <div class="p-hdr">
+      <span class="p-lbl">Raw note</span>
+      <span class="pill" id="char-pill">0 chars</span>
+    </div>
+
+    <div class="input-zone">
+      <div class="drop-zone" id="drop-zone" onclick="handleDropZoneClick()">
+        <div class="dz-icon" id="dz-icon">📥</div>
+        <div class="dz-txt" id="dz-txt">Drop a note from BAKER-Inbox<br>or click to load a file</div>
+        <div class="dz-sub" id="dz-sub">Paste directly or drag & drop .md / .txt</div>
+        <textarea id="note-input" placeholder="Paste your raw note here..."></textarea>
+      </div>
+      <div class="meta-row" id="meta-row" style="display:none">
+        <span class="meta-chip type" id="meta-type">detecting...</span>
+        <span class="meta-chip path" id="meta-path">—</span>
+      </div>
+    </div>
+
+    <button class="process-btn" id="process-btn" onclick="processNote()" style="margin:0 16px 12px">▶ PROCESS → BAKER</button>
+  </div>
+
+  <!-- RIGHT: Output -->
+  <div class="out-panel">
+    <div class="p-hdr">
+      <span class="p-lbl">Result</span>
+      <span class="pill" id="out-pill">ready</span>
+    </div>
+    <div class="out-body" id="out-body">
+      <div class="ph">
+        <div class="ph-icon">◈</div>
+        <div class="ph-title" id="ph-title">Inbox empty, sir.</div>
+        <div class="ph-sub">Paste a raw note or load files from your BAKER-Inbox folder. BAKER will read them and tell you exactly where they belong in your vault.</div>
+      </div>
+    </div>
+    <div class="out-foot">
+      <span class="pill" id="type-pill">—</span>
+      <span style="flex:1"></span>
+      <span class="pill" id="time-pill"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Shared utilities ──────────────────────────────────────
+function getTimeGreeting(){var h=new Date().getHours();if(h>=5&&h<12)return 'Good morning, sir.';if(h>=12&&h<17)return 'Good afternoon, sir.';if(h>=17&&h<21)return 'Good evening, sir.';return "You're up late, sir.";}
+function getContextBlock(){var now=new Date();return '[Date: '+now.toLocaleDateString([],{weekday:'long',year:'numeric',month:'long',day:'numeric'})+' | Time: '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+']';}
+
+// ── State ─────────────────────────────────────────────────
+var noteContent = '';
+var processedNote = '';
+var processedPath = '';
+var processedFilename = '';
+var vaultHandle = null;
+var vaultConnected = false;
+var hasFS = ('showDirectoryPicker' in window);
+var loadedFiles = [];
+var currentFileIdx = 0;
+
+// ── Boot ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  var h = new Date().getHours();
+  document.getElementById('ph-title').textContent = getTimeGreeting().replace(',','') + ' Inbox empty.';
+  document.getElementById('time-pill').textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+
+  if(!hasFS){
+    document.getElementById('vault-btn').textContent = '⬡ Vault (Chrome only)';
+    document.getElementById('vault-btn').disabled = true;
+  }
+
+  // Wire textarea
+  var ta = document.getElementById('note-input');
+  ta.addEventListener('input', function(){
+    noteContent = this.value;
+    updateCharPill();
+    if(this.value.trim()){
+      showTextarea();
+    }
+  });
+
+  // Drag and drop
+  var dz = document.getElementById('drop-zone');
+  dz.addEventListener('dragover', function(e){e.preventDefault();this.classList.add('drag-over');});
+  dz.addEventListener('dragleave', function(){this.classList.remove('drag-over');});
+  dz.addEventListener('drop', function(e){
+    e.preventDefault();this.classList.remove('drag-over');
+    var files = Array.from(e.dataTransfer.files).filter(function(f){return f.name.endsWith('.md')||f.name.endsWith('.txt');});
+    if(files.length) loadFiles(files);
+  });
+
+  // File input
+  document.getElementById('file-input').addEventListener('change', function(e){
+    loadFiles(Array.from(e.target.files));
+    e.target.value='';
+  });
+});
+
+function handleDropZoneClick(){
+  var ta = document.getElementById('note-input');
+  if(ta.classList.contains('visible')){return;}
+  document.getElementById('file-input').click();
+}
+
+function showTextarea(){
+  var ta = document.getElementById('note-input');
+  ta.classList.add('visible');
+  document.getElementById('dz-icon').style.display='none';
+  document.getElementById('dz-txt').style.display='none';
+  document.getElementById('dz-sub').style.display='none';
+  document.getElementById('drop-zone').classList.add('has-content');
+  ta.focus();
+}
+
+function updateCharPill(){
+  var len = (document.getElementById('note-input').value||'').length;
+  document.getElementById('char-pill').textContent = len.toLocaleString()+' chars';
+}
+
+// ── File loading ──────────────────────────────────────────
+function loadFiles(files){
+  loadedFiles = files;
+  if(files.length === 1){
+    readFile(files[0], function(content, name){
+      document.getElementById('note-input').value = content;
+      noteContent = content;
+      updateCharPill();
+      showTextarea();
+    });
+  } else {
+    // Multiple files — show list
+    showFileList(files);
+  }
+}
+
+function readFile(file, cb){
+  var r = new FileReader();
+  r.onload = function(e){ cb(e.target.result, file.name); };
+  r.readAsText(file);
+}
+
+function showFileList(files){
+  var body = document.getElementById('out-body');
+  body.innerHTML = '';
+  var heading = document.createElement('div');
+  heading.style.cssText='font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:10px;padding:4px 0;border-bottom:1px solid var(--border)';
+  heading.textContent = files.length+' files loaded — click one to process';
+  body.appendChild(heading);
+  var list = document.createElement('div');
+  list.className = 'inbox-items';
+  files.forEach(function(file, idx){
+    var item = document.createElement('div');
+    item.className = 'inbox-item';
+    item.innerHTML='<span style="font-size:16px">📄</span><span class="ii-name">'+file.name+'</span><span class="ii-size">'+Math.round(file.size/1024*10)/10+' KB</span>';
+    item.addEventListener('click', function(){
+      document.querySelectorAll('.inbox-item').forEach(function(i){i.classList.remove('selected');});
+      item.classList.add('selected');
+      readFile(file, function(content){
+        document.getElementById('note-input').value = content;
+        noteContent = content;
+        updateCharPill();
+        showTextarea();
+      });
+    });
+    list.appendChild(item);
+  });
+  body.appendChild(list);
+  setPill('ready','');
+}
+
+// ── Vault ─────────────────────────────────────────────────
+function openDB(){return new Promise(function(res,rej){var r=indexedDB.open('baker-vault',1);r.onupgradeneeded=function(e){e.target.result.createObjectStore('handles',{keyPath:'id'});};r.onsuccess=function(e){res(e.target.result);};r.onerror=function(){rej(r.error);};});}
+async function storeHandle(h){try{var db=await openDB();db.transaction('handles','readwrite').objectStore('handles').put({id:'vault',handle:h});}catch(e){}}
+async function getStoredHandle(){try{var db=await openDB();return new Promise(function(res){var r=db.transaction('handles','readonly').objectStore('handles').get('vault');r.onsuccess=function(){res(r.result?r.result.handle:null);};r.onerror=function(){res(null);};});}catch(e){return null;}}
+
+async function handleVaultBtn(){
+  if(!hasFS){alert('Requires Chrome on desktop.');return;}
+  if(vaultConnected){
+    vaultHandle=null;vaultConnected=false;
+    setVaultBtn('off');
+    document.getElementById('vault-save-btn').style.display='none';
+  } else {
+    try{
+      var handle=await window.showDirectoryPicker({mode:'readwrite'});
+      vaultHandle=handle;await storeHandle(handle);vaultConnected=true;
+      setVaultBtn('on');
+      if(processedNote) document.getElementById('vault-save-btn').style.display='inline-block';
+    }catch(e){if(e.name!=='AbortError')alert('Connection failed: '+e.message);}
+  }
+}
+
+function setVaultBtn(s){
+  var b=document.getElementById('vault-btn');
+  b.className='hbtn'+(s==='on'?' vault-on':'');
+  b.textContent=s==='on'?'⬡ Vault on':'⬡ Connect Vault';
+}
+
+async function writeToVault(relPath, content){
+  if(!vaultHandle)return false;
+  try{
+    var parts=relPath.replace(/^\/+/,'').split('/');
+    var fileName=parts.pop();
+    var dir=vaultHandle;
+    for(var i=0;i<parts.length;i++)dir=await dir.getDirectoryHandle(parts[i],{create:true});
+    var fh=await dir.getFileHandle(fileName,{create:true});
+    var w=await fh.createWritable();await w.write(content);await w.close();
+    return true;
+  }catch(e){return false;}
+}
+
+// ── Process ───────────────────────────────────────────────
+async function processNote(){
+  var key = localStorage.getItem('baker_api_key');
+  if(!key){alert('No API key — go to BAKER Settings first.');return;}
+  var content = document.getElementById('note-input').value.trim();
+  if(!content){alert('Paste a note first, sir.');return;}
+
+  var btn = document.getElementById('process-btn');
+  btn.disabled=true;btn.textContent='⟳ PROCESSING...';
+  setPill('working','amber');
+  document.getElementById('save-btn').disabled=true;
+  document.getElementById('vault-save-btn').disabled=true;
+
+  document.getElementById('out-body').innerHTML='<div class="thinking"><div class="dots"><span></span><span></span><span></span></div>BAKER is reading this note and deciding where it belongs...</div>';
+
+  var systemPrompt = 'You are BAKER, an intelligent second brain assistant modelled after JARVIS from Iron Man.\n\n'+
+    'Your job is to process a raw inbox note and determine where it belongs in the vault.\n\n'+
+    'Vault structure:\n'+
+    '- 00-Capture/Inbox/ — raw unprocessed notes\n'+
+    '- 00-Capture/Lectures/ — lecture notes and class recordings\n'+
+    '- 00-Capture/Conversations/ — conversation logs\n'+
+    '- 01-Projects/ — active projects with goals and tasks\n'+
+    '- 02-Areas/College/ — college coursework and study\n'+
+    '- 02-Areas/Personal/ — personal life, relationships, goals\n'+
+    '- 02-Areas/Health/ — health, fitness, mental wellness\n'+
+    '- 03-Resources/ — reference material, how-tos, research\n'+
+    '- 05-Notes/Atomic/ — single-idea atomic notes\n'+
+    '- 07-System/Daily/ — daily log entries\n\n'+
+    'Return your response in this EXACT format with these exact labels:\n\n'+
+    'TYPE: [project|lecture|daily|idea|resource|conversation|area]\n'+
+    'PATH: [exact vault path like 01-Projects/]\n'+
+    'FILENAME: [suggested-filename.md]\n'+
+    'TAGS: [tag1, tag2, tag3]\n'+
+    'REASON: [one sentence explaining why this note goes here]\n'+
+    'WIKILINKS: [[[Link1]], [[Link2]] — suggest 2-3 relevant vault connections]\n'+
+    'PROCESSED_NOTE:\n'+
+    '[The full processed note with YAML frontmatter added at top. Include: date, type, tags, status: processed. Add [[HOME]] link at bottom. Clean up formatting but preserve the original content. Add any helpful structure like headers if the note is long.]\n\n'+
+    'Be decisive. Pick the single best location. If it could go in multiple places pick the most specific one.';
+
+  var userMsg = 'System information: Note captured '+getContextBlock()+'\n\nProcess this inbox note:\n\n'+content;
+
+  try{
+    var resp = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,system:systemPrompt,messages:[{role:'user',content:userMsg}]})
+    });
+    var data = await resp.json();
+    if(data.error)throw new Error(data.error.message);
+    var raw = data.content.map(function(b){return b.text||'';}).join('').trim();
+    parseAndRender(raw);
+    setPill('done','ok');
+    document.getElementById('save-btn').disabled=false;
+    if(vaultConnected) document.getElementById('vault-save-btn').style.display='inline-block';
+    document.getElementById('vault-save-btn').disabled=false;
+    document.getElementById('time-pill').textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  }catch(err){
+    document.getElementById('out-body').innerHTML='<div class="thinking" style="color:var(--red)">Error: '+err.message+'</div>';
+    setPill('error','err');
+  }
+  btn.disabled=false;btn.textContent='▶ PROCESS → BAKER';
+}
+
+function parseAndRender(raw){
+  var lines = raw.split('\n');
+  var result = {type:'',path:'',filename:'',tags:[],reason:'',wikilinks:'',note:''};
+  var inNote = false;
+  var noteLines = [];
+
+  lines.forEach(function(line){
+    if(inNote){noteLines.push(line);return;}
+    if(line.startsWith('TYPE:'))result.type=line.replace('TYPE:','').trim();
+    else if(line.startsWith('PATH:'))result.path=line.replace('PATH:','').trim();
+    else if(line.startsWith('FILENAME:'))result.filename=line.replace('FILENAME:','').trim();
+    else if(line.startsWith('TAGS:'))result.tags=line.replace('TAGS:','').trim().split(',').map(function(t){return t.trim().replace(/[\[\]]/g,'');});
+    else if(line.startsWith('REASON:'))result.reason=line.replace('REASON:','').trim();
+    else if(line.startsWith('WIKILINKS:'))result.wikilinks=line.replace('WIKILINKS:','').trim();
+    else if(line.startsWith('PROCESSED_NOTE:'))inNote=true;
+  });
+
+  result.note = noteLines.join('\n').trim();
+  processedNote = result.note;
+  processedPath = result.path + result.filename;
+  processedFilename = result.filename;
+
+  // Update meta chips
+  document.getElementById('meta-type').textContent = result.type || 'unknown';
+  document.getElementById('meta-path').textContent = result.path || '—';
+  document.getElementById('meta-row').style.display='flex';
+  document.getElementById('type-pill').textContent = result.type;
+
+  // Render result cards
+  var body = document.getElementById('out-body');
+  body.innerHTML = '';
+
+  // Decision card
+  var dec = document.createElement('div');dec.className='result-card';
+  dec.innerHTML='<div class="rc-title">📍 Vault destination</div>'+
+    '<div class="rc-val green">'+result.path+'</div>'+
+    '<div class="rc-val accent" style="margin-top:4px">'+result.filename+'</div>'+
+    '<div class="rc-val" style="margin-top:6px;color:var(--muted);font-size:10px">'+result.reason+'</div>';
+  body.appendChild(dec);
+
+  // Tags card
+  if(result.tags.length){
+    var tags = document.createElement('div');tags.className='result-card';
+    tags.innerHTML='<div class="rc-title">🏷 Tags</div><div class="tag-row">'+
+      result.tags.map(function(t){return '<span class="tag">'+t+'</span>';}).join('')+
+      '</div>';
+    body.appendChild(tags);
+  }
+
+  // Wikilinks card
+  if(result.wikilinks){
+    var links = document.createElement('div');links.className='result-card';
+    links.innerHTML='<div class="rc-title">🔗 Connects to</div><div class="rc-val amber">'+result.wikilinks+'</div>';
+    body.appendChild(links);
+  }
+
+  // Processed note preview
+  if(result.note){
+    var prev = document.createElement('div');prev.className='result-card';
+    prev.innerHTML='<div class="rc-title">📄 Processed note preview</div>';
+    var pre = document.createElement('div');pre.className='note-preview';pre.textContent=result.note;
+    prev.appendChild(pre);
+    body.appendChild(prev);
+  }
+}
+
+function setPill(t,cls){
+  var p=document.getElementById('out-pill');
+  p.textContent=t;p.className='pill'+(cls?' '+cls:'');
+}
+
+function saveProcessed(){
+  if(!processedNote||!processedFilename)return;
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([processedNote],{type:'text/markdown'}));
+  a.download=processedFilename;a.click();
+}
+
+async function saveToVault(){
+  if(!processedNote||!processedPath||!vaultConnected)return;
+  var btn=document.getElementById('vault-save-btn');
+  btn.textContent='Saving...';btn.disabled=true;
+  var ok=await writeToVault(processedPath,processedNote);
+  if(ok){
+    btn.textContent='✓ Saved';btn.className='hbtn vault-on';
+    setTimeout(function(){
+      btn.textContent='⬡ Saved to vault';
+    },1500);
+  } else {
+    btn.textContent='⬡ Save to Vault';btn.disabled=false;
+    alert('Save failed — check vault connection.');
+  }
+}
+</script>
+</body>
+</html>
