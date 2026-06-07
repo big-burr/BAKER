@@ -560,37 +560,47 @@ function makeConnCard(conn,focusNote){
   var typeLabel={extends:'↑ extends',supports:'✓ supports',related:'~ related',contradicts:'✗ contradicts',example:'eg example',prereq:'← prereq'};
   var pairId=conn.noteA+'||'+conn.noteB;
   var isWritten=writtenPairs.has(pairId);
-
   var nameA=conn.noteA.replace('.md','');
   var nameB=conn.noteB.replace('.md','');
 
-  card.innerHTML=
-    '<div class="cc-dots">'+
-      '<div class="cc-dot" style="background:'+typeColor(conn.noteAType)+'"></div>'+
-      '<div class="cc-line"></div>'+
-      '<div class="cc-dot" style="background:'+typeColor(conn.noteBType)+'"></div>'+
-    '</div>'+
-    '<div class="cc-body">'+
-      '<div class="cc-names">'+
-        '<span class="cc-note">'+nameA+'</span>'+
-        '<span class="cc-arrow">↔</span>'+
-        '<span class="cc-note">'+nameB+'</span>'+
-        '<span class="cc-type">'+(typeLabel[conn.type]||conn.type)+'</span>'+
-      '</div>'+
-      '<div class="cc-strength"><div class="cc-strength-fill" style="width:'+strengthPct[conn.strength]+';background:'+strengthColors[conn.strength]+'"></div></div>'+
-      '<div class="cc-reason">'+conn.reason+'</div>'+
-      '<div class="cc-action">'+
-        '<button class="cc-btn'+(isWritten?' written':'')+'" id="write-btn-'+sanitizeId(pairId)+'" onclick="writeLink(\''+escapeStr(pairId)+'\')">'+
-          (isWritten?'✓ Written':'⬡ Write links')+
-        '</button>'+
-        '<button class="cc-btn" onclick="previewLink(\''+escapeStr(nameA)+'\',\''+escapeStr(nameB)+'\')">Preview</button>'+
-      '</div>'+
-    '</div>';
+  var top=document.createElement('div');top.style.cssText='display:flex;align-items:flex-start;gap:10px';
+
+  var dots=document.createElement('div');dots.className='cc-dots';
+  dots.innerHTML='<div class="cc-dot" style="background:'+typeColor(conn.noteAType)+'"></div><div class="cc-line"></div><div class="cc-dot" style="background:'+typeColor(conn.noteBType)+'"></div>';
+
+  var body=document.createElement('div');body.className='cc-body';
+
+  var names=document.createElement('div');names.className='cc-names';
+  names.innerHTML='<span class="cc-note">'+nameA+'</span><span class="cc-arrow">↔</span><span class="cc-note">'+nameB+'</span><span class="cc-type">'+(typeLabel[conn.type]||conn.type)+'</span>';
+
+  var bar=document.createElement('div');bar.className='cc-strength';
+  bar.innerHTML='<div class="cc-strength-fill" style="width:'+strengthPct[conn.strength]+';background:'+strengthColors[conn.strength]+'"></div>';
+
+  var reason=document.createElement('div');reason.className='cc-reason';reason.textContent=conn.reason;
+
+  var actions=document.createElement('div');actions.className='cc-action';
+
+  var writeBtn=document.createElement('button');
+  writeBtn.className='cc-btn'+(isWritten?' written':'');
+  writeBtn.id='write-btn-'+sanitizeId(pairId);
+  writeBtn.textContent=isWritten?'✓ Written':'⬡ Write links';
+  writeBtn.addEventListener('click',function(){writeLink(pairId);});
+
+  var previewBtn=document.createElement('button');
+  previewBtn.className='cc-btn';
+  previewBtn.textContent='Preview';
+  previewBtn.addEventListener('click',function(){previewLink(nameA,nameB);});
+
+  actions.appendChild(writeBtn);actions.appendChild(previewBtn);
+  body.appendChild(names);body.appendChild(bar);body.appendChild(reason);body.appendChild(actions);
+  top.appendChild(dots);top.appendChild(body);
+  card.appendChild(top);
   return card;
 }
 
+
 function sanitizeId(str){return str.replace(/[^a-zA-Z0-9]/g,'_');}
-function escapeStr(str){return str.replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+function escapeStr(str){return str.replace(/'/g,"&#39;");}
 
 // ── Write links ───────────────────────────────────────────
 async function writeLink(pairId){
