@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -103,6 +102,21 @@ a.back:hover{border-color:var(--accent);color:var(--text)}
 .cb-lbl{font-family:var(--mono);font-size:9px;color:var(--muted)}
 .cb-chips{display:flex;gap:4px;flex-wrap:wrap;flex:1}
 .cb-chip{font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:20px;background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.2);color:var(--green)}
+
+.voice-bar{padding:10px 18px;border-top:1px solid var(--border);background:var(--surface);display:none;align-items:center;gap:12px;flex-shrink:0}
+.voice-bar.visible{display:flex}
+.mic-ring{width:48px;height:48px;border-radius:50%;border:2px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;transition:all .2s;flex-shrink:0}
+.mic-ring:hover{border-color:var(--accent)}
+.mic-ring.listening{border-color:var(--red);background:rgba(248,113,113,.1);animation:rpulse 1.5s infinite}
+.mic-ring.speaking{border-color:var(--accent);background:rgba(124,106,247,.1);animation:mpulse 1.5s infinite}
+@keyframes mpulse{0%,100%{box-shadow:0 0 0 0 rgba(124,106,247,.3)}50%{box-shadow:0 0 0 8px rgba(124,106,247,0)}}
+@keyframes rpulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.3)}50%{box-shadow:0 0 0 8px rgba(248,113,113,0)}}
+.voice-status{font-family:var(--mono);font-size:11px;color:var(--muted);flex:1}
+.voice-status.active{color:var(--text)}
+.voice-live{font-family:var(--mono);font-size:10px;color:var(--muted);font-style:italic;max-width:280px;line-height:1.5}
+.mode-toggle-voice{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:2px;gap:2px;flex-shrink:0}
+.mtv-tab{padding:3px 10px;border-radius:4px;font-family:var(--mono);font-size:10px;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .15s}
+.mtv-tab.active{background:var(--accent);color:#fff}
 </style>
 </head>
 <body>
@@ -113,6 +127,10 @@ a.back:hover{border-color:var(--accent);color:var(--text)}
   <span class="hdr-sub" id="hdr-sub">vault chat</span>
   <div class="hdr-right">
     <button class="hbtn" id="vault-btn" onclick="handleVaultBtn()">⬡ Connect Vault</button>
+    <div class="mode-toggle-voice">
+      <button class="mtv-tab active" id="tab-text" onclick="setInputMode('text')">⌨ Text</button>
+      <button class="mtv-tab" id="tab-voice" onclick="setInputMode('voice')">🎙 Voice</button>
+    </div>
     <button class="hbtn" onclick="clearChat()">Clear</button>
     <button class="hbtn end" onclick="clearChat(true)">⏹ End &amp; Save</button>
   </div>
@@ -188,9 +206,16 @@ a.back:hover{border-color:var(--accent);color:var(--text)}
       <span class="mode-lbl" id="mode-desc" style="opacity:.5">Balanced relevance scoring</span>
     </div>
 
-    <div class="input-area">
+    <div class="input-area" id="input-area">
       <textarea class="msg-input" id="msg-input" placeholder="Ask anything about your vault..." rows="1"></textarea>
       <button class="send-btn" id="send-btn" onclick="sendMessage()">↑</button>
+    </div>
+    <div class="voice-bar" id="voice-bar">
+      <div class="mic-ring" id="mic-ring" onclick="handleMicClick()"><span id="mic-icon">🎙</span></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+        <div class="voice-status" id="voice-status">Tap to ask your vault a question</div>
+        <div class="voice-live" id="voice-live"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -532,6 +557,144 @@ function clearChat(save){
   updateSidebar([]);
   updateContextBar([]);
 }
+
+// ── Voice mode ────────────────────────────────────────────
+var voiceMode=false,voiceRec=null,voiceActive=false,isSpeaking=false;
+var voiceFinal='',silenceTimer=null,speechRate=0.92;
+var cachedVoices=[];
+function loadVoices(){cachedVoices=speechSynthesis.getVoices();}
+loadVoices();
+if(speechSynthesis.onvoiceschanged!==undefined)speechSynthesis.onvoiceschanged=loadVoices;
+
+function setInputMode(mode){
+  voiceMode=(mode==='voice');
+  document.getElementById('tab-text').className='mtv-tab'+(voiceMode?'':' active');
+  document.getElementById('tab-voice').className='mtv-tab'+(voiceMode?' active':'');
+  document.getElementById('input-area').style.display=voiceMode?'none':'flex';
+  document.getElementById('voice-bar').className='voice-bar'+(voiceMode?' visible':'');
+  if(!voiceMode){stopVoice();stopSpeaking();}
+}
+
+function handleMicClick(){
+  if(isSpeaking){stopSpeaking();return;}
+  if(voiceActive)stopVoice();
+  else startVoice();
+}
+
+function startVoice(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert('Voice requires Chrome.');return;}
+  if(busy)return;
+  voiceFinal='';
+  document.getElementById('voice-live').textContent='';
+  voiceRec=new SR();
+  voiceRec.continuous=true;voiceRec.interimResults=true;voiceRec.lang='en-US';
+  voiceRec.onstart=function(){voiceActive=true;setMicState('listening');setVoiceStatus('Listening...',true);};
+  voiceRec.onresult=function(e){
+    var interim='';
+    for(var i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal)voiceFinal+=e.results[i][0].transcript+' ';
+      else interim+=e.results[i][0].transcript;
+    }
+    document.getElementById('voice-live').textContent=voiceFinal+interim;
+    if(silenceTimer)clearTimeout(silenceTimer);
+    silenceTimer=setTimeout(function(){if(voiceActive)stopVoice();},800);
+  };
+  voiceRec.onend=function(){if(voiceActive){try{voiceRec.start();}catch(e){}}};
+  voiceRec.onerror=function(e){if(e.error==='not-allowed'){setVoiceStatus('Microphone denied',false);stopVoice();}};
+  try{voiceRec.start();}catch(e){setVoiceStatus('Could not start — try Chrome',false);}
+}
+
+function stopVoice(){
+  voiceActive=false;
+  if(silenceTimer){clearTimeout(silenceTimer);silenceTimer=null;}
+  if(voiceRec){voiceRec.stop();voiceRec=null;}
+  var txt=voiceFinal.trim();voiceFinal='';
+  document.getElementById('voice-live').textContent='';
+  setMicState('idle');
+  if(txt){setVoiceStatus('Searching vault...',true);sendVoiceQuery(txt);}
+  else{setVoiceStatus('Tap to ask your vault a question',false);}
+}
+
+async function sendVoiceQuery(txt){
+  if(busy)return;
+  var key=localStorage.getItem('baker_api_key');
+  if(!key){setVoiceStatus('No API key',false);return;}
+  appendMsg('user',txt);removeWelcome();
+
+  var meta=modeMeta[currentMode];
+  var relevant=vaultConnected?findRelevantNotes(txt,meta.topN,meta.minScore):[];
+  lastPulledNotes=relevant;
+  updateSidebar(relevant);updateContextBar(relevant);
+
+  history.push({role:'user',content:txt+' '+getContextBlock()});
+  busy=true;setMicState('speaking');setVoiceStatus('BAKER is reading your vault...',true);
+  showThinking();
+
+  // Voice mode system prompt — shorter responses for TTS
+  var sys=buildSystem(relevant,txt);
+  sys+='\n\nVOICE MODE: Keep your answer to 2-4 natural spoken sentences. No markdown, no bullet points, no headers. Flowing speech only.';
+
+  try{
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,system:sys,messages:history})
+    });
+    var data=await resp.json();
+    if(data.error)throw new Error(data.error.message);
+    var raw=data.content.map(function(b){return b.text||'';}).join('').trim();
+    removeThinking();
+    appendMsg('baker',raw,relevant);
+    history.push({role:'assistant',content:raw});
+    if(history.length>30)history=history.slice(-30);
+    speakAnswer(raw);
+  }catch(err){
+    removeThinking();
+    appendMsg('baker','Fault encountered, sir: '+err.message);
+    busy=false;setMicState('idle');setVoiceStatus('Tap to ask your vault a question',false);
+  }
+}
+
+function speakAnswer(txt){
+  stopSpeaking();
+  var clean=txt.replace(/#{1,6} /g,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').replace(/\[\[([^\]]+)\]\]/g,'$1').replace(/`([^`]+)`/g,'$1').replace(/^[-*] /gm,'').trim();
+  var utt=new SpeechSynthesisUtterance(clean);
+  var voices=cachedVoices.length?cachedVoices:speechSynthesis.getVoices();
+  var preferred=['Daniel','Google UK English Male','Microsoft George','Microsoft David','Alex'];
+  var chosen=null;
+  preferred.forEach(function(p){if(!chosen)chosen=voices.find(function(v){return v.name.indexOf(p)!==-1;});});
+  if(!chosen)chosen=voices.find(function(v){return v.lang&&v.lang.indexOf('en')===0;});
+  if(chosen)utt.voice=chosen;
+  utt.rate=speechRate;utt.pitch=0.85;utt.volume=1;
+  isSpeaking=true;setMicState('speaking');setVoiceStatus('BAKER is speaking... tap to stop',true);
+  utt.onend=function(){
+    isSpeaking=false;busy=false;
+    setMicState('idle');
+    if(voiceMode){
+      setVoiceStatus('Listening for next question...',true);
+      setTimeout(function(){if(voiceMode&&!busy&&!isSpeaking)startVoice();},400);
+    }
+  };
+  utt.onerror=function(){isSpeaking=false;busy=false;setMicState('idle');setVoiceStatus('Tap to ask your vault a question',false);};
+  speechSynthesis.speak(utt);
+}
+
+function stopSpeaking(){
+  if(isSpeaking){speechSynthesis.cancel();isSpeaking=false;}
+}
+
+function setMicState(s){
+  var ring=document.getElementById('mic-ring'),icon=document.getElementById('mic-icon');
+  ring.className='mic-ring'+(s==='listening'?' listening':s==='speaking'?' speaking':'');
+  icon.textContent=s==='listening'?'⏹':s==='speaking'?'🔊':'🎙';
+}
+
+function setVoiceStatus(txt,active){
+  var el=document.getElementById('voice-status');
+  el.textContent=txt;el.className='voice-status'+(active?' active':'');
+}
+
 </script>
 </body>
 </html>
