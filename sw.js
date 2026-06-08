@@ -1,4 +1,4 @@
-const CACHE = 'baker-v12';
+const CACHE = 'baker-v13';
 const BASE = '/BAKER';
 const ASSETS = [
   BASE + '/',
