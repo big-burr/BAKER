@@ -84,6 +84,24 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .modal-note a{color:var(--accent)}
 .greeting-bar{padding:12px 24px 0;font-family:var(--mono);font-size:12px;color:var(--muted)}
 @keyframes glow{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Daily Brief */
+.brief-panel{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:none;position:relative}
+.brief-panel.visible{display:block}
+.brief-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.brief-lbl{font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:.1em;text-transform:uppercase}
+.brief-dismiss{background:none;border:none;color:var(--muted);cursor:pointer;font-family:var(--mono);font-size:10px;padding:0;transition:color .15s}
+.brief-dismiss:hover{color:var(--text)}
+.brief-txt{font-size:13px;color:var(--text);line-height:1.7;max-width:700px}
+.brief-loading{font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.brief-dots span{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--accent);animation:bnc 1.2s infinite;margin-right:2px}
+.brief-dots span:nth-child(2){animation-delay:.2s}
+.brief-dots span:nth-child(3){animation-delay:.4s}
+/* Badges on tool cards */
+.tool-badge-count{position:absolute;top:10px;right:10px;font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:20px;font-weight:500}
+.tool-badge-count.red{background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.4);color:var(--red)}
+.tool-badge-count.amber{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:var(--amber)}
+.tool-card{position:relative}
 </style>
 </head>
 <body>
@@ -124,6 +142,16 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <div class="w-main spotify" id="w-track">—</div>
       <div class="w-sub" id="w-artist">—</div>
       <div class="w-action">Discuss with BAKER →</div>
+    </div>
+  </div>
+
+  <div class="brief-panel" id="brief-panel">
+    <div class="brief-hdr">
+      <span class="brief-lbl">📋 Daily Brief</span>
+      <button class="brief-dismiss" onclick="dismissBrief()">dismiss ×</button>
+    </div>
+    <div id="brief-content">
+      <div class="brief-loading"><div class="brief-dots"><span></span><span></span><span></span></div><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">BAKER is preparing your brief...</span></div>
     </div>
   </div>
 
@@ -549,6 +577,136 @@ function fetchWeatherAndSpeak() {
 
 loadConstantMic();
 checkSpotifyToken();
+
+// ── Daily Brief ───────────────────────────────────────────
+var briefShownKey='baker_brief_date';
+
+async function runDailyBrief(){
+  var key=localStorage.getItem('baker_api_key');
+  if(!key)return;
+  // Only run once per day
+  var today=new Date().toISOString().split('T')[0];
+  if(localStorage.getItem(briefShownKey)===today)return;
+  document.getElementById('brief-panel').classList.add('visible');
+
+  // Gather context
+  var h=new Date().getHours();
+  var greeting=h>=5&&h<12?'Good morning':'Good afternoon';
+  if(h>=17&&h<21)greeting='Good evening';
+  if(h<5||h>=21)greeting="You're up late";
+
+  // Get memories from conversation page
+  var memories=[];
+  try{memories=JSON.parse(localStorage.getItem('baker_memories')||'[]');}catch(e){}
+  var recentMemory=memories.length?memories[0].summary:'No recent conversations.';
+
+  // Check inbox badge counts
+  var inboxCount=parseInt(localStorage.getItem('baker_inbox_count')||'0');
+  var daysSinceWeekly=parseInt(localStorage.getItem('baker_days_since_weekly')||'0');
+
+  var contextParts=[
+    greeting+', sir. Today is '+new Date().toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'})+'.',
+    memories.length?'Last session: '+recentMemory:'No previous sessions found.',
+    inboxCount>0?inboxCount+' notes waiting in your inbox.':'Inbox is clear.',
+    daysSinceWeekly>5?'Your last weekly review was '+daysSinceWeekly+' days ago.':'Weekly review is current.'
+  ];
+
+  var prompt='Generate a brief JARVIS-style morning briefing in 2-3 sentences. Be specific, use the context provided. Address as "sir". Mention what needs attention. No markdown, no bullets, natural speech.\n\nContext:\n'+contextParts.join('\n');
+
+  try{
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:150,system:'You are BAKER, an AI assistant modelled after JARVIS. Generate a brief daily briefing.',messages:[{role:'user',content:prompt}]})
+    });
+    var data=await resp.json();
+    if(data.error)throw new Error(data.error.message);
+    var briefTxt=data.content.map(function(b){return b.text||'';}).join('').trim();
+    document.getElementById('brief-content').innerHTML='<div class="brief-txt">'+briefTxt+'</div>';
+    localStorage.setItem(briefShownKey,today);
+  }catch(e){
+    document.getElementById('brief-panel').classList.remove('visible');
+  }
+}
+
+function dismissBrief(){
+  document.getElementById('brief-panel').classList.remove('visible');
+  var today=new Date().toISOString().split('T')[0];
+  localStorage.setItem(briefShownKey,today);
+}
+
+// Run brief after short delay to let page settle
+setTimeout(runDailyBrief,1200);
+
+// ── Vault badge scanning ──────────────────────────────────
+async function scanVaultForBadges(vaultHandle){
+  if(!vaultHandle)return;
+  try{
+    // Count inbox notes
+    var inboxCount=0;
+    try{
+      var inboxDir=await vaultHandle.getDirectoryHandle('00-Capture',{create:false});
+      var inboxSub=await inboxDir.getDirectoryHandle('Inbox',{create:false});
+      for await(var entry of inboxSub.values()){
+        if(entry.kind==='file'&&entry.name.endsWith('.md'))inboxCount++;
+      }
+    }catch(e){}
+    localStorage.setItem('baker_inbox_count',inboxCount);
+
+    // Check days since last weekly review
+    var daysSince=999;
+    try{
+      var sysDir=await vaultHandle.getDirectoryHandle('07-System',{create:false});
+      var weeklyDir=await sysDir.getDirectoryHandle('Weekly',{create:false});
+      var latestDate=null;
+      for await(var entry of weeklyDir.values()){
+        if(entry.kind==='file'){
+          var dateMatch=entry.name.match(/(\\d{4}-\\d{2}-\\d{2})/);
+          if(dateMatch){
+            var d=new Date(dateMatch[1]);
+            if(!latestDate||d>latestDate)latestDate=d;
+          }
+        }
+      }
+      if(latestDate){
+        daysSince=Math.floor((Date.now()-latestDate.getTime())/(1000*60*60*24));
+      }
+    }catch(e){}
+    localStorage.setItem('baker_days_since_weekly',daysSince);
+
+    // Update badge UI
+    updateBadges(inboxCount,daysSince);
+  }catch(e){}
+}
+
+function updateBadges(inboxCount,daysSince){
+  // Add inbox badge
+  var inboxCard=document.querySelector('a[href="inbox.html"]');
+  if(inboxCard&&inboxCount>0){
+    var existing=inboxCard.querySelector('.tool-badge-count');
+    if(existing)existing.remove();
+    var badge=document.createElement('span');
+    badge.className='tool-badge-count red';
+    badge.textContent=inboxCount+' new';
+    inboxCard.appendChild(badge);
+  }
+  // Add weekly badge
+  var weeklyCard=document.querySelector('a[href="weekly.html"]');
+  if(weeklyCard&&daysSince>6){
+    var existing2=weeklyCard.querySelector('.tool-badge-count');
+    if(existing2)existing2.remove();
+    var badge2=document.createElement('span');
+    badge2.className='tool-badge-count amber';
+    badge2.textContent=daysSince+'d ago';
+    weeklyCard.appendChild(badge2);
+  }
+}
+
+// Hook into existing vault connect to trigger badge scan
+var origConnectVault=window.connectVaultCallback;
+window.onVaultConnected=function(handle){
+  scanVaultForBadges(handle);
+};
 
 // ── Spotify device selector for settings ─────────────────
 async function loadSpotifyDevicesForSettings(){
