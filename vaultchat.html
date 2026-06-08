@@ -301,6 +301,7 @@ async function doConnect(handle){
   vaultConnected=true;setVaultBtn('on');
   document.getElementById('stat-indexed').textContent=vaultIndex.length;
   document.getElementById('pulled-lbl').textContent='Notes will appear here as you chat';
+  buildIDF();
   document.getElementById('hdr-sub').textContent='vault chat · '+vaultIndex.length+' notes';
   document.getElementById('cb-chips').innerHTML='<span class="cb-chip">'+vaultIndex.length+' notes indexed</span>';
   appendSys('Vault connected, sir. '+vaultIndex.length+' notes ready. Ask me anything about your knowledge.');
@@ -319,17 +320,39 @@ async function scanDir(dir,path){
 // ── Relevance scoring ─────────────────────────────────────
 var STOP=new Set(['the','and','for','are','but','not','you','all','can','had','was','one','our','out','get','has','how','its','may','now','see','who','did','too','use','that','this','with','have','from','they','will','been','were','said','each','into','than','your','more','then','some','them','what','when','also','just','know','take','after','could','think','about','would','these','those','other','well','want','much','still','while','even','back','come','made','only','over','here','down','does','like','time','most','date','type','tags','status','true','false','null','undefined','front']);
 
-function scoreNote(query,note){
-  var qWords=new Set(query.toLowerCase().split(/\W+/).filter(function(w){return w.length>2&&!STOP.has(w);}));
-  if(!qWords.size)return 0;
-  var text=(note.name+' '+note.content).toLowerCase();
+// ── TF-IDF scoring ───────────────────────────────────────
+// IDF: words appearing in many notes are less informative
+var idfCache={};
+function buildIDF(){
+  idfCache={};
+  var N=vaultIndex.length;
+  if(!N)return;
+  var df={};
+  vaultIndex.forEach(function(note){
+    var words=new Set(note.content.toLowerCase().split(/\W+/).filter(function(w){return w.length>2&&!STOP.has(w);}));
+    words.forEach(function(w){df[w]=(df[w]||0)+1;});
+  });
+  Object.keys(df).forEach(function(w){
+    idfCache[w]=Math.log((N+1)/(df[w]+1))+1;
+  });
+}
+
+function tfidfScore(query,note){
+  var qWords=query.toLowerCase().split(/\W+/).filter(function(w){return w.length>2&&!STOP.has(w);});
+  if(!qWords.length)return 0;
+  var content=(note.name+' '+note.content).toLowerCase();
+  var words=content.split(/\W+/);
+  var tf={};
+  words.forEach(function(w){if(w.length>2)tf[w]=(tf[w]||0)+1;});
+  var total=words.length||1;
   var score=0;
   qWords.forEach(function(w){
-    var inContent=text.split(w).length-1;
-    var inName=(note.name.toLowerCase().split(w).length-1)*4;
-    score+=inContent+inName;
+    var termTF=(tf[w]||0)/total;
+    var idf=idfCache[w]||Math.log(2);
+    var nameBoost=note.name.toLowerCase().includes(w)?5:1;
+    score+=termTF*idf*nameBoost;
   });
-  // Boost by recency if filename has a date
+  // Recency boost
   var dateMatch=note.name.match(/(\d{4}-\d{2}-\d{2})/);
   if(dateMatch){
     var age=(Date.now()-new Date(dateMatch[1]).getTime())/(1000*60*60*24);
@@ -341,12 +364,12 @@ function scoreNote(query,note){
 
 function findRelevantNotes(query,topN,minScore){
   if(!vaultIndex.length)return[];
+  if(!Object.keys(idfCache).length)buildIDF();
   var scored=vaultIndex.map(function(note){
-    return{note:note,score:scoreNote(query,note)};
+    return{note:note,score:tfidfScore(query,note)};
   });
   scored.sort(function(a,b){return b.score-a.score;});
-  var results=scored.filter(function(s){return s.score>minScore;}).slice(0,topN);
-  // Normalize scores for display
+  var results=scored.filter(function(s){return s.score>0;}).slice(0,topN);
   var maxScore=results.length?results[0].score:1;
   return results.map(function(s){return{note:s.note,score:s.score,pct:Math.round((s.score/maxScore)*100)};});
 }
