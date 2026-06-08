@@ -244,13 +244,22 @@ async function scanDir(dir,path){
 var STOP=new Set(['the','and','for','are','but','not','you','all','can','had','was','one','our','out','get','has','how','its','may','now','see','who','did','too','use','that','this','with','have','from','they','will','been','were','said','each','into','than','your','more','then','some','them','what','when','also','just','know','take','after','could','think','about','would','these','those','other','well','want','much','still','while','even','back','come','made','only','over','here','down','does','like','time','most']);
 
 function scoreRelevance(noteContent,vaultNote){
-  var words=noteContent.toLowerCase().split(/\W+/).filter(function(w){return w.length>3&&!STOP.has(w);});
+  // TF-IDF based scoring
+  var qWords=noteContent.toLowerCase().split(/\W+/).filter(function(w){return w.length>3&&!STOP.has(w);});
+  var unique=new Set(qWords);
+  if(!unique.size)return 0;
+  var N=vaultIndex.length||1;
   var text=(vaultNote.name+' '+vaultNote.content).toLowerCase();
+  var words=text.split(/\W+/);
+  var tf={};words.forEach(function(w){if(w.length>2)tf[w]=(tf[w]||0)+1;});
+  var total=words.length||1;
   var score=0;
-  var unique=new Set(words);
   unique.forEach(function(w){
-    var m=text.match(new RegExp('\\b'+w+'\\b','g'));
-    if(m){var nm=vaultNote.name.toLowerCase().match(new RegExp('\\b'+w+'\\b','g'));score+=m.length+(nm?nm.length*5:0);}
+    var termTF=(tf[w]||0)/total;
+    var df=vaultIndex.filter(function(n){return n.content.toLowerCase().includes(w);}).length+1;
+    var idf=Math.log((N+1)/df)+1;
+    var nameBoost=vaultNote.name.toLowerCase().includes(w)?5:1;
+    score+=termTF*idf*nameBoost;
   });
   return score;
 }
