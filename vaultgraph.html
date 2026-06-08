@@ -270,8 +270,8 @@ async function doConnect(handle){
   vaultConnected=true;setVaultBtn('on');
   updateStats();renderNoteList();
   document.getElementById('run-btn').disabled=false;
-  document.getElementById('ph-title').textContent='Vault connected. '+vaultIndex.length+' notes ready to link.';
   document.getElementById('conn-view').innerHTML='<div class="ph"><div class="ph-icon">🕸</div><div class="ph-title">'+vaultIndex.length+' notes indexed.</div><div class="ph-sub">Set your strength threshold and click Sweep vault to find connections. BAKER will score every note pair and only send strong candidates to Claude.</div></div>';
+  document.getElementById('hdr-sub').textContent='vault graph · '+vaultIndex.length+' notes';
 }
 
 function setVaultBtn(s){
