@@ -326,11 +326,15 @@ async function runDailyBrief(){
 
   // Richer memory context — pull up to 3 recent sessions
   var memContext='';
-  if(memories.length){
-    memContext=memories.slice(0,3).map(function(m,i){
-      return(i===0?'Most recent session ('+m.date+')':'Also on '+m.date+')+': '+m.summary;
-    }).join(' ');
-  }
+if(memories.length){
+  memContext = memories.slice(0,3).map(function(m,i){
+    if(i === 0){
+      return 'Most recent session (' + m.date + '): ' + m.summary;
+    } else {
+      return 'Also on ' + m.date + ': ' + m.summary;
+    }
+  }).join(' ');
+}
 
   var inboxCount=parseInt(localStorage.getItem('baker_inbox_count')||'0');
   var daysSinceWeekly=parseInt(localStorage.getItem('baker_days_since_weekly')||'999');
