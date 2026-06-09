@@ -3,6 +3,7 @@ const BASE = '/BAKER';
 const ASSETS = [
   BASE + '/',
   BASE + '/index.html',
+  BASE + '/hud.html',
   BASE + '/lecture.html',
   BASE + '/conversation.html',
   BASE + '/analyze.html',
