@@ -383,9 +383,10 @@ if(memories.length){
     document.getElementById('brief-content').innerHTML='<div class="brief-txt">'+briefTxt+'</div>';
     localStorage.setItem(briefCacheKey,briefTxt);
     localStorage.setItem(briefShownKey,today);
-  }catch(e){
-    document.getElementById('brief-panel').classList.remove('visible');
-  }
+ }catch(e){
+  console.error('Daily brief error:', e);
+  document.getElementById('brief-content').innerHTML =
+    '<div class="brief-txt">Unable to generate daily brief.</div>';
 }
 
 function regenerateBrief(){
