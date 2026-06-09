@@ -34,6 +34,7 @@ a.back:hover{border-color:var(--accent);color:var(--text)}
 .m-btn{flex:1;padding:9px;border:1px solid var(--border);background:transparent;font-family:var(--mono);font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;letter-spacing:.08em;transition:all .15s}
 .m-btn:first-child{border-radius:4px 0 0 4px}
 .m-btn:last-child{border-radius:0 4px 4px 0;border-left:none}
+.m-btn:not(:first-child):not(:last-child){border-left:none}
 .m-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
 .m-btn:not(.active):hover{color:var(--text);background:var(--surface2)}
 .main{display:grid;grid-template-columns:1fr 1fr;flex:1;overflow:hidden}
@@ -97,6 +98,12 @@ textarea::placeholder{color:var(--muted);opacity:.4}
 .pill.ok{color:var(--green);border-color:var(--green)}
 .pill.err{color:var(--red);border-color:var(--red)}
 .sys-info-bar{padding:5px 16px;border-bottom:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:10px;color:var(--muted);flex-shrink:0;display:none}
+
+/* xray mode tint */
+.xray-active .cam-placeholder{border-color:rgba(74,222,128,.3)}
+.xray-active .cam-placeholder-icon{filter:hue-rotate(90deg)}
+.xray-label{font-family:var(--mono);font-size:10px;color:var(--green);letter-spacing:.08em;text-align:center}
+
 #file-input{display:none}
 #mobile-cam-input{display:none}
 </style>
@@ -117,35 +124,37 @@ textarea::placeholder{color:var(--muted);opacity:.4}
   </div>
 </div>
 
+<!-- THREE TABS: Text, Camera, X-Ray -->
 <div class="mode-bar">
   <button class="m-btn active" id="btn-text" onclick="switchMode('text')">📝 Text</button>
   <button class="m-btn" id="btn-cam" onclick="switchMode('camera')">📷 Camera</button>
+  <button class="m-btn" id="btn-xray" onclick="switchMode('xray')">🔬 X-Ray</button>
 </div>
 
-<!-- System info bar — shows injected context -->
 <div class="sys-info-bar" id="sys-info-bar"></div>
 
 <div class="main">
-  <div class="panel">
+  <div class="panel" id="left-panel">
     <div class="p-hdr">
       <span class="p-lbl">Analysis type</span>
     </div>
 
-    <!-- Topic row -->
     <div class="topic-row">
       <span class="topic-lbl">Label</span>
       <input class="topic-inp" id="analysis-topic" placeholder="What is this? (improves filename + context)">
     </div>
 
-    <div class="type-bar">
+    <div class="type-bar" id="type-bar">
       <div class="type-chip active" id="type-project" onclick="setType('project')">🚀 Project</div>
       <div class="type-chip" id="type-essay" onclick="setType('essay')">📄 Essay</div>
       <div class="type-chip" id="type-lecture" onclick="setType('lecture')">🎓 Lecture notes</div>
       <div class="type-chip" id="type-idea" onclick="setType('idea')">💡 Idea</div>
       <div class="type-chip" id="type-general" onclick="setType('general')">🔍 General</div>
       <div class="type-chip" id="type-visual" onclick="setType('visual')" style="display:none">👁 Visual</div>
+      <div class="type-chip" id="type-xray" onclick="setType('xray')" style="display:none">🔬 X-Ray</div>
     </div>
 
+    <!-- TEXT VIEW -->
     <div class="text-view" id="text-view">
       <textarea id="text-input" placeholder="Paste your note, project, essay, or anything you want BAKER to analyze...
 
@@ -153,11 +162,12 @@ Or click Load note to pull directly from your vault."></textarea>
       <div class="char-count"><span id="char-count">0</span> characters</div>
     </div>
 
+    <!-- CAMERA VIEW (shared by camera + xray modes) -->
     <div class="cam-view" id="cam-view" style="display:none">
+      <div class="xray-label" id="xray-label" style="display:none">🔬 X-RAY MODE — point camera at subject</div>
       <div class="cam-placeholder" id="cam-placeholder" onclick="handleCamClick()">
-        <div class="cam-placeholder-icon">📷</div>
-        <div class="cam-placeholder-txt">Tap to take photo</div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);opacity:.5;text-align:center">iPhone: opens camera · PC: opens file picker</div>
+        <div class="cam-placeholder-icon" id="cam-placeholder-icon">📷</div>
+        <div class="cam-placeholder-txt" id="cam-placeholder-txt">Click to start camera</div>
       </div>
       <img id="cam-preview" class="cam-preview" alt="Captured photo">
       <div class="cam-actions" id="cam-actions" style="display:none">
@@ -196,336 +206,270 @@ Or click Load note to pull directly from your vault."></textarea>
 </div>
 
 <script>
-// ── Shared utilities ──────────────────────────────────────
-function getTimeGreeting() {
-  var h = new Date().getHours();
-  if (h >= 5 && h < 12) return 'Good morning, sir.';
-  if (h >= 12 && h < 17) return 'Good afternoon, sir.';
-  if (h >= 17 && h < 21) return 'Good evening, sir.';
-  return "You're up late, sir.";
-}
+function getTimeGreeting(){var h=new Date().getHours();if(h>=5&&h<12)return 'Good morning, sir.';if(h>=12&&h<17)return 'Good afternoon, sir.';if(h>=17&&h<21)return 'Good evening, sir.';return "You're up late, sir.";}
+function getContextBlock(){var now=new Date();var timeStr=now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});var dateStr=now.toLocaleDateString([],{weekday:'long',year:'numeric',month:'long',day:'numeric'});return '[Current date: '+dateStr+' | Time: '+timeStr+']';}
 
-function getContextBlock() {
-  var now = new Date();
-  var timeStr = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-  var dateStr = now.toLocaleDateString([], {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-  return '[Current date: ' + dateStr + ' | Time: ' + timeStr + ']';
-}
+var currentMode='text';
+var currentType='project';
+var capturedImage=null;
+var videoStream=null;
+var analysisText='';
+var analysisRaw='';
+var loadedFileName='';
+var isMobile=/iPhone|iPad|Android/i.test(navigator.userAgent);
 
-// ── State ─────────────────────────────────────────────────
-var currentMode = 'text';
-var currentType = 'project';
-var capturedImage = null;
-var videoStream = null;
-var analysisText = '';
-var analysisRaw = '';
-var loadedFileName = '';
-var isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
-
-// ── Boot ──────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
-  // Time-aware header
-  var h = new Date().getHours();
-  var greeting = h >= 5 && h < 12 ? 'good morning' : h >= 12 && h < 17 ? 'good afternoon' : h >= 17 && h < 21 ? 'good evening' : 'up late';
-  document.getElementById('ph-title').textContent = getTimeGreeting().replace(',', '') + ' Ready to analyze.';
-
-  // Time pill in footer
-  var tp = document.getElementById('time-pill');
-  tp.textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-  tp.style.display = 'inline';
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('ph-title').textContent=getTimeGreeting().replace(',','')+' Ready to analyze.';
+  var tp=document.getElementById('time-pill');
+  tp.textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  tp.style.display='inline';
 });
 
-// ── Mode switch ───────────────────────────────────────────
-function switchMode(mode) {
-  currentMode = mode;
-  document.getElementById('btn-text').className = 'm-btn' + (mode==='text'?' active':'');
-  document.getElementById('btn-cam').className = 'm-btn' + (mode==='camera'?' active':'');
-  document.getElementById('text-view').style.display = mode==='text'?'flex':'none';
-  document.getElementById('cam-view').style.display = mode==='camera'?'flex':'none';
-  document.getElementById('type-visual').style.display = mode==='camera'?'flex':'none';
-  if (mode==='camera') setType('visual');
-  else if (currentType==='visual') setType('general');
-  if (mode!=='camera') stopLiveCamera();
+// ── Mode switch — now handles text, camera, xray ──────────
+function switchMode(mode){
+  currentMode=mode;
+  document.getElementById('btn-text').className='m-btn'+(mode==='text'?' active':'');
+  document.getElementById('btn-cam').className='m-btn'+(mode==='camera'?' active':'');
+  document.getElementById('btn-xray').className='m-btn'+(mode==='xray'?' active':'');
+  document.getElementById('text-view').style.display=mode==='text'?'flex':'none';
+  document.getElementById('cam-view').style.display=(mode==='camera'||mode==='xray')?'flex':'none';
+
+  // type chips visibility
+  document.getElementById('type-visual').style.display=mode==='camera'?'flex':'none';
+  document.getElementById('type-xray').style.display=mode==='xray'?'flex':'none';
+
+  // xray-specific UI
+  var xrayLabel=document.getElementById('xray-label');
+  var placeholder=document.getElementById('cam-placeholder');
+  xrayLabel.style.display=mode==='xray'?'block':'none';
+  placeholder.classList.toggle('xray-active',mode==='xray');
+  if(mode==='xray'){
+    document.getElementById('cam-placeholder-icon').textContent='🔬';
+    document.getElementById('cam-placeholder-txt').textContent='Click to start camera — point at subject';
+    setType('xray');
+  } else if(mode==='camera'){
+    document.getElementById('cam-placeholder-icon').textContent='📷';
+    document.getElementById('cam-placeholder-txt').textContent='Click to start camera';
+    setType('visual');
+  } else {
+    if(currentType==='visual'||currentType==='xray')setType('general');
+  }
+
+  if(mode!=='camera'&&mode!=='xray')stopLiveCamera();
 }
 
-function setType(t) {
-  currentType = t;
-  document.querySelectorAll('.type-chip').forEach(function(c){ c.classList.remove('active'); });
-  var el = document.getElementById('type-'+t);
-  if (el) el.classList.add('active');
-  document.getElementById('type-pill').textContent = t;
+function setType(t){
+  currentType=t;
+  document.querySelectorAll('.type-chip').forEach(function(c){c.classList.remove('active');});
+  var el=document.getElementById('type-'+t);
+  if(el)el.classList.add('active');
+  document.getElementById('type-pill').textContent=t;
 }
 
-// ── File load ─────────────────────────────────────────────
-document.getElementById('file-input').addEventListener('change', function(e) {
-  var file = e.target.files[0];
-  if (!file) return;
-  loadedFileName = file.name;
-  var r = new FileReader();
-  r.onload = function(ev) {
-    document.getElementById('text-input').value = ev.target.result;
-    document.getElementById('char-count').textContent = ev.target.result.length.toLocaleString();
-    // System info bar: show file metadata (from Concept Bytes tools.py pattern)
-    var bar = document.getElementById('sys-info-bar');
-    bar.textContent = 'System information: File "' + file.name + '" · ' + (ev.target.result.length/1024).toFixed(1) + ' KB · loaded ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-    bar.style.display = 'block';
-    // Auto-fill topic from filename
-    if (!document.getElementById('analysis-topic').value) {
-      document.getElementById('analysis-topic').value = file.name.replace(/\.md$|\.txt$/,'').replace(/[-_]/g,' ');
-    }
+document.getElementById('file-input').addEventListener('change',function(e){
+  var file=e.target.files[0];if(!file)return;
+  loadedFileName=file.name;
+  var r=new FileReader();
+  r.onload=function(ev){
+    document.getElementById('text-input').value=ev.target.result;
+    document.getElementById('char-count').textContent=ev.target.result.length.toLocaleString();
+    var bar=document.getElementById('sys-info-bar');
+    bar.textContent='System information: File "'+file.name+'" · '+(ev.target.result.length/1024).toFixed(1)+' KB · loaded '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    bar.style.display='block';
+    if(!document.getElementById('analysis-topic').value){document.getElementById('analysis-topic').value=file.name.replace(/\.md$|\.txt$/,'').replace(/[-_]/g,' ');}
   };
-  r.readAsText(file);
-  e.target.value = '';
+  r.readAsText(file);e.target.value='';
 });
 
-document.getElementById('text-input').addEventListener('input', function() {
-  document.getElementById('char-count').textContent = this.value.length.toLocaleString();
+document.getElementById('text-input').addEventListener('input',function(){
+  document.getElementById('char-count').textContent=this.value.length.toLocaleString();
 });
 
 // ── Camera ────────────────────────────────────────────────
-function handleCamClick() {
-  if (isMobile) { document.getElementById('mobile-cam-input').click(); }
-  else { startLiveCamera(); }
+function handleCamClick(){
+  if(isMobile){document.getElementById('mobile-cam-input').click();}
+  else{startLiveCamera();}
 }
-
-document.getElementById('mobile-cam-input').addEventListener('change', function(e) {
-  var file = e.target.files[0]; if (!file) return;
-  var r = new FileReader();
-  r.onload = function(ev) { capturedImage = ev.target.result.split(',')[1]; showPreview(ev.target.result); };
-  r.readAsDataURL(file); e.target.value = '';
+document.getElementById('mobile-cam-input').addEventListener('change',function(e){
+  var file=e.target.files[0];if(!file)return;
+  var r=new FileReader();
+  r.onload=function(ev){capturedImage=ev.target.result.split(',')[1];showPreview(ev.target.result);};
+  r.readAsDataURL(file);e.target.value='';
 });
-
-async function startLiveCamera() {
-  try {
-    videoStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-    var video = document.getElementById('cam-video');
-    video.srcObject = videoStream; video.style.display = 'block';
-    document.getElementById('cam-placeholder').style.display = 'none';
-    document.getElementById('live-cam-actions').style.display = 'flex';
-    document.getElementById('cam-status').textContent = 'Camera active — click Capture when ready';
-  } catch(e) { document.getElementById('cam-status').textContent = 'Camera error: ' + e.message; }
+async function startLiveCamera(){
+  try{
+    videoStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}});
+    var video=document.getElementById('cam-video');
+    video.srcObject=videoStream;video.style.display='block';
+    document.getElementById('cam-placeholder').style.display='none';
+    document.getElementById('live-cam-actions').style.display='flex';
+    document.getElementById('cam-status').textContent='Camera active — click Capture when ready';
+  }catch(e){document.getElementById('cam-status').textContent='Camera error: '+e.message;}
 }
-
-function captureFrame() {
-  var video = document.getElementById('cam-video');
-  var canvas = document.getElementById('canvas');
-  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-  canvas.getContext('2d').drawImage(video, 0, 0);
-  var dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-  capturedImage = dataUrl.split(',')[1];
-  showPreview(dataUrl); stopLiveCamera();
+function captureFrame(){
+  var video=document.getElementById('cam-video');
+  var canvas=document.getElementById('canvas');
+  canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+  canvas.getContext('2d').drawImage(video,0,0);
+  var dataUrl=canvas.toDataURL('image/jpeg',0.8);
+  capturedImage=dataUrl.split(',')[1];
+  showPreview(dataUrl);stopLiveCamera();
 }
-
-function stopLiveCamera() {
-  if (videoStream) { videoStream.getTracks().forEach(function(t){t.stop();}); videoStream = null; }
-  document.getElementById('cam-video').style.display = 'none';
-  document.getElementById('live-cam-actions').style.display = 'none';
-  if (!capturedImage) { document.getElementById('cam-placeholder').style.display = 'flex'; document.getElementById('cam-status').textContent = ''; }
+function stopLiveCamera(){
+  if(videoStream){videoStream.getTracks().forEach(function(t){t.stop();});videoStream=null;}
+  document.getElementById('cam-video').style.display='none';
+  document.getElementById('live-cam-actions').style.display='none';
+  if(!capturedImage){document.getElementById('cam-placeholder').style.display='flex';document.getElementById('cam-status').textContent='';}
 }
-
-function showPreview(dataUrl) {
-  var img = document.getElementById('cam-preview');
-  img.src = dataUrl; img.style.display = 'block';
-  document.getElementById('cam-placeholder').style.display = 'none';
-  document.getElementById('cam-actions').style.display = 'flex';
-  document.getElementById('cam-status').textContent = 'Photo captured — ready to analyze';
+function showPreview(dataUrl){
+  var img=document.getElementById('cam-preview');
+  img.src=dataUrl;img.style.display='block';
+  document.getElementById('cam-placeholder').style.display='none';
+  document.getElementById('cam-actions').style.display='flex';
+  document.getElementById('cam-status').textContent=currentMode==='xray'?'Photo captured — ready for X-Ray scan':'Photo captured — ready to analyze';
 }
-
-function clearCamera() {
-  capturedImage = null;
-  document.getElementById('cam-preview').style.display = 'none';
-  document.getElementById('cam-preview').src = '';
-  document.getElementById('cam-actions').style.display = 'none';
-  document.getElementById('cam-placeholder').style.display = 'flex';
-  document.getElementById('cam-status').textContent = '';
+function clearCamera(){
+  capturedImage=null;
+  document.getElementById('cam-preview').style.display='none';
+  document.getElementById('cam-preview').src='';
+  document.getElementById('cam-actions').style.display='none';
+  document.getElementById('cam-placeholder').style.display='flex';
+  document.getElementById('cam-status').textContent='';
 }
 
 // ── System prompts ────────────────────────────────────────
-var typePrompts = {
-  project: 'You are BAKER analyzing a project note. Return structured analysis with these exact sections (ALL CAPS title + colon):\n\nOVERVIEW:\n[2-3 sentences on what this project is and its current state]\n\nSTRENGTHS:\n[3-5 bullet points on what is working well]\n\nGAPS:\n[3-5 bullet points on what is missing or underdeveloped]\n\nRISKS:\n[2-4 bullet points on potential problems or blockers]\n\nNEXT STEPS:\n[4-6 concrete action items as checkboxes: - [ ] action]\n\nCONNECTS TO:\n[2-3 related ideas or vault topics]',
+var typePrompts={
+  project:'You are BAKER analyzing a project note. Return structured analysis with these exact sections (ALL CAPS title + colon):\n\nOVERVIEW:\n[2-3 sentences on what this project is and its current state]\n\nSTRENGTHS:\n[3-5 bullet points on what is working well]\n\nGAPS:\n[3-5 bullet points on what is missing or underdeveloped]\n\nRISKS:\n[2-4 bullet points on potential problems or blockers]\n\nNEXT STEPS:\n[4-6 concrete action items as checkboxes: - [ ] action]\n\nCONNECTS TO:\n[2-3 related ideas or vault topics]',
+  essay:'You are BAKER analyzing an essay or piece of writing. Return analysis with these exact sections:\n\nOVERVIEW:\n[What this piece argues or explores]\n\nSTRENGTHS:\n[What works well — argument, evidence, style]\n\nWEAK POINTS:\n[Specific areas that need improvement]\n\nSTRUCTURE:\n[Assessment of the overall structure and flow]\n\nNEXT STEPS:\n[4-5 specific revisions as checkboxes: - [ ] action]\n\nGRADE RISK:\n[Honest assessment of current quality]',
+  lecture:'You are BAKER analyzing lecture notes. Return analysis with these exact sections:\n\nOVERVIEW:\n[What topic/subject these notes cover]\n\nKEY CONCEPTS:\n[The 4-6 most important ideas from these notes]\n\nGAPS:\n[What seems missing or unclear in the notes]\n\nSTUDY PRIORITIES:\n[What to focus on for exams/assignments]\n\nACTION ITEMS:\n[3-5 follow-up actions as checkboxes: - [ ] action]\n\nCONNECTS TO:\n[Related topics to explore]',
+  idea:'You are BAKER analyzing an idea or concept. Return analysis with these exact sections:\n\nCORE CONCEPT:\n[What this idea is at its essence]\n\nSTRENGTHS:\n[Why this idea has merit]\n\nCHALLENGES:\n[Obstacles or weaknesses in this idea]\n\nOPPORTUNITIES:\n[Where this idea could lead]\n\nNEXT STEPS:\n[3-5 ways to develop this idea as checkboxes: - [ ] action]\n\nCONNECTS TO:\n[Related concepts or projects]',
+  general:'You are BAKER. Analyze whatever has been provided and return a structured breakdown:\n\nOVERVIEW:\n[What this is]\n\nKEY POINTS:\n[The most important elements]\n\nGAPS OR ISSUES:\n[What needs attention]\n\nNEXT STEPS:\n[3-5 action items as checkboxes: - [ ] action]\n\nCONNECTS TO:\n[Related ideas]',
+  visual:'You are BAKER analyzing an image. Return with these exact sections:\n\nWHAT I SEE:\n[Detailed description of the image]\n\nKEY OBSERVATIONS:\n[The most notable or interesting elements]\n\nCONTEXT & MEANING:\n[What this likely represents or its significance]\n\nINSIGHTS:\n[Anything worth noting that might not be obvious]\n\nNEXT STEPS:\n[2-3 relevant actions or follow-ups as checkboxes: - [ ] action]',
 
-  essay: 'You are BAKER analyzing an essay or piece of writing. Return analysis with these exact sections:\n\nOVERVIEW:\n[What this piece argues or explores]\n\nSTRENGTHS:\n[What works well — argument, evidence, style]\n\nWEAK POINTS:\n[Specific areas that need improvement]\n\nSTRUCTURE:\n[Assessment of the overall structure and flow]\n\nNEXT STEPS:\n[4-5 specific revisions as checkboxes: - [ ] action]\n\nGRADE RISK:\n[Honest assessment of current quality]',
-
-  lecture: 'You are BAKER analyzing lecture notes. Return analysis with these exact sections:\n\nOVERVIEW:\n[What topic/subject these notes cover]\n\nKEY CONCEPTS:\n[The 4-6 most important ideas from these notes]\n\nGAPS:\n[What seems missing or unclear in the notes]\n\nSTUDY PRIORITIES:\n[What to focus on for exams/assignments]\n\nACTION ITEMS:\n[3-5 follow-up actions as checkboxes: - [ ] action]\n\nCONNECTS TO:\n[Related topics to explore]',
-
-  idea: 'You are BAKER analyzing an idea or concept. Return analysis with these exact sections:\n\nCORE CONCEPT:\n[What this idea is at its essence]\n\nSTRENGTHS:\n[Why this idea has merit]\n\nCHALLENGES:\n[Obstacles or weaknesses in this idea]\n\nOPPORTUNITIES:\n[Where this idea could lead]\n\nNEXT STEPS:\n[3-5 ways to develop this idea as checkboxes: - [ ] action]\n\nCONNECTS TO:\n[Related concepts or projects]',
-
-  general: 'You are BAKER. Analyze whatever has been provided and return a structured breakdown:\n\nOVERVIEW:\n[What this is]\n\nKEY POINTS:\n[The most important elements]\n\nGAPS OR ISSUES:\n[What needs attention]\n\nNEXT STEPS:\n[3-5 action items as checkboxes: - [ ] action]\n\nCONNECTS TO:\n[Related ideas]',
-
-  visual: 'You are BAKER analyzing an image. Return with these exact sections:\n\nWHAT I SEE:\n[Detailed description of the image]\n\nKEY OBSERVATIONS:\n[The most notable or interesting elements]\n\nCONTEXT & MEANING:\n[What this likely represents or its significance]\n\nINSIGHTS:\n[Anything worth noting that might not be obvious]\n\nNEXT STEPS:\n[2-3 relevant actions or follow-ups as checkboxes: - [ ] action]'
+  // X-RAY prompt — clinical, technical, diagnostic tone
+  xray:'You are BAKER running an X-Ray scan. Analyze the image as if you are an advanced diagnostic system. Return with these exact sections:\n\nSCAN RESULTS:\n[What the X-Ray reveals — describe structure, components, or subjects in clinical detail]\n\nANOMALIES DETECTED:\n[Anything unusual, damaged, misaligned, or worth flagging]\n\nSTRUCTURAL ANALYSIS:\n[Breakdown of the underlying structure or composition of what is visible]\n\nDIAGNOSIS:\n[Your overall assessment — what is the condition or state of what was scanned]\n\nRECOMMENDED ACTIONS:\n[2-4 follow-up actions as checkboxes: - [ ] action]'
 };
 
-var sectionColors = {
-  'OVERVIEW':'muted','CORE CONCEPT':'muted','WHAT I SEE':'muted',
-  'STRENGTHS':'green','KEY CONCEPTS':'green','KEY POINTS':'green','KEY OBSERVATIONS':'green','OPPORTUNITIES':'green',
-  'GAPS':'amber','GAPS OR ISSUES':'amber','WEAK POINTS':'amber','CHALLENGES':'amber','CONTEXT & MEANING':'amber','STRUCTURE':'amber','STUDY PRIORITIES':'amber','INSIGHTS':'amber',
-  'RISKS':'red','GRADE RISK':'red',
-  'NEXT STEPS':'accent','ACTION ITEMS':'accent',
+var sectionColors={
+  'OVERVIEW':'muted','CORE CONCEPT':'muted','WHAT I SEE':'muted','SCAN RESULTS':'muted',
+  'STRENGTHS':'green','KEY CONCEPTS':'green','KEY POINTS':'green','KEY OBSERVATIONS':'green','OPPORTUNITIES':'green','STRUCTURAL ANALYSIS':'green',
+  'GAPS':'amber','GAPS OR ISSUES':'amber','WEAK POINTS':'amber','CHALLENGES':'amber','CONTEXT & MEANING':'amber','STRUCTURE':'amber','STUDY PRIORITIES':'amber','INSIGHTS':'amber','DIAGNOSIS':'amber',
+  'RISKS':'red','GRADE RISK':'red','ANOMALIES DETECTED':'red',
+  'NEXT STEPS':'accent','ACTION ITEMS':'accent','RECOMMENDED ACTIONS':'accent',
   'CONNECTS TO':'muted'
 };
 
 // ── Analyze ───────────────────────────────────────────────
-async function analyze() {
-  var key = localStorage.getItem('baker_api_key');
-  if (!key) { alert('No API key — go to BAKER Settings first.'); return; }
-
-  var btn = document.getElementById('analyze-btn');
-  btn.disabled = true; btn.textContent = '⟳ ANALYZING...';
-  setPill('working', '');
-  document.getElementById('save-btn').disabled = true;
-  document.getElementById('convo-btn').disabled = true;
-
-  var topic = document.getElementById('analysis-topic').value.trim();
-  var contextBlock = getContextBlock();
-
-  document.getElementById('out-body').innerHTML = '<div class="thinking"><div class="dots"><span></span><span></span><span></span></div>BAKER is reading this carefully...</div>';
-
-  try {
+async function analyze(){
+  var key=localStorage.getItem('baker_api_key');
+  if(!key){alert('No API key — go to BAKER Settings first.');return;}
+  var btn=document.getElementById('analyze-btn');
+  btn.disabled=true;btn.textContent=currentMode==='xray'?'⟳ SCANNING...':'⟳ ANALYZING...';
+  setPill('working','');
+  document.getElementById('save-btn').disabled=true;
+  document.getElementById('convo-btn').disabled=true;
+  var topic=document.getElementById('analysis-topic').value.trim();
+  var contextBlock=getContextBlock();
+  document.getElementById('out-body').innerHTML='<div class="thinking"><div class="dots"><span></span><span></span><span></span></div>'+( currentMode==='xray'?'BAKER is running X-Ray scan...':'BAKER is reading this carefully...')+'</div>';
+  try{
     var messages;
-    var systemPrompt = typePrompts[currentType] || typePrompts.general;
-
-    // From Concept Bytes: inject system info as prefix
-    var sysInfo = 'System information: Analysis requested ' + contextBlock;
-    if (topic) sysInfo += ' · Topic/label: "' + topic + '"';
-    if (loadedFileName) sysInfo += ' · Source file: "' + loadedFileName + '"';
-    sysInfo += '\n\n';
-
-    if (currentMode === 'camera' && capturedImage) {
-      messages = [{
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: capturedImage }},
-          { type: 'text', text: sysInfo + 'Analyze this image.' }
-        ]
-      }];
-    } else {
-      var txt = document.getElementById('text-input').value.trim();
-      if (!txt) { alert('Paste something to analyze first.'); btn.disabled=false; btn.textContent='▶ ANALYZE'; return; }
-      messages = [{ role: 'user', content: sysInfo + 'Analyze this:\n\n' + txt }];
+    var systemPrompt=typePrompts[currentType]||typePrompts.general;
+    var sysInfo='System information: Analysis requested '+contextBlock;
+    if(topic)sysInfo+=' · Topic/label: "'+topic+'"';
+    if(loadedFileName)sysInfo+=' · Source file: "'+loadedFileName+'"';
+    sysInfo+='\n\n';
+    if((currentMode==='camera'||currentMode==='xray')&&capturedImage){
+      messages=[{role:'user',content:[
+        {type:'image',source:{type:'base64',media_type:'image/jpeg',data:capturedImage}},
+        {type:'text',text:sysInfo+(currentMode==='xray'?'Run an X-Ray scan on this image.':'Analyze this image.')}
+      ]}];
+    }else{
+      var txt=document.getElementById('text-input').value.trim();
+      if(!txt){alert('Paste something to analyze first.');btn.disabled=false;btn.textContent='▶ ANALYZE';return;}
+      messages=[{role:'user',content:sysInfo+'Analyze this:\n\n'+txt}];
     }
-
-    var resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: messages
-      })
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:systemPrompt,messages:messages})
     });
-
-    var data = await resp.json();
-    if (data.error) throw new Error(data.error.message);
-    var raw = data.content.map(function(b){return b.text||'';}).join('').trim();
-
-    // Check for <<BAKER:save>> command tag
-    var autoSave = raw.includes('<<BAKER:save>>');
-    raw = raw.replace(/<<BAKER:[^>]+>>/g, '').trim();
-
-    analysisRaw = raw;
-    analysisText = raw;
+    var data=await resp.json();
+    if(data.error)throw new Error(data.error.message);
+    var raw=data.content.map(function(b){return b.text||'';}).join('').trim();
+    var autoSave=raw.includes('<<BAKER:save>>');
+    raw=raw.replace(/<<BAKER:[^>]+>>/g,'').trim();
+    analysisRaw=raw;analysisText=raw;
     renderAnalysis(raw);
-    setPill('done', 'ok');
-    document.getElementById('save-btn').disabled = false;
-    document.getElementById('convo-btn').disabled = false;
-
-    // Update time pill
-    document.getElementById('time-pill').textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-
-    if (autoSave) { setTimeout(saveAnalysis, 500); }
-
-  } catch(err) {
-    document.getElementById('out-body').innerHTML = '<div class="thinking" style="color:var(--red)">Error: '+err.message+'</div>';
-    setPill('error', 'err');
+    setPill('done','ok');
+    document.getElementById('save-btn').disabled=false;
+    document.getElementById('convo-btn').disabled=false;
+    document.getElementById('time-pill').textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    if(autoSave){setTimeout(saveAnalysis,500);}
+  }catch(err){
+    document.getElementById('out-body').innerHTML='<div class="thinking" style="color:var(--red)">Error: '+err.message+'</div>';
+    setPill('error','err');
   }
-
-  btn.disabled = false; btn.textContent = '▶ ANALYZE';
+  btn.disabled=false;btn.textContent='▶ ANALYZE';
 }
 
-function renderAnalysis(raw) {
-  var el = document.getElementById('out-body');
-  el.innerHTML = '';
-  var lines = raw.split('\n');
-  var currentSection = null, currentLines = [];
-
-  function flushSection() {
-    if (!currentSection) return;
-    var div = document.createElement('div'); div.className = 'section';
-    var title = document.createElement('div');
-    var colorKey = currentSection.replace(':','').trim();
-    var color = sectionColors[colorKey] || 'accent';
-    title.className = 'section-title' + (color!=='accent'?' '+color:'');
-    title.textContent = currentSection.replace(':','');
+function renderAnalysis(raw){
+  var el=document.getElementById('out-body');el.innerHTML='';
+  var lines=raw.split('\n');var currentSection=null,currentLines=[];
+  function flushSection(){
+    if(!currentSection)return;
+    var div=document.createElement('div');div.className='section';
+    var title=document.createElement('div');
+    var colorKey=currentSection.replace(':','').trim();
+    var color=sectionColors[colorKey]||'accent';
+    title.className='section-title'+(color!=='accent'?' '+color:'');
+    title.textContent=currentSection.replace(':','');
     div.appendChild(title);
-    var body = document.createElement('div'); body.className = 'section-body';
-    currentLines.forEach(function(line) {
-      if (!line.trim()) return;
-      if (line.trim().startsWith('- [ ]') || line.trim().startsWith('- [x]')) {
-        var item = document.createElement('div'); item.className = 'action-item';
-        var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = line.includes('[x]');
-        var lbl = document.createElement('span'); lbl.textContent = line.replace(/^- \[.\] /,'').replace(/^- \[ \] /,'');
-        item.appendChild(cb); item.appendChild(lbl); body.appendChild(item);
-      } else if (line.trim().startsWith('- ') || line.trim().startsWith('• ')) {
-        var li = document.createElement('div');
-        li.style.cssText = 'margin-left:12px;margin-bottom:4px;font-size:12px';
-        li.textContent = '· ' + line.trim().replace(/^[-•] /,'');
-        body.appendChild(li);
-      } else {
-        var p = document.createElement('p'); p.style.marginBottom = '4px'; p.textContent = line;
-        body.appendChild(p);
+    var body=document.createElement('div');body.className='section-body';
+    currentLines.forEach(function(line){
+      if(!line.trim())return;
+      if(line.trim().startsWith('- [ ]')||line.trim().startsWith('- [x]')){
+        var item=document.createElement('div');item.className='action-item';
+        var cb=document.createElement('input');cb.type='checkbox';cb.checked=line.includes('[x]');
+        var lbl=document.createElement('span');lbl.textContent=line.replace(/^- \[.\] /,'').replace(/^- \[ \] /,'');
+        item.appendChild(cb);item.appendChild(lbl);body.appendChild(item);
+      }else if(line.trim().startsWith('- ')||line.trim().startsWith('• ')){
+        var li=document.createElement('div');li.style.cssText='margin-left:12px;margin-bottom:4px;font-size:12px';
+        li.textContent='· '+line.trim().replace(/^[-•] /,'');body.appendChild(li);
+      }else{
+        var p=document.createElement('p');p.style.marginBottom='4px';p.textContent=line;body.appendChild(p);
       }
     });
-    div.appendChild(body); el.appendChild(div);
-    currentSection = null; currentLines = [];
+    div.appendChild(body);el.appendChild(div);
+    currentSection=null;currentLines=[];
   }
-
-  lines.forEach(function(line) {
-    var isSectionHeader = /^[A-Z][A-Z\s&]+:/.test(line.trim()) && line.trim().length < 40;
-    if (isSectionHeader) { flushSection(); currentSection = line.trim(); }
-    else if (currentSection) { if (line.trim()) currentLines.push(line.trim()); }
+  lines.forEach(function(line){
+    var isSectionHeader=/^[A-Z][A-Z\s&]+:/.test(line.trim())&&line.trim().length<40;
+    if(isSectionHeader){flushSection();currentSection=line.trim();}
+    else if(currentSection){if(line.trim())currentLines.push(line.trim());}
   });
   flushSection();
-
-  if (!el.children.length) {
-    el.innerHTML = '<div style="font-family:var(--mono);font-size:12px;color:var(--text);line-height:1.8;white-space:pre-wrap">'+raw+'</div>';
-  }
+  if(!el.children.length){el.innerHTML='<div style="font-family:var(--mono);font-size:12px;color:var(--text);line-height:1.8;white-space:pre-wrap">'+raw+'</div>';}
 }
 
-function setPill(t, cls) {
-  var p = document.getElementById('out-pill');
-  p.textContent = t; p.className = 'pill' + (cls?' '+cls:'');
+function setPill(t,cls){var p=document.getElementById('out-pill');p.textContent=t;p.className='pill'+(cls?' '+cls:'');}
+
+function saveAnalysis(){
+  if(!analysisText)return;
+  var date=new Date().toISOString().split('T')[0];
+  var topic=document.getElementById('analysis-topic').value.trim()||currentType;
+  var fname=date+'-Analysis-'+topic.replace(/\s+/g,'-')+'.md';
+  var note='---\ndate: '+date+'\ntype: analysis\ncategory: '+currentType+'\ntopic: '+topic+'\ntags: [analysis, '+currentType+']\n---\n\n# Analysis — '+topic+'\n\n'+analysisText+'\n\n---\n*[[HOME]]*\n';
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([note],{type:'text/markdown'}));
+  a.download=fname;a.click();
 }
 
-// ── Save analysis ─────────────────────────────────────────
-function saveAnalysis() {
-  if (!analysisText) return;
-  var date = new Date().toISOString().split('T')[0];
-  var topic = document.getElementById('analysis-topic').value.trim() || currentType;
-  var fname = date + '-Analysis-' + topic.replace(/\s+/g,'-') + '.md';
-  var note = '---\ndate: ' + date + '\ntype: analysis\ncategory: ' + currentType + '\ntopic: ' + topic + '\ntags: [analysis, ' + currentType + ']\n---\n\n# Analysis — ' + topic + '\n\n' + analysisText + '\n\n---\n*[[HOME]]*\n';
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([note], {type:'text/markdown'}));
-  a.download = fname; a.click();
-}
-
-// ── Send to Conversation ─────────────────────────────────
-// Stores analysis in sessionStorage then opens conversation.html
-function sendToConversation() {
-  if (!analysisText) return;
-  var topic = document.getElementById('analysis-topic').value.trim() || currentType;
-  var payload = {
-    topic: 'Analysis: ' + topic,
-    context: '## Analysis (' + currentType + ') — ' + topic + '\n\n' + analysisText,
-    source: 'analyze'
-  };
-  sessionStorage.setItem('baker_convo_context', JSON.stringify(payload));
-  window.location.href = 'conversation.html';
+function sendToConversation(){
+  if(!analysisText)return;
+  var topic=document.getElementById('analysis-topic').value.trim()||currentType;
+  var payload={topic:'Analysis: '+topic,context:'## Analysis ('+currentType+') — '+topic+'\n\n'+analysisText,source:'analyze'};
+  sessionStorage.setItem('baker_convo_context',JSON.stringify(payload));
+  window.location.href='conversation.html';
 }
 </script>
 </body>
