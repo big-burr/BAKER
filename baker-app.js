@@ -1,5 +1,5 @@
-// BAKER conversation app — all JS in one external file
-// v2.0 — Jarvis V5 upgrades: echo lockout, semantic VAD, duplicate suppression, conversation compaction, web search toggle
+// BAKER conversation app
+// Additions: camera modal + X-Ray intent detection
 (function(){
   var canvas=document.getElementById('orb-canvas');
   var gl=canvas&&canvas.getContext('webgl');
@@ -58,130 +58,149 @@ var constantMic=localStorage.getItem('baker_constant_mic')==='true';
 var HOT_WORDS=['hey baker','baker','yo baker','ok baker'];
 var spotifyToken=null,spotifyClientId=localStorage.getItem('baker_spotify_id')||'';
 
-// ── Echo / VAD state (Jarvis V5 upgrade) ──────────────────
-var speakEndTime=0;           // timestamp when BAKER last finished speaking
-var ECHO_LOCKOUT_MS=1800;     // how long to block mic after BAKER speaks
-var lastSentText='';          // for duplicate suppression
+var speakEndTime=0;
+var ECHO_LOCKOUT_MS=1800;
+var lastSentText='';
 
-// ── Semantic sentence detection ───────────────────────────
-// Words that suggest the speaker isn't done yet
 var MID_SENTENCE_WORDS=['and','but','so','because','that','which','who','when','where','if','although','however','therefore','then','or','nor','yet','for','as','since','while','though','unless','until','after','before','even'];
 
-function isCompleteSentence(txt){
-  if(!txt||txt.trim().length<5)return false;
-  var trimmed=txt.trim().toLowerCase();
-  // Ends with terminal punctuation
-  if(/[.!?]$/.test(txt.trim()))return true;
-  // Ends with a conjunction = incomplete
-  var lastWord=trimmed.split(/\s+/).pop().replace(/[.,!?]*/g,'');
-  if(MID_SENTENCE_WORDS.indexOf(lastWord)!==-1)return false;
-  // Short single-word or two-word = probably complete
-  var wordCount=txt.trim().split(/\s+/).length;
-  if(wordCount<=3)return true;
-  return true; // default: treat as complete after full silence window
-}
+function isCompleteSentence(txt){if(!txt||txt.trim().length<5)return false;var trimmed=txt.trim().toLowerCase();if(/[.!?]$/.test(txt.trim()))return true;var lastWord=trimmed.split(/\s+/).pop().replace(/[.,!?]*/g,'');if(MID_SENTENCE_WORDS.indexOf(lastWord)!==-1)return false;return true;}
+function getSilenceWindow(txt){var trimmed=(txt||'').trim().toLowerCase();var lastWord=trimmed.split(/\s+/).pop().replace(/[.,!?]*/g,'');if(MID_SENTENCE_WORDS.indexOf(lastWord)!==-1)return 1500;return 800;}
 
-function getSilenceWindow(txt){
-  // If mid-sentence, wait longer before cutting off
-  var trimmed=(txt||'').trim().toLowerCase();
-  var lastWord=trimmed.split(/\s+/).pop().replace(/[.,!?]*/g,'');
-  if(MID_SENTENCE_WORDS.indexOf(lastWord)!==-1)return 1500;
-  return 800; // normal silence window
-}
+function levenshtein(a,b){var m=a.length,n=b.length;var dp=[];for(var i=0;i<=m;i++){dp[i]=[i];for(var j=1;j<=n;j++)dp[i][j]=0;}for(var j=0;j<=n;j++)dp[0][j]=j;for(var i=1;i<=m;i++)for(var j=1;j<=n;j++){if(a[i-1]===b[j-1])dp[i][j]=dp[i-1][j-1];else dp[i][j]=1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);}return dp[m][n];}
+function similarityRatio(a,b){if(!a||!b)return 0;var maxLen=Math.max(a.length,b.length);if(maxLen===0)return 1;return 1-(levenshtein(a.toLowerCase(),b.toLowerCase())/maxLen);}
+function isDuplicate(txt){if(!lastSentText||!txt)return false;return similarityRatio(txt.trim(),lastSentText.trim())>0.82;}
 
-// ── Duplicate / echo suppression ─────────────────────────
-function levenshtein(a,b){
-  var m=a.length,n=b.length;
-  var dp=[];
-  for(var i=0;i<=m;i++){dp[i]=[i];for(var j=1;j<=n;j++)dp[i][j]=0;}
-  for(var j=0;j<=n;j++)dp[0][j]=j;
-  for(var i=1;i<=m;i++)for(var j=1;j<=n;j++){
-    if(a[i-1]===b[j-1])dp[i][j]=dp[i-1][j-1];
-    else dp[i][j]=1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
-  }
-  return dp[m][n];
-}
-
-function similarityRatio(a,b){
-  if(!a||!b)return 0;
-  var maxLen=Math.max(a.length,b.length);
-  if(maxLen===0)return 1;
-  return 1-(levenshtein(a.toLowerCase(),b.toLowerCase())/maxLen);
-}
-
-function isDuplicate(txt){
-  if(!lastSentText||!txt)return false;
-  var ratio=similarityRatio(txt.trim(),lastSentText.trim());
-  return ratio>0.82; // 82% similar = likely echo
-}
-
-// ── Persistent memory ─────────────────────────────────────
 var MEMORY_KEY='baker_memories';
 var MAX_MEMORIES=10;
+function getMemories(){try{return JSON.parse(localStorage.getItem(MEMORY_KEY)||'[]');}catch(e){return[];}}
+function saveMemory(summary){var memories=getMemories();var entry={date:new Date().toISOString().split('T')[0],time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),summary:summary};memories.unshift(entry);if(memories.length>MAX_MEMORIES)memories=memories.slice(0,MAX_MEMORIES);localStorage.setItem(MEMORY_KEY,JSON.stringify(memories));}
+function buildMemoryBlock(){var memories=getMemories();if(!memories.length)return'';var block='BAKER MEMORY — previous sessions (most recent first):\n';memories.slice(0,5).forEach(function(m){block+='['+m.date+' '+m.time+']: '+m.summary+'\n';});return block;}
 
-function getMemories(){
-  try{return JSON.parse(localStorage.getItem(MEMORY_KEY)||'[]');}catch(e){return[];}
-}
-
-function saveMemory(summary){
-  var memories=getMemories();
-  var entry={date:new Date().toISOString().split('T')[0],time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),summary:summary};
-  memories.unshift(entry);
-  if(memories.length>MAX_MEMORIES)memories=memories.slice(0,MAX_MEMORIES);
-  localStorage.setItem(MEMORY_KEY,JSON.stringify(memories));
-}
-
-function buildMemoryBlock(){
-  var memories=getMemories();
-  if(!memories.length)return'';
-  var block='BAKER MEMORY — previous sessions (most recent first):\n';
-  memories.slice(0,5).forEach(function(m){
-    block+='['+m.date+' '+m.time+']: '+m.summary+'\n';
-  });
-  return block;
-}
-
-// ── Conversation compaction (Jarvis V5 upgrade) ───────────
-// When history gets long, auto-compress oldest turns to save context
-var COMPACT_THRESHOLD=20;   // start compacting at 20 turns
-var COMPACT_KEEP=10;        // keep the 10 most recent turns after compaction
+var COMPACT_THRESHOLD=20;
+var COMPACT_KEEP=10;
 var compactionInProgress=false;
-
-async function maybeCompactHistory(key){
-  if(state.history.length<COMPACT_THRESHOLD)return;
-  if(compactionInProgress)return;
-  compactionInProgress=true;
-
-  var toCompress=state.history.slice(0,state.history.length-COMPACT_KEEP);
-  var recent=state.history.slice(-COMPACT_KEEP);
-
-  var transcript=toCompress.map(function(m){return(m.role==='user'?'User':'BAKER')+': '+m.content;}).join('\n\n');
-
-  try{
-    var resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-6',
-        max_tokens:300,
-        system:'You are a conversation summarizer. Summarize the key points, decisions, context, and any vault notes created from this conversation fragment. Be extremely concise — this summary will be injected as context. Max 3 sentences.',
-        messages:[{role:'user',content:'Summarize this conversation:\n\n'+transcript}]
-      })
-    });
-    var data=await resp.json();
-    if(!data.error){
-      var summary=data.content.map(function(b){return b.text||'';}).join('').trim();
-      var compactedMsg={role:'user',content:'[COMPACTED CONTEXT: '+summary+']'};
-      var compactedReply={role:'assistant',content:'Understood. Context retained.'};
-      state.history=[compactedMsg,compactedReply].concat(recent);
-      appendSys('Conversation compacted to save context.');
-    }
-  }catch(e){}
-  compactionInProgress=false;
-}
+async function maybeCompactHistory(key){if(state.history.length<COMPACT_THRESHOLD)return;if(compactionInProgress)return;compactionInProgress=true;var toCompress=state.history.slice(0,state.history.length-COMPACT_KEEP);var recent=state.history.slice(-COMPACT_KEEP);var transcript=toCompress.map(function(m){return(m.role==='user'?'User':'BAKER')+': '+(typeof m.content==='string'?m.content:'[image message]');}).join('\n\n');try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,system:'You are a conversation summarizer. Summarize the key points, decisions, context, and any vault notes created from this conversation fragment. Be extremely concise — this summary will be injected as context. Max 3 sentences.',messages:[{role:'user',content:'Summarize this conversation:\n\n'+transcript}]})});var data=await resp.json();if(!data.error){var summary=data.content.map(function(b){return b.text||'';}).join('').trim();var compactedMsg={role:'user',content:'[COMPACTED CONTEXT: '+summary+']'};var compactedReply={role:'assistant',content:'Understood. Context retained.'};state.history=[compactedMsg,compactedReply].concat(recent);appendSys('Conversation compacted to save context.');}}catch(e){}compactionInProgress=false;}
 
 function getTimeGreeting(){var h=new Date().getHours();if(h>=5&&h<12)return 'Good morning, sir.';if(h>=12&&h<17)return 'Good afternoon, sir.';if(h>=17&&h<21)return 'Good evening, sir.';return "You're up late, sir.";}
 function getContextBlock(){var now=new Date();return '[Date: '+now.toLocaleDateString([],{weekday:'long',year:'numeric',month:'long',day:'numeric'})+' | Time: '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+']';}
+
+// ── Camera modal ──────────────────────────────────────────
+function injectCameraModal(){
+  if(document.getElementById('cam-modal'))return;
+  var modal=document.createElement('div');
+  modal.id='cam-modal';
+  modal.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;align-items:center;justify-content:center;padding:24px';
+  modal.innerHTML='<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;width:100%;max-width:480px;display:flex;flex-direction:column;gap:12px"><div style="display:flex;align-items:center;justify-content:space-between"><span id="cam-modal-title" style="font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.1em;text-transform:uppercase">📷 Camera</span><button onclick="closeCameraModal()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0">×</button></div><video id="modal-video" style="width:100%;border-radius:8px;border:1px solid var(--border);background:var(--surface2)" autoplay playsinline></video><canvas id="modal-canvas" style="display:none"></canvas><img id="modal-preview" style="display:none;width:100%;border-radius:8px;border:1px solid var(--border)" alt="preview"><div id="modal-status" style="font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center"></div><div style="display:flex;gap:8px"><button id="modal-capture-btn" onclick="modalCapture()" style="flex:1;padding:10px;background:var(--accent);border:none;border-radius:4px;font-family:var(--mono);font-size:11px;color:#fff;cursor:pointer;letter-spacing:.08em">📸 Capture</button><button id="modal-retake-btn" onclick="modalRetake()" style="display:none;flex:1;padding:10px;background:transparent;border:1px solid var(--border);border-radius:4px;font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer">🔄 Retake</button><button id="modal-send-btn" onclick="modalSend()" style="display:none;flex:1;padding:10px;background:var(--accent);border:none;border-radius:4px;font-family:var(--mono);font-size:11px;color:#fff;cursor:pointer;letter-spacing:.08em">▶ Send</button></div></div>';
+  document.body.appendChild(modal);
+}
+
+var modalStream=null;
+var modalCapturedImage=null;
+var modalCameraType='visual';
+
+function openCameraModal(type){
+  modalCameraType=type||'visual';
+  modalCapturedImage=null;
+  var modal=document.getElementById('cam-modal');
+  document.getElementById('cam-modal-title').textContent=type==='xray'?'🔬 X-Ray Scan':'📷 Camera';
+  modal.style.display='flex';
+  document.getElementById('modal-preview').style.display='none';
+  document.getElementById('modal-capture-btn').style.display='block';
+  document.getElementById('modal-retake-btn').style.display='none';
+  document.getElementById('modal-send-btn').style.display='none';
+  document.getElementById('modal-status').textContent='Starting camera...';
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}}).then(function(stream){
+    modalStream=stream;
+    var video=document.getElementById('modal-video');
+    video.srcObject=stream;video.style.display='block';
+    document.getElementById('modal-status').textContent=type==='xray'?'Point camera at subject — click Capture when ready':'Camera active — click Capture when ready';
+  }).catch(function(e){document.getElementById('modal-status').textContent='Camera error: '+e.message;});
+}
+
+function modalCapture(){
+  var video=document.getElementById('modal-video');
+  var canvas=document.getElementById('modal-canvas');
+  canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+  canvas.getContext('2d').drawImage(video,0,0);
+  var dataUrl=canvas.toDataURL('image/jpeg',0.8);
+  modalCapturedImage=dataUrl.split(',')[1];
+  if(modalStream){modalStream.getTracks().forEach(function(t){t.stop();});modalStream=null;}
+  video.style.display='none';
+  var preview=document.getElementById('modal-preview');
+  preview.src=dataUrl;preview.style.display='block';
+  document.getElementById('modal-capture-btn').style.display='none';
+  document.getElementById('modal-retake-btn').style.display='block';
+  document.getElementById('modal-send-btn').style.display='block';
+  document.getElementById('modal-status').textContent=modalCameraType==='xray'?'Ready to scan — click Send':'Photo captured — click Send';
+}
+
+function modalRetake(){
+  modalCapturedImage=null;
+  document.getElementById('modal-preview').style.display='none';
+  document.getElementById('modal-retake-btn').style.display='none';
+  document.getElementById('modal-send-btn').style.display='none';
+  document.getElementById('modal-capture-btn').style.display='block';
+  openCameraModal(modalCameraType);
+}
+
+function closeCameraModal(){
+  if(modalStream){modalStream.getTracks().forEach(function(t){t.stop();});modalStream=null;}
+  document.getElementById('cam-modal').style.display='none';
+  modalCapturedImage=null;
+}
+
+async function modalSend(){
+  if(!modalCapturedImage)return;
+  var key=localStorage.getItem('baker_api_key');
+  if(!key){closeCameraModal();return;}
+  closeCameraModal();
+  var isXray=modalCameraType==='xray';
+  appendMsg('user',isXray?'[X-Ray scan requested]':'[Photo taken]');
+  removeWelcome();
+  var systemPrompt=isXray
+    ?'You are BAKER running an X-Ray scan. Analyze the image as if you are an advanced diagnostic system. Return with these sections:\n\nSCAN RESULTS:\n[What the X-Ray reveals — describe structure, components, or subjects in clinical detail]\n\nANOMALIES DETECTED:\n[Anything unusual, damaged, misaligned, or worth flagging]\n\nSTRUCTURAL ANALYSIS:\n[Breakdown of the underlying structure or composition]\n\nDIAGNOSIS:\n[Your overall assessment]\n\nRECOMMENDED ACTIONS:\n[2-4 follow-up actions]'
+    :'You are BAKER analyzing an image the user just captured. Describe what you see and offer any relevant observations or insights. Be conversational, concise, and sharp — JARVIS style.';
+  state.history.push({role:'user',content:[
+    {type:'image',source:{type:'base64',media_type:'image/jpeg',data:modalCapturedImage}},
+    {type:'text',text:(isXray?'Run an X-Ray scan on this image.':'What do you see in this image?')+' '+getContextBlock()}
+  ]});
+  state.busy=true;
+  document.getElementById('send-btn').disabled=true;
+  showThinking();setOrbState('thinking');
+  var effort=localStorage.getItem('baker_effort')||'standard';
+  var maxTok={deep:1500,standard:800,quick:400,minimal:150}[effort]||800;
+  try{
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTok,system:systemPrompt,messages:state.history})});
+    var data=await resp.json();
+    if(data.error)throw new Error(data.error.message);
+    var raw=data.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text||'';}).join('').trim();
+    var parsed=parseResponse(raw);
+    removeThinking();
+    appendMsg('baker',parsed.txt,parsed.note);
+    state.history.push({role:'assistant',content:raw});
+    document.getElementById('dl-btn').disabled=false;
+    if(voiceMode)speakText(parsed.txt);else setOrbState('idle');
+  }catch(err){
+    removeThinking();
+    appendMsg('baker','Camera analysis failed, sir: '+err.message);
+    setOrbState('idle');
+  }
+  state.busy=false;
+  document.getElementById('send-btn').disabled=false;
+  if(state.history.length>40)state.history=state.history.slice(-40);
+}
+
+// ── Camera intent detection ───────────────────────────────
+var CAMERA_PHRASES=['take a photo','take a picture','take photo','take picture','open camera','photograph this','snap a photo','use camera','camera'];
+var XRAY_PHRASES=['x-ray','xray','x ray','scan this','run a scan','x-ray this','xray this','scan me','scan it'];
+
+function checkCameraIntent(txt){
+  var lower=txt.toLowerCase();
+  if(XRAY_PHRASES.some(function(p){return lower.includes(p);}))return'xray';
+  if(CAMERA_PHRASES.some(function(p){return lower.includes(p);}))return'camera';
+  return null;
+}
 
 document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('send-btn').addEventListener('click',sendMessage);
@@ -203,41 +222,11 @@ document.addEventListener('DOMContentLoaded',function(){
   checkSpotifyCallback();
   if(constantMic){startWakeWord();setMode('voice');}
   if(hasFS){tryReconnectVault();}else{document.getElementById('vault-btn').textContent='⬡ Vault (Chrome only)';document.getElementById('vault-btn').disabled=true;setSb('','Automatic vault scanning requires Chrome on desktop');}
-
-  // Web search toggle button — inject if not present
   injectWebSearchToggle();
+  injectCameraModal();
 });
 
-// ── Web search toggle (Jarvis V5 upgrade) ─────────────────
-function injectWebSearchToggle(){
-  var hdrRight=document.querySelector('.hdr-right');
-  if(!hdrRight||document.getElementById('web-search-btn'))return;
-  var btn=document.createElement('button');
-  btn.id='web-search-btn';
-  btn.className='hbtn';
-  var on=localStorage.getItem('baker_web_search')==='true';
-  btn.textContent=on?'🌐 Web on':'🌐 Web';
-  btn.style.color=on?'var(--blue)':'';
-  btn.style.borderColor=on?'var(--blue)':'';
-  btn.title='Toggle web search (gives BAKER access to current internet info)';
-  btn.addEventListener('click',function(){
-    var now=localStorage.getItem('baker_web_search')==='true';
-    var next=!now;
-    localStorage.setItem('baker_web_search',next.toString());
-    btn.textContent=next?'🌐 Web on':'🌐 Web';
-    btn.style.color=next?'var(--blue)':'';
-    btn.style.borderColor=next?'rgba(96,165,250,.6)':'';
-    appendSys(next?'Web search enabled — BAKER can now look things up, sir.':'Web search disabled.');
-  });
-  // Insert before vault-btn
-  var vaultBtn=document.getElementById('vault-btn');
-  if(vaultBtn)hdrRight.insertBefore(btn,vaultBtn);
-  else hdrRight.appendChild(btn);
-  if(on){
-    btn.style.color='var(--blue)';
-    btn.style.borderColor='rgba(96,165,250,.6)';
-  }
-}
+function injectWebSearchToggle(){var hdrRight=document.querySelector('.hdr-right');if(!hdrRight||document.getElementById('web-search-btn'))return;var btn=document.createElement('button');btn.id='web-search-btn';btn.className='hbtn';var on=localStorage.getItem('baker_web_search')==='true';btn.textContent=on?'🌐 Web on':'🌐 Web';btn.style.color=on?'var(--blue)':'';btn.style.borderColor=on?'var(--blue)':'';btn.title='Toggle web search';btn.addEventListener('click',function(){var now=localStorage.getItem('baker_web_search')==='true';var next=!now;localStorage.setItem('baker_web_search',next.toString());btn.textContent=next?'🌐 Web on':'🌐 Web';btn.style.color=next?'var(--blue)':'';btn.style.borderColor=next?'rgba(96,165,250,.6)':'';appendSys(next?'Web search enabled — BAKER can now look things up, sir.':'Web search disabled.');});var vaultBtn=document.getElementById('vault-btn');if(vaultBtn)hdrRight.insertBefore(btn,vaultBtn);else hdrRight.appendChild(btn);if(on){btn.style.color='var(--blue)';btn.style.borderColor='rgba(96,165,250,.6)';}}
 
 function openDB(){return new Promise(function(res,rej){var r=indexedDB.open('baker-vault',1);r.onupgradeneeded=function(e){e.target.result.createObjectStore('handles',{keyPath:'id'});};r.onsuccess=function(e){res(e.target.result);};r.onerror=function(){rej(r.error);};});}
 async function storeHandle(h){try{var db=await openDB();db.transaction('handles','readwrite').objectStore('handles').put({id:'vault',handle:h});}catch(e){}}
@@ -260,83 +249,14 @@ async function fetchWeather(){return new Promise(function(res,rej){if(!navigator
 async function fetchWeatherAndReport(){appendSys('Fetching weather...');setOrbState('thinking');try{var w=await fetchWeather();var sysInfo='System information: Current weather — '+w.temp+'°F (feels like '+w.feels+'°F), '+w.desc+', wind '+w.wind+' mph, humidity '+w.humidity+'%.';showWeatherCard(w);await sendSystemInfo(sysInfo,'Tell the user the current weather in one natural sentence as JARVIS would.');}catch(e){appendSys('Weather unavailable: '+e.message);setOrbState('idle');}}
 function showWeatherCard(w){var msgs=document.getElementById('messages');removeWelcome();var card=document.createElement('div');card.className='weather-card';card.innerHTML='<div class="weather-temp">'+w.temp+'°F</div><div class="weather-desc">'+w.desc+'<br>Feels like '+w.feels+'°F<br>Wind: '+w.wind+' mph · Humidity: '+w.humidity+'%</div>';var wrap=document.createElement('div');wrap.className='msg baker';wrap.appendChild(card);msgs.appendChild(wrap);msgs.scrollTop=msgs.scrollHeight;}
 
-// PKCE helpers
 async function generateCodeVerifier(){var array=new Uint8Array(32);window.crypto.getRandomValues(array);return btoa(String.fromCharCode.apply(null,array)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');}
 async function generateCodeChallenge(verifier){var data=new TextEncoder().encode(verifier);var digest=await window.crypto.subtle.digest('SHA-256',data);return btoa(String.fromCharCode.apply(null,new Uint8Array(digest))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');}
 
 function handleSpotifyBtn(){if(spotifyToken){fetchSpotifyAndReport();}else{initSpotify();}}
-
-async function initSpotify(){
-  spotifyClientId=localStorage.getItem('baker_spotify_id')||'';
-  if(!spotifyClientId){spotifyClientId=prompt('Enter your Spotify Client ID (from developer.spotify.com):');if(!spotifyClientId)return;localStorage.setItem('baker_spotify_id',spotifyClientId);}
-  var verifier=await generateCodeVerifier();
-  var challenge=await generateCodeChallenge(verifier);
-  localStorage.setItem('spotify_verifier',verifier);
-  var redirect=encodeURIComponent('https://big-burr.github.io/BAKER/conversation.html');
-  var scopes=encodeURIComponent('user-read-currently-playing user-read-playback-state user-modify-playback-state streaming app-remote-control user-read-private playlist-read-private playlist-modify-public playlist-modify-private');
-  window.location.href='https://accounts.spotify.com/authorize?client_id='+spotifyClientId+'&response_type=code&redirect_uri='+redirect+'&scope='+scopes+'&code_challenge_method=S256&code_challenge='+challenge;
-}
-
-async function checkSpotifyCallback(){
-  var params=new URLSearchParams(window.location.search);
-  var code=params.get('code');
-  if(!code)return;
-  window.history.replaceState(null,'',window.location.pathname);
-  var verifier=localStorage.getItem('spotify_verifier');
-  if(!verifier)return;
-  spotifyClientId=localStorage.getItem('baker_spotify_id')||'';
-  try{
-    var resp=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:spotifyClientId,grant_type:'authorization_code',code:code,redirect_uri:'https://big-burr.github.io/BAKER/conversation.html',code_verifier:verifier})});
-    var data=await resp.json();
-    if(data.access_token){
-      spotifyToken=data.access_token;
-      localStorage.setItem('baker_spotify_token',data.access_token);
-      if(data.refresh_token)localStorage.setItem('baker_spotify_refresh',data.refresh_token);
-      localStorage.setItem('baker_spotify_expiry',Date.now()+(data.expires_in*1000));
-      localStorage.removeItem('spotify_verifier');
-      document.getElementById('spotify-btn').className='hbtn spotify-on';
-      document.getElementById('spotify-btn').textContent='♫ Spotify on';
-      appendSys('Spotify connected, sir.');
-    }
-  }catch(e){appendSys('Spotify auth failed: '+e.message);}
-}
-
-async function refreshSpotifyToken(){
-  var refresh=localStorage.getItem('baker_spotify_refresh');
-  if(!refresh)return false;
-  spotifyClientId=localStorage.getItem('baker_spotify_id')||'';
-  try{
-    var resp=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:spotifyClientId,grant_type:'refresh_token',refresh_token:refresh})});
-    var data=await resp.json();
-    if(data.access_token){
-      spotifyToken=data.access_token;
-      localStorage.setItem('baker_spotify_token',data.access_token);
-      localStorage.setItem('baker_spotify_expiry',Date.now()+(data.expires_in*1000));
-      if(data.refresh_token)localStorage.setItem('baker_spotify_refresh',data.refresh_token);
-      return true;
-    }
-  }catch(e){}
-  return false;
-}
-
-async function spotifyAPI(endpoint,method,body){
-  if(!spotifyToken){
-    var saved=localStorage.getItem('baker_spotify_token');
-    var expiry=parseInt(localStorage.getItem('baker_spotify_expiry')||'0');
-    if(saved&&Date.now()<expiry){spotifyToken=saved;}
-    else if(localStorage.getItem('baker_spotify_refresh')){var ok=await refreshSpotifyToken();if(!ok)return null;}
-    else return null;
-  }
-  try{
-    var opts={method:method||'GET',headers:{Authorization:'Bearer '+spotifyToken}};
-    if(body){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body);}
-    var r=await fetch('https://api.spotify.com/v1/'+endpoint,opts);
-    if(r.status===401){var ok=await refreshSpotifyToken();if(!ok){appendSys('Spotify disconnected — reconnect.');return null;}return spotifyAPI(endpoint,method,body);}
-    if(r.status===204||r.status===202)return{ok:true};
-    if(r.ok)return await r.json();
-    return null;
-  }catch(e){return null;}
-}
+async function initSpotify(){spotifyClientId=localStorage.getItem('baker_spotify_id')||'';if(!spotifyClientId){spotifyClientId=prompt('Enter your Spotify Client ID (from developer.spotify.com):');if(!spotifyClientId)return;localStorage.setItem('baker_spotify_id',spotifyClientId);}var verifier=await generateCodeVerifier();var challenge=await generateCodeChallenge(verifier);localStorage.setItem('spotify_verifier',verifier);var redirect=encodeURIComponent('https://big-burr.github.io/BAKER/conversation.html');var scopes=encodeURIComponent('user-read-currently-playing user-read-playback-state user-modify-playback-state streaming app-remote-control user-read-private playlist-read-private playlist-modify-public playlist-modify-private');window.location.href='https://accounts.spotify.com/authorize?client_id='+spotifyClientId+'&response_type=code&redirect_uri='+redirect+'&scope='+scopes+'&code_challenge_method=S256&code_challenge='+challenge;}
+async function checkSpotifyCallback(){var params=new URLSearchParams(window.location.search);var code=params.get('code');if(!code)return;window.history.replaceState(null,'',window.location.pathname);var verifier=localStorage.getItem('spotify_verifier');if(!verifier)return;spotifyClientId=localStorage.getItem('baker_spotify_id')||'';try{var resp=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:spotifyClientId,grant_type:'authorization_code',code:code,redirect_uri:'https://big-burr.github.io/BAKER/conversation.html',code_verifier:verifier})});var data=await resp.json();if(data.access_token){spotifyToken=data.access_token;localStorage.setItem('baker_spotify_token',data.access_token);if(data.refresh_token)localStorage.setItem('baker_spotify_refresh',data.refresh_token);localStorage.setItem('baker_spotify_expiry',Date.now()+(data.expires_in*1000));localStorage.removeItem('spotify_verifier');document.getElementById('spotify-btn').className='hbtn spotify-on';document.getElementById('spotify-btn').textContent='♫ Spotify on';appendSys('Spotify connected, sir.');}}catch(e){appendSys('Spotify auth failed: '+e.message);}}
+async function refreshSpotifyToken(){var refresh=localStorage.getItem('baker_spotify_refresh');if(!refresh)return false;spotifyClientId=localStorage.getItem('baker_spotify_id')||'';try{var resp=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:spotifyClientId,grant_type:'refresh_token',refresh_token:refresh})});var data=await resp.json();if(data.access_token){spotifyToken=data.access_token;localStorage.setItem('baker_spotify_token',data.access_token);localStorage.setItem('baker_spotify_expiry',Date.now()+(data.expires_in*1000));if(data.refresh_token)localStorage.setItem('baker_spotify_refresh',data.refresh_token);return true;}}catch(e){}return false;}
+async function spotifyAPI(endpoint,method,body){if(!spotifyToken){var saved=localStorage.getItem('baker_spotify_token');var expiry=parseInt(localStorage.getItem('baker_spotify_expiry')||'0');if(saved&&Date.now()<expiry){spotifyToken=saved;}else if(localStorage.getItem('baker_spotify_refresh')){var ok=await refreshSpotifyToken();if(!ok)return null;}else return null;}try{var opts={method:method||'GET',headers:{Authorization:'Bearer '+spotifyToken}};if(body){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body);}var r=await fetch('https://api.spotify.com/v1/'+endpoint,opts);if(r.status===401){var ok=await refreshSpotifyToken();if(!ok){appendSys('Spotify disconnected — reconnect.');return null;}return spotifyAPI(endpoint,method,body);}if(r.status===204||r.status===202)return{ok:true};if(r.ok)return await r.json();return null;}catch(e){return null;}}
 async function fetchSpotifyAndReport(){if(!spotifyToken){appendSys('Connect Spotify first using the ♫ button.');return;}setOrbState('thinking');var d=await spotifyAPI('me/player/currently-playing');if(!d||!d.item){appendSys('Nothing playing on Spotify right now.');setOrbState('idle');return;}var track={title:d.item.name,artist:d.item.artists.map(function(a){return a.name;}).join(', '),album:d.item.album.name,playing:d.is_playing};showSpotifyCard(track);var sysInfo='System information: Spotify is currently '+(track.playing?'playing':'paused')+' "'+track.title+'" by '+track.artist+'.';await sendSystemInfo(sysInfo,'Comment on the currently playing track as JARVIS would — brief, witty, one sentence.');}
 function showSpotifyCard(track){removeWelcome();var card=document.createElement('div');card.className='spotify-card';card.innerHTML='<div class="spotify-track">♫ '+track.title+'</div><div class="spotify-artist">'+track.artist+' · '+track.album+'</div><div class="spotify-controls"><button class="sp-btn" onclick="spotifyControl(\'previous\')">⏮</button><button class="sp-btn" onclick="spotifyControl(\'toggle\')">'+( track.playing?'⏸':'▶')+'</button><button class="sp-btn" onclick="spotifyControl(\'next\')">⏭</button></div>';var wrap=document.createElement('div');wrap.className='msg baker';wrap.appendChild(card);var msgs=document.getElementById('messages');msgs.appendChild(wrap);msgs.scrollTop=msgs.scrollHeight;}
 
@@ -350,7 +270,7 @@ async function spotifyPlay(uri){var device=await pickDevice();if(!device)return 
 async function spotifySearchAndPlay(query){appendSys('Searching Spotify for: '+query);setOrbState('thinking');var key=localStorage.getItem('baker_api_key');var searchQuery=query;if(key){try{var r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:50,system:'Extract the song title and artist from the user request and return ONLY a Spotify search query in format: track:"song title" artist:"artist name". If no artist mentioned just return track:"song title". No explanation, no punctuation, just the query.',messages:[{role:'user',content:query}]})});var d=await r.json();if(d.content&&d.content[0])searchQuery=d.content[0].text.trim();}catch(e){}}var track=await spotifySearch(searchQuery,'track');if(!track)track=await spotifySearch(query,'track');if(!track){appendSys('No results found for: '+query);setOrbState('idle');return;}var ok=await spotifyPlay(track.uri);if(ok){var sysInfo='System information: Now playing "'+track.name+'" by '+track.artists.map(function(a){return a.name;}).join(', ')+' on Spotify.';showSpotifyCard({title:track.name,artist:track.artists.map(function(a){return a.name;}).join(', '),album:track.album.name,playing:true});await sendSystemInfo(sysInfo,'Confirm what you just queued as JARVIS would — one brief sentence.');}else{setOrbState('idle');}}
 async function getMyPlaylists(){var d=await spotifyAPI('me/playlists?limit=50');if(!d||!d.items)return[];return d.items;}
 async function getUserId(){var d=await spotifyAPI('me');return d?d.id:null;}
-async function showPlaylists(){appendSys('Fetching your playlists...');var playlists=await getMyPlaylists();if(!playlists.length){appendSys('No playlists found.');return;}removeWelcome();var msgs=document.getElementById('messages');var card=document.createElement('div');card.className='spotify-card';card.style.maxWidth='380px';var title=document.createElement('div');title.className='spotify-track';title.textContent='📋 Your playlists ('+playlists.length+'):';card.appendChild(title);playlists.slice(0,10).forEach(function(pl){var row=document.createElement('div');row.className='spotify-artist';row.style.marginTop='4px';row.textContent='• '+pl.name+' ('+pl.tracks.total+' tracks)';card.appendChild(row);});if(playlists.length>10){var more=document.createElement('div');more.className='spotify-artist';more.style.marginTop='4px';more.textContent='...and '+(playlists.length-10)+' more';card.appendChild(more);}var wrap=document.createElement('div');wrap.className='msg baker';wrap.appendChild(card);var msgs=document.getElementById('messages');msgs.appendChild(wrap);msgs.scrollTop=msgs.scrollHeight;var sysInfo='System information: User has '+playlists.length+' Spotify playlists: '+playlists.slice(0,5).map(function(p){return p.name;}).join(', ')+(playlists.length>5?'...':'.')+'.';await sendSystemInfo(sysInfo,'Acknowledge the playlists briefly as JARVIS would.');}
+async function showPlaylists(){appendSys('Fetching your playlists...');var playlists=await getMyPlaylists();if(!playlists.length){appendSys('No playlists found.');return;}removeWelcome();var msgs=document.getElementById('messages');var card=document.createElement('div');card.className='spotify-card';card.style.maxWidth='380px';var title=document.createElement('div');title.className='spotify-track';title.textContent='📋 Your playlists ('+playlists.length+'):';card.appendChild(title);playlists.slice(0,10).forEach(function(pl){var row=document.createElement('div');row.className='spotify-artist';row.style.marginTop='4px';row.textContent='• '+pl.name+' ('+pl.tracks.total+' tracks)';card.appendChild(row);});if(playlists.length>10){var more=document.createElement('div');more.className='spotify-artist';more.style.marginTop='4px';more.textContent='...and '+(playlists.length-10)+' more';card.appendChild(more);}var wrap=document.createElement('div');wrap.className='msg baker';wrap.appendChild(card);msgs.appendChild(wrap);msgs.scrollTop=msgs.scrollHeight;var sysInfo='System information: User has '+playlists.length+' Spotify playlists: '+playlists.slice(0,5).map(function(p){return p.name;}).join(', ')+(playlists.length>5?'...':'.')+'.';await sendSystemInfo(sysInfo,'Acknowledge the playlists briefly as JARVIS would.');}
 async function addCurrentToPlaylist(playlistName){appendSys('Adding to playlist: '+playlistName);setOrbState('thinking');var current=await spotifyAPI('me/player/currently-playing');if(!current||!current.item){appendSys('Nothing is currently playing.');setOrbState('idle');return;}var trackUri=current.item.uri;var trackName=current.item.name;var playlists=await getMyPlaylists();var pl=playlists.find(function(p){return p.name.toLowerCase().includes(playlistName.toLowerCase());});if(!pl){appendSys('Could not find playlist: '+playlistName);setOrbState('idle');return;}var result=await spotifyAPI('playlists/'+pl.id+'/tracks','POST',{uris:[trackUri]});if(result){var sysInfo='System information: Added "'+trackName+'" to playlist "'+pl.name+'" successfully.';await sendSystemInfo(sysInfo,'Confirm you added the track to the playlist as JARVIS would — one sentence.');}else{appendSys('Failed to add track to playlist.');setOrbState('idle');}}
 async function createPlaylist(name){appendSys('Creating playlist: '+name);setOrbState('thinking');var userId=await getUserId();if(!userId){appendSys('Could not get user ID.');setOrbState('idle');return;}var result=await spotifyAPI('users/'+userId+'/playlists','POST',{name:name,public:false,description:'Created by BAKER'});if(result&&result.id){var sysInfo='System information: Created new Spotify playlist "'+name+'" successfully.';await sendSystemInfo(sysInfo,'Confirm playlist creation as JARVIS would — one sentence.');}else{appendSys('Failed to create playlist.');setOrbState('idle');}}
 async function removeCurrentFromPlaylist(playlistName){appendSys('Removing from playlist: '+playlistName);setOrbState('thinking');var current=await spotifyAPI('me/player/currently-playing');if(!current||!current.item){appendSys('Nothing is currently playing.');setOrbState('idle');return;}var trackUri=current.item.uri;var trackName=current.item.name;var playlists=await getMyPlaylists();var pl=playlists.find(function(p){return p.name.toLowerCase().includes(playlistName.toLowerCase());});if(!pl){appendSys('Could not find playlist: '+playlistName);setOrbState('idle');return;}var result=await spotifyAPI('playlists/'+pl.id+'/tracks','DELETE',{tracks:[{uri:trackUri}]});if(result){var sysInfo='System information: Removed "'+trackName+'" from playlist "'+pl.name+'".';await sendSystemInfo(sysInfo,'Confirm removal as JARVIS would — one sentence.');}else{appendSys('Failed to remove track.');setOrbState('idle');}}
@@ -359,19 +279,7 @@ async function spotifyControl(action){if(!spotifyToken)return;if(action==='next'
 async function sendSystemInfo(sysInfo,instruction){var key=localStorage.getItem('baker_api_key');if(!key){setOrbState('idle');return;}var effort=localStorage.getItem('baker_effort')||'standard';var maxTok={deep:1500,standard:800,quick:400,minimal:150}[effort]||800;state.history.push({role:'user',content:sysInfo+' '+instruction});showThinking();try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTok,system:buildSystem(),messages:state.history})});var data=await resp.json();if(data.error)throw new Error(data.error.message);var raw=data.content.map(function(b){return b.text||'';}).join('').trim();var parsed=parseResponse(raw);removeThinking();appendMsg('baker',parsed.txt,parsed.note);state.history.push({role:'assistant',content:raw});document.getElementById('dl-btn').disabled=false;if(voiceMode)speakText(parsed.txt);else setOrbState('idle');state.skipHotWord=parsed.txt.trim().endsWith('?');}catch(err){removeThinking();appendMsg('baker','System info failed: '+err.message);setOrbState('idle');}if(state.history.length>40)state.history=state.history.slice(-40);}
 
 function parseResponse(raw){var noteResult=parseNote(raw);var txt=noteResult.txt;var cmdMatch=txt.match(/<<BAKER:([^>]+)>>$/);if(cmdMatch){txt=txt.replace(/<<BAKER:[^>]+>>$/,'').trim();var parts=cmdMatch[1].split(':');setTimeout(function(){dispatchBAKERCommand(parts[0],parts.slice(1));},100);}return{txt:txt,note:noteResult.note};}
-function dispatchBAKERCommand(cmd,args){
-  if(cmd==='weather')fetchWeatherAndReport();
-  else if(cmd==='spotify')fetchSpotifyAndReport();
-  else if(cmd==='spotify_next')spotifyControl('next');
-  else if(cmd==='spotify_prev')spotifyControl('previous');
-  else if(cmd==='spotify_pause')spotifyControl('toggle');
-  else if(cmd==='spotify_play'&&args.length)spotifySearchAndPlay(args.join(' '));
-  else if(cmd==='spotify_add'&&args.length)addCurrentToPlaylist(args.join(' '));
-  else if(cmd==='spotify_remove'&&args.length)removeCurrentFromPlaylist(args.join(' '));
-  else if(cmd==='spotify_playlists')showPlaylists();
-  else if(cmd==='spotify_create'&&args.length)createPlaylist(args.join(' '));
-  else if(cmd==='spotify_device')pickDevice();
-}
+function dispatchBAKERCommand(cmd,args){if(cmd==='weather')fetchWeatherAndReport();else if(cmd==='spotify')fetchSpotifyAndReport();else if(cmd==='spotify_next')spotifyControl('next');else if(cmd==='spotify_prev')spotifyControl('previous');else if(cmd==='spotify_pause')spotifyControl('toggle');else if(cmd==='spotify_play'&&args.length)spotifySearchAndPlay(args.join(' '));else if(cmd==='spotify_add'&&args.length)addCurrentToPlaylist(args.join(' '));else if(cmd==='spotify_remove'&&args.length)removeCurrentFromPlaylist(args.join(' '));else if(cmd==='spotify_playlists')showPlaylists();else if(cmd==='spotify_create'&&args.length)createPlaylist(args.join(' '));else if(cmd==='spotify_device')pickDevice();}
 function parseNote(raw){var s=raw.indexOf('<<<NOTE_START>>>'),e=raw.indexOf('<<<NOTE_END>>>');if(s===-1||e===-1)return{txt:raw,note:null};var block=raw.slice(s+16,e).trim(),chat=raw.slice(0,s).trim();var fm=block.match(/FILENAME:\s*(.+)/),pm=block.match(/PATH:\s*(.+)/),ci=block.indexOf('<<<CONTENT>>>');if(!fm||!pm||ci===-1)return{txt:raw,note:null};return{txt:chat||raw,note:{filename:fm[1].trim(),path:pm[1].trim(),content:block.slice(ci+13).trim()}};}
 
 function buildSystem(){
@@ -379,46 +287,24 @@ function buildSystem(){
   var tod=h>=5&&h<12?'morning':h>=12&&h<17?'afternoon':h>=17&&h<21?'evening':'night';
   var memBlock=buildMemoryBlock();
   var webSearchOn=localStorage.getItem('baker_web_search')==='true';
-
   var sys='You are BAKER, an intelligent AI assistant modelled after JARVIS from Iron Man.\n\nPersonality: precise, composed, quietly witty. Address the user as "sir" occasionally. Lead with the answer. Dry humour when appropriate. Do not pad responses.\n\nIt is currently '+tod+'. Use time-aware greetings naturally but NEVER state the specific time unless asked.\n\n';
-
   if(voiceMode){sys+='VOICE MODE: Responses are read aloud. No markdown, no bullets, no headers. Flowing spoken sentences only. 1-3 sentences max unless asked for more. End with "?" if you need clarification.\n\n';}
-
-  if(webSearchOn){
-    sys+='WEB SEARCH: You have access to real-time web search via tool use. Use it when the user asks about current events, recent news, live data, or anything that may have changed since your training. Always cite what you found.\n\n';
-  }
-
+  if(webSearchOn){sys+='WEB SEARCH: You have access to real-time web search via tool use. Use it when the user asks about current events, recent news, live data, or anything that may have changed since your training. Always cite what you found.\n\n';}
   sys+='Command tags (append to END of response only, never mid-sentence):\n<<BAKER:weather>> — fetch weather\n<<BAKER:spotify>> — show Spotify track\n<<BAKER:spotify_next>> — skip track\n<<BAKER:spotify_prev>> — previous track\n<<BAKER:spotify_pause>> — pause/resume\n<<BAKER:spotify_play:song name>> — search and play a song\n<<BAKER:spotify_playlists>> — show user playlists\n<<BAKER:spotify_add:playlist name>> — add current song to playlist\n<<BAKER:spotify_remove:playlist name>> — remove current song from playlist\n<<BAKER:spotify_create:playlist name>> — create new playlist\n<<BAKER:spotify_device>> — show device picker\nOnly use when user explicitly asks.\n\n';
-
   sys+='To create vault notes end your reply with:\n<<<NOTE_START>>>\nFILENAME: Title.md\nPATH: 01-Projects/Title.md\n<<<CONTENT>>>\n[markdown note]\n<<<NOTE_END>>>\n\nFolders: Projects->01-Projects/, Daily->07-System/Daily/, Lectures->00-Capture/Lectures/, Conversations->00-Capture/Conversations/, Ideas->05-Notes/Atomic/, General->00-Capture/Inbox/\nAlways include YAML frontmatter and [[HOME]] link.';
-
   if(memBlock){sys+='\n'+memBlock+'\n';}
-
   var all=state.autoNotes.concat(state.manualNotes);
   if(all.length){sys+='\n\n--- VAULT NOTES IN CONTEXT ---\n';all.forEach(function(n){var trimmed=n.content.length>2000?n.content.slice(0,2000)+'\n...[truncated]':n.content;sys+='\n### '+(n.path||n.name)+'\n'+trimmed+'\n';});sys+='\n--- END VAULT NOTES ---';}
   return sys;
 }
 
-// ── API call with optional web search tool ────────────────
-async function callAPI(key, maxTok, messages){
+async function callAPI(key,maxTok,messages){
   var webSearchOn=localStorage.getItem('baker_web_search')==='true';
-  var body={
-    model:'claude-sonnet-4-6',
-    max_tokens:maxTok,
-    system:buildSystem(),
-    messages:messages
-  };
-  if(webSearchOn){
-    body.tools=[{type:'web_search_20250305',name:'web_search',max_uses:3}];
-  }
-  var resp=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify(body)
-  });
+  var body={model:'claude-sonnet-4-6',max_tokens:maxTok,system:buildSystem(),messages:messages};
+  if(webSearchOn){body.tools=[{type:'web_search_20250305',name:'web_search',max_uses:3}];}
+  var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});
   var data=await resp.json();
   if(data.error)throw new Error(data.error.message);
-  // Handle tool use blocks — extract text from all content blocks
   var raw=data.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text||'';}).join('').trim();
   return raw;
 }
@@ -432,71 +318,30 @@ async function sendMessage(){
   var key=localStorage.getItem('baker_api_key');
   if(!key){alert('No API key — go to BAKER Settings first.');return;}
   input.value='';input.style.height='auto';
+
+  // ── Camera intent check ───────────────────────────────
+  var camIntent=checkCameraIntent(txt);
+  if(camIntent){appendMsg('user',txt);removeWelcome();openCameraModal(camIntent);return;}
+
   appendMsg('user',txt);
-
-  // Spotify intent detection
-  if(spotifyToken){
-    var lowerTxt=txt.toLowerCase().trim();
-    if(/^(?:hey baker[,.]?\s*)?(?:play|put on|queue)\s+/i.test(txt)){spotifySearchAndPlay(txt.replace(/^(?:hey baker[,.]?\s*)?(?:play|put on|queue)\s+/i,''));return;}
-    if(/show(?:my)? playlists?|list(?:my)? playlists?/i.test(lowerTxt)){showPlaylists();return;}
-    if(/change device|switch device|which device|pick device/i.test(lowerTxt)){pickDevice();return;}
-    var addMatch=txt.match(/add (?:this|current|song) to (?:my )?(?:playlist )?(.+)/i);
-    if(addMatch){addCurrentToPlaylist(addMatch[1].trim());return;}
-    var removeMatch=txt.match(/remove (?:this|current|song) from (?:my )?(?:playlist )?(.+)/i);
-    if(removeMatch){removeCurrentFromPlaylist(removeMatch[1].trim());return;}
-    var createMatch=txt.match(/create (?:a )?(?:new )?playlist (?:called|named) (.+)/i);
-    if(createMatch){createPlaylist(createMatch[1].trim());return;}
-  }
-
+  if(spotifyToken){var lowerTxt=txt.toLowerCase().trim();if(/^(?:hey baker[,.]?\s*)?(?:play|put on|queue)\s+/i.test(txt)){spotifySearchAndPlay(txt.replace(/^(?:hey baker[,.]?\s*)?(?:play|put on|queue)\s+/i,''));return;}if(/show(?:my)? playlists?|list(?:my)? playlists?/i.test(lowerTxt)){showPlaylists();return;}if(/change device|switch device|which device|pick device/i.test(lowerTxt)){pickDevice();return;}var addMatch=txt.match(/add (?:this|current|song) to (?:my )?(?:playlist )?(.+)/i);if(addMatch){addCurrentToPlaylist(addMatch[1].trim());return;}var removeMatch=txt.match(/remove (?:this|current|song) from (?:my )?(?:playlist )?(.+)/i);if(removeMatch){removeCurrentFromPlaylist(removeMatch[1].trim());return;}var createMatch=txt.match(/create (?:a )?(?:new )?playlist (?:called|named) (.+)/i);if(createMatch){createPlaylist(createMatch[1].trim());return;}}
   state.history.push({role:'user',content:txt+' '+getContextBlock()});
   if(state.vaultConnected){var rel=findRelevant(txt);var newN=rel.filter(function(r){return !state.autoNotes.find(function(a){return a.path===r.path;});});if(newN.length){state.autoNotes=state.autoNotes.concat(newN).slice(0,8);renderStatusBar();appendSys(newN.length===1?'Pulled: '+newN[0].name.replace('.md',''):'Pulled '+newN.length+' relevant notes');}}
-
-  state.busy=true;
-  document.getElementById('send-btn').disabled=true;
-  showThinking();setOrbState('thinking');
-
-  var effort=localStorage.getItem('baker_effort')||'standard';
-  var maxTok=effortTokens[effort]||800;
-
-  try{
-    var raw=await callAPI(key,maxTok,state.history);
-    var parsed=parseResponse(raw);
-    removeThinking();
-    appendMsg('baker',parsed.txt,parsed.note);
-    state.history.push({role:'assistant',content:raw});
-    document.getElementById('dl-btn').disabled=false;
-    state.skipHotWord=parsed.txt.trim().endsWith('?');
-    if(state.history.length===2&&!document.getElementById('topic').value){
-      var topicEl=document.getElementById('topic');
-      var words=txt.split(/\s+/).slice(0,4).join(' ');
-      topicEl.value=words;topicEl.style.borderColor='var(--accent)';
-      setTimeout(function(){topicEl.style.borderColor='';},2000);
-    }
-    // Compaction check
-    await maybeCompactHistory(key);
-  }catch(err){
-    removeThinking();
-    appendMsg('baker','I appear to have encountered a fault, sir. '+err.message);
-  }
-  state.busy=false;setOrbState('idle');
-  document.getElementById('send-btn').disabled=false;
-  document.getElementById('msg-input').focus();
+  state.busy=true;document.getElementById('send-btn').disabled=true;showThinking();setOrbState('thinking');
+  var effort=localStorage.getItem('baker_effort')||'standard';var maxTok=effortTokens[effort]||800;
+  try{var raw=await callAPI(key,maxTok,state.history);var parsed=parseResponse(raw);removeThinking();appendMsg('baker',parsed.txt,parsed.note);state.history.push({role:'assistant',content:raw});document.getElementById('dl-btn').disabled=false;state.skipHotWord=parsed.txt.trim().endsWith('?');if(state.history.length===2&&!document.getElementById('topic').value){var topicEl=document.getElementById('topic');var words=txt.split(/\s+/).slice(0,4).join(' ');topicEl.value=words;topicEl.style.borderColor='var(--accent)';setTimeout(function(){topicEl.style.borderColor='';},2000);}await maybeCompactHistory(key);}catch(err){removeThinking();appendMsg('baker','I appear to have encountered a fault, sir. '+err.message);}
+  state.busy=false;setOrbState('idle');document.getElementById('send-btn').disabled=false;document.getElementById('msg-input').focus();
   if(state.history.length>40)state.history=state.history.slice(-40);
 }
 
 function openEnd(){if(!state.history.length){alert('Nothing to save yet, sir.');return;}document.getElementById('end-sub').textContent=state.vaultConnected?'BAKER will summarize and save to your vault. Chat will clear.':'No vault connected — BAKER will download the note.';document.getElementById('end-overlay').classList.add('open');}
 function closeEnd(){document.getElementById('end-overlay').classList.remove('open');}
 var endPrompts={deep:'Create a comprehensive vault note summary: overview, key topics, insights, decisions, action items (checkbox format), connections.',standard:'Create a vault note summary: brief overview, key points, action items (checkbox format).',quick:'Brief vault note summary with key points and action items.',minimal:'2-3 sentence summary and action items.'};
-async function endConvo(){closeEnd();var key=localStorage.getItem('baker_api_key');if(!key){alert('No API key set.');return;}var topic=document.getElementById('topic').value.trim()||'Conversation';var effort=localStorage.getItem('baker_effort')||'standard';var date=new Date().toISOString().split('T')[0];var fname=date+'-Conversation-'+topic.replace(/\s+/g,'-')+'.md';var fpath='00-Capture/Conversations/'+fname;appendSys('Generating summary...');setOrbState('thinking');var transcript=state.history.map(function(m){return(m.role==='user'?'User':'BAKER')+': '+m.content;}).join('\n\n');try{var prompt=endPrompts[effort]||endPrompts.standard;var sysMsg='You are BAKER. '+prompt+'\n\nStart with:\n---\ndate: '+date+'\ntype: conversation\nwith: BAKER\ncontext: '+topic+'\ntags: [conversation, baker]\n---\n\n# Conversation: '+topic+'\n\nThen summary. End with:\n\n---\n*[[HOME]] - [[00-Capture/Conversations]]*';var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:sysMsg,messages:[{role:'user',content:'Summarize:\n\n'+transcript}]})});var data=await resp.json();if(data.error)throw new Error(data.error.message);var note=data.content.map(function(b){return b.text||'';}).join('').trim();
-    var memSummary=note.replace(/---[\s\S]*?---/,'').trim().slice(0,200).replace(/\n/g,' ');
-    if(memSummary)saveMemory('Topic: '+(document.getElementById('topic').value.trim()||'General')+'. '+memSummary);
-    if(state.vaultConnected){var ok=await writeToVault(fpath,note);appendSys(ok?'Saved to vault: '+fpath:'Vault write failed — downloading.');if(!ok)downloadBlob(note,fname);}else{downloadBlob(note,fname);appendSys('Downloaded — move to 00-Capture/Conversations/ in your vault.');}
-    setTimeout(function(){state.history=[];state.autoNotes=[];state.manualNotes=[];state.noteStore={};state.skipHotWord=false;renderStatusBar();document.getElementById('messages').innerHTML='<div class="welcome" id="welcome"><div class="welcome-icon">◈</div><div class="welcome-title">'+getTimeGreeting()+'</div><div class="welcome-sub">Conversation saved. What shall we work through next, sir?</div><div class="starters"><div class="starter" id="s1">💡 Project idea</div><div class="starter" id="s2">📅 Daily reflection</div><div class="starter" id="s3">📚 Study help</div><div class="starter" id="s4">📂 Check my notes</div><div class="starter" id="s5">✏ Create a note</div><div class="starter" id="s6">🌤 Weather</div><div class="starter" id="s7">🎵 Now playing</div></div></div>';document.getElementById('dl-btn').disabled=true;document.getElementById('topic').value='';setOrbState('idle');rewireStarters();},2000);
-  }catch(err){appendSys('Summary failed: '+err.message);setOrbState('idle');}}
+async function endConvo(){closeEnd();var key=localStorage.getItem('baker_api_key');if(!key){alert('No API key set.');return;}var topic=document.getElementById('topic').value.trim()||'Conversation';var effort=localStorage.getItem('baker_effort')||'standard';var date=new Date().toISOString().split('T')[0];var fname=date+'-Conversation-'+topic.replace(/\s+/g,'-')+'.md';var fpath='00-Capture/Conversations/'+fname;appendSys('Generating summary...');setOrbState('thinking');var transcript=state.history.map(function(m){return(m.role==='user'?'User':'BAKER')+': '+(typeof m.content==='string'?m.content:'[image message]');}).join('\n\n');try{var prompt=endPrompts[effort]||endPrompts.standard;var sysMsg='You are BAKER. '+prompt+'\n\nStart with:\n---\ndate: '+date+'\ntype: conversation\nwith: BAKER\ncontext: '+topic+'\ntags: [conversation, baker]\n---\n\n# Conversation: '+topic+'\n\nThen summary. End with:\n\n---\n*[[HOME]] - [[00-Capture/Conversations]]*';var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:sysMsg,messages:[{role:'user',content:'Summarize:\n\n'+transcript}]})});var data=await resp.json();if(data.error)throw new Error(data.error.message);var note=data.content.map(function(b){return b.text||'';}).join('').trim();var memSummary=note.replace(/---[\s\S]*?---/,'').trim().slice(0,200).replace(/\n/g,' ');if(memSummary)saveMemory('Topic: '+(document.getElementById('topic').value.trim()||'General')+'. '+memSummary);if(state.vaultConnected){var ok=await writeToVault(fpath,note);appendSys(ok?'Saved to vault: '+fpath:'Vault write failed — downloading.');if(!ok)downloadBlob(note,fname);}else{downloadBlob(note,fname);appendSys('Downloaded — move to 00-Capture/Conversations/ in your vault.');}setTimeout(function(){state.history=[];state.autoNotes=[];state.manualNotes=[];state.noteStore={};state.skipHotWord=false;renderStatusBar();document.getElementById('messages').innerHTML='<div class="welcome" id="welcome"><div class="welcome-icon">◈</div><div class="welcome-title">'+getTimeGreeting()+'</div><div class="welcome-sub">Conversation saved. What shall we work through next, sir?</div><div class="starters"><div class="starter" id="s1">💡 Project idea</div><div class="starter" id="s2">📅 Daily reflection</div><div class="starter" id="s3">📚 Study help</div><div class="starter" id="s4">📂 Check my notes</div><div class="starter" id="s5">✏ Create a note</div><div class="starter" id="s6">🌤 Weather</div><div class="starter" id="s7">🎵 Now playing</div></div></div>';document.getElementById('dl-btn').disabled=true;document.getElementById('topic').value='';setOrbState('idle');rewireStarters();},2000);}catch(err){appendSys('Summary failed: '+err.message);setOrbState('idle');}}
 
 function rewireStarters(){var map={s1:'Help me think through a project idea',s2:'I want to reflect on my day',s3:'Help me understand something I am studying',s4:'What do my notes say about my current projects?',s5:'Create a new project note for me',s6:'__weather__',s7:'__spotify__'};Object.keys(map).forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('click',function(){if(map[id]==='__weather__')fetchWeatherAndReport();else if(map[id]==='__spotify__')fetchSpotifyAndReport();else sendStarter(map[id]);});});}
 function downloadBlob(content,filename){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:'text/markdown'}));a.download=filename;a.click();}
-function downloadNote(){if(!state.history.length)return;var topic=document.getElementById('topic').value.trim()||'Conversation';var date=new Date().toISOString().split('T')[0];var t=state.history.map(function(m){return '**'+(m.role==='user'?'Me':'BAKER')+':** '+m.content;}).join('\n\n');downloadBlob('---\ndate: '+date+'\ntype: conversation\nwith: BAKER\ncontext: '+topic+'\ntags: [conversation, baker]\n---\n\n# Conversation — '+topic+'\n\n'+t+'\n\n---\n*[[HOME]]*\n',date+'-Conversation-'+topic.replace(/\s+/g,'-')+'.md');}
+function downloadNote(){if(!state.history.length)return;var topic=document.getElementById('topic').value.trim()||'Conversation';var date=new Date().toISOString().split('T')[0];var t=state.history.map(function(m){return '**'+(m.role==='user'?'Me':'BAKER')+':** '+(typeof m.content==='string'?m.content:'[image message]');}).join('\n\n');downloadBlob('---\ndate: '+date+'\ntype: conversation\nwith: BAKER\ncontext: '+topic+'\ntags: [conversation, baker]\n---\n\n# Conversation — '+topic+'\n\n'+t+'\n\n---\n*[[HOME]]*\n',date+'-Conversation-'+topic.replace(/\s+/g,'-')+'.md');}
 function clearChat(){if(state.history.length&&!confirm('Clear this conversation?'))return;state.history=[];state.autoNotes=[];state.manualNotes=[];state.noteStore={};state.skipHotWord=false;renderStatusBar();document.getElementById('messages').innerHTML='<div class="welcome" id="welcome"><div class="welcome-icon">◈</div><div class="welcome-title">'+getTimeGreeting()+'</div><div class="welcome-sub">Good to have you, sir. Ready when you are.</div><div class="starters"><div class="starter" id="s1">💡 Project idea</div><div class="starter" id="s2">📅 Daily reflection</div><div class="starter" id="s3">📚 Study help</div><div class="starter" id="s4">📂 Check my notes</div><div class="starter" id="s5">✏ Create a note</div><div class="starter" id="s6">🌤 Weather</div><div class="starter" id="s7">🎵 Now playing</div></div></div>';document.getElementById('dl-btn').disabled=true;document.getElementById('topic').value='';setOrbState('idle');rewireStarters();}
 
 function setVaultBtn(s){var b=document.getElementById('vault-btn');b.className='hbtn'+(s==='on'?' vault-on':s==='scanning'?' vault-scanning':'');b.textContent=s==='on'?'⬡ Vault on':s==='scanning'?'⟳ Scanning...':'⬡ Connect Vault';}
@@ -514,40 +359,18 @@ function removeThinking(){var t=document.getElementById('thinking-msg');if(t)t.r
 function setMode(mode){voiceMode=(mode==='voice');var tT=document.getElementById('tab-text'),tV=document.getElementById('tab-voice');var iA=document.getElementById('input-area'),vA=document.getElementById('voice-area');if(tT)tT.className='mode-tab'+(voiceMode?'':' active');if(tV)tV.className='mode-tab'+(voiceMode?' active':'');if(iA)iA.style.display=voiceMode?'none':'flex';if(vA)vA.style.display=voiceMode?'flex':'none';if(voiceMode&&window.orbInitAudio)window.orbInitAudio();if(!voiceMode){stopVoice();stopSpeaking();if(constantMic)setTimeout(startWakeWord,500);}}
 function handleMicClick(){if(isSpeaking){stopSpeaking();return;}if(voiceActive){stopVoice();}else{startVoice();}}
 
-// ── Voice: upgraded with echo lockout + semantic VAD ──────
 function startVoice(){
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){alert('Voice input requires Chrome.');return;}
   if(state.busy)return;
-
-  // Echo lockout: don't start mic if BAKER just finished speaking
   var msSinceSpeakEnd=Date.now()-speakEndTime;
-  if(msSinceSpeakEnd<ECHO_LOCKOUT_MS){
-    var remaining=ECHO_LOCKOUT_MS-msSinceSpeakEnd;
-    setTimeout(function(){if(voiceMode&&!state.busy&&!isSpeaking)startVoice();},remaining+50);
-    return;
-  }
-
+  if(msSinceSpeakEnd<ECHO_LOCKOUT_MS){var remaining=ECHO_LOCKOUT_MS-msSinceSpeakEnd;setTimeout(function(){if(voiceMode&&!state.busy&&!isSpeaking)startVoice();},remaining+50);return;}
   try{var w=new SpeechSynthesisUtterance('');w.volume=0;speechSynthesis.speak(w);}catch(e){}
   if(window.orbInitAudio)window.orbInitAudio();
-  voiceFinal='';
-  document.getElementById('voice-live').textContent='';
-  voiceRec=new SR();
-  voiceRec.continuous=true;voiceRec.interimResults=true;voiceRec.lang='en-US';
+  voiceFinal='';document.getElementById('voice-live').textContent='';
+  voiceRec=new SR();voiceRec.continuous=true;voiceRec.interimResults=true;voiceRec.lang='en-US';
   voiceRec.onstart=function(){voiceActive=true;setMicState('listening');setVoiceStatus('Listening...',true);setOrbState('listening');};
-  voiceRec.onresult=function(e){
-    var interim='';
-    for(var i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal)voiceFinal+=e.results[i][0].transcript+' ';
-      else interim+=e.results[i][0].transcript;
-    }
-    document.getElementById('voice-live').textContent=voiceFinal+interim;
-    if(silenceTimer)clearTimeout(silenceTimer);
-    // Semantic silence window: longer if mid-sentence
-    var window_ms=getSilenceWindow(voiceFinal+interim);
-    silenceTimer=setTimeout(function(){if(voiceActive)stopVoice();},window_ms);
-    if(/over\s*$/i.test(voiceFinal.trim())){voiceFinal=voiceFinal.replace(/\s*over\s*$/i,'').trim()+' ';if(silenceTimer)clearTimeout(silenceTimer);stopVoice();}
-  };
+  voiceRec.onresult=function(e){var interim='';for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)voiceFinal+=e.results[i][0].transcript+' ';else interim+=e.results[i][0].transcript;}document.getElementById('voice-live').textContent=voiceFinal+interim;if(silenceTimer)clearTimeout(silenceTimer);var window_ms=getSilenceWindow(voiceFinal+interim);silenceTimer=setTimeout(function(){if(voiceActive)stopVoice();},window_ms);if(/over\s*$/i.test(voiceFinal.trim())){voiceFinal=voiceFinal.replace(/\s*over\s*$/i,'').trim()+' ';if(silenceTimer)clearTimeout(silenceTimer);stopVoice();}};
   voiceRec.onend=function(){if(voiceActive){try{voiceRec.start();}catch(e){}}};
   voiceRec.onerror=function(e){if(e.error==='not-allowed'){setVoiceStatus('Microphone access denied',false);stopVoice();}};
   try{voiceRec.start();}catch(e){setVoiceStatus('Could not start — try Chrome',false);}
@@ -560,14 +383,7 @@ function stopVoice(){
   var txt=voiceFinal.trim();voiceFinal='';
   document.getElementById('voice-live').textContent='';
   setMicState('idle');setOrbState('idle');
-
-  // Duplicate suppression: discard if too similar to last sent
-  if(txt&&isDuplicate(txt)){
-    setVoiceStatus('Echo detected — discarded',false);
-    setTimeout(function(){setVoiceStatus('Tap to speak',false);},1200);
-    return;
-  }
-
+  if(txt&&isDuplicate(txt)){setVoiceStatus('Echo detected — discarded',false);setTimeout(function(){setVoiceStatus('Tap to speak',false);},1200);return;}
   if(txt){setVoiceStatus('Sending...',true);lastSentText=txt;sendVoiceMessage(txt);}
   else{setVoiceStatus('Tap to speak',false);}
 }
@@ -576,40 +392,21 @@ async function sendVoiceMessage(txt){
   if(state.busy)return;
   var key=localStorage.getItem('baker_api_key');
   if(!key){setVoiceStatus('No API key — check Settings',false);return;}
+
+  // ── Camera intent check in voice mode ─────────────────
+  var camIntent=checkCameraIntent(txt);
+  if(camIntent){appendMsg('user',txt);removeWelcome();setVoiceStatus('Opening camera...',true);openCameraModal(camIntent);return;}
+
   if(checkGoodbye(txt)){appendMsg('user',txt);var farewell='It has been a pleasure, sir. Saving our conversation now.';appendMsg('baker',farewell);speakText(farewell);setTimeout(function(){endConvo();},2000);return;}
   var speedChange=checkSpeedCommand(txt);
   if(speedChange){var msg=speedChange==='faster'?'Understood, sir. Speaking rate increased to '+Math.round(speechRate*100)+'.':'Of course, sir. Speaking rate decreased to '+Math.round(speechRate*100)+'.';appendMsg('baker',msg);speakText(msg);setMicState('idle');setVoiceStatus('Tap to speak',false);return;}
   appendMsg('user',txt);
-
-  // Spotify intent detection
-  if(spotifyToken){
-    var lowerTxt=txt.toLowerCase().trim();
-    if(/^(?:hey baker[,.]?\s*)?(?:play|put on|queue)\s+/i.test(txt)){spotifySearchAndPlay(txt.replace(/^(?:hey baker[,.]?\s*)?(?:play|put on|queue)\s+/i,''));return;}
-    if(/show(?:my)? playlists?|list(?:my)? playlists?/i.test(lowerTxt)){showPlaylists();return;}
-    if(/change device|switch device|which device|pick device/i.test(lowerTxt)){pickDevice();return;}
-    var addMatch=txt.match(/add (?:this|current|song) to (?:my )?(?:playlist )?(.+)/i);if(addMatch){addCurrentToPlaylist(addMatch[1].trim());return;}
-    var removeMatch=txt.match(/remove (?:this|current|song) from (?:my )?(?:playlist )?(.+)/i);if(removeMatch){removeCurrentFromPlaylist(removeMatch[1].trim());return;}
-    var createMatch=txt.match(/create (?:a )?(?:new )?playlist (?:called|named) (.+)/i);if(createMatch){createPlaylist(createMatch[1].trim());return;}
-  }
-
+  if(spotifyToken){var lowerTxt=txt.toLowerCase().trim();if(/^(?:hey baker[,.]?\s*)?(?:play|put on|queue)\s+/i.test(txt)){spotifySearchAndPlay(txt.replace(/^(?:hey baker[,.]?\s*)?(?:play|put on|queue)\s+/i,''));return;}if(/show(?:my)? playlists?|list(?:my)? playlists?/i.test(lowerTxt)){showPlaylists();return;}if(/change device|switch device|which device|pick device/i.test(lowerTxt)){pickDevice();return;}var addMatch=txt.match(/add (?:this|current|song) to (?:my )?(?:playlist )?(.+)/i);if(addMatch){addCurrentToPlaylist(addMatch[1].trim());return;}var removeMatch=txt.match(/remove (?:this|current|song) from (?:my )?(?:playlist )?(.+)/i);if(removeMatch){removeCurrentFromPlaylist(removeMatch[1].trim());return;}var createMatch=txt.match(/create (?:a )?(?:new )?playlist (?:called|named) (.+)/i);if(createMatch){createPlaylist(createMatch[1].trim());return;}}
   state.history.push({role:'user',content:txt+' '+getContextBlock()});
   if(state.vaultConnected){var rel=findRelevant(txt);var newN=rel.filter(function(r){return !state.autoNotes.find(function(a){return a.path===r.path;});});if(newN.length){state.autoNotes=state.autoNotes.concat(newN).slice(0,8);renderStatusBar();}}
   state.busy=true;setMicState('speaking');setVoiceStatus('BAKER is thinking...',true);setOrbState('thinking');
-  var effort=localStorage.getItem('baker_effort')||'standard';
-  var maxTok={deep:1500,standard:800,quick:400,minimal:150}[effort]||800;
-  try{
-    var raw=await callAPI(key,maxTok,state.history);
-    var parsed=parseResponse(raw);
-    appendMsg('baker',parsed.txt,parsed.note);
-    state.history.push({role:'assistant',content:raw});
-    document.getElementById('dl-btn').disabled=false;
-    state.skipHotWord=parsed.txt.trim().endsWith('?');
-    speakText(parsed.txt);
-    await maybeCompactHistory(key);
-  }catch(err){
-    appendMsg('baker','I appear to have encountered a fault, sir. '+err.message);
-    setMicState('idle');setVoiceStatus('Tap to speak',false);setOrbState('idle');state.busy=false;
-  }
+  var effort=localStorage.getItem('baker_effort')||'standard';var maxTok={deep:1500,standard:800,quick:400,minimal:150}[effort]||800;
+  try{var raw=await callAPI(key,maxTok,state.history);var parsed=parseResponse(raw);appendMsg('baker',parsed.txt,parsed.note);state.history.push({role:'assistant',content:raw});document.getElementById('dl-btn').disabled=false;state.skipHotWord=parsed.txt.trim().endsWith('?');speakText(parsed.txt);await maybeCompactHistory(key);}catch(err){appendMsg('baker','I appear to have encountered a fault, sir. '+err.message);setMicState('idle');setVoiceStatus('Tap to speak',false);setOrbState('idle');state.busy=false;}
   if(state.history.length>40)state.history=state.history.slice(-40);
 }
 
@@ -622,7 +419,6 @@ function loadVoices(){cachedVoices=speechSynthesis.getVoices();}
 loadVoices();
 if(speechSynthesis.onvoiceschanged!==undefined)speechSynthesis.onvoiceschanged=loadVoices;
 
-// ── speakText: upgraded with echo lockout tracking ────────
 function speakText(txt){
   if(!voiceMode){state.busy=false;return;}
   stopSpeaking();
@@ -630,50 +426,18 @@ function speakText(txt){
   var utt=new SpeechSynthesisUtterance(clean);
   var voices=cachedVoices.length?cachedVoices:speechSynthesis.getVoices();
   var preferred=['Daniel','Google UK English Male','Microsoft George','Microsoft David','Alex'];
-  var chosen=null;
-  preferred.forEach(function(pref){if(!chosen)chosen=voices.find(function(v){return v.name.indexOf(pref)!==-1;});});
+  var chosen=null;preferred.forEach(function(pref){if(!chosen)chosen=voices.find(function(v){return v.name.indexOf(pref)!==-1;});});
   if(!chosen)chosen=voices.find(function(v){return v.lang&&v.lang.indexOf('en')===0;});
   if(chosen)utt.voice=chosen;
   utt.rate=speechRate;utt.pitch=0.85;utt.volume=1;
   isSpeaking=true;setMicState('speaking');setVoiceStatus('BAKER is speaking... tap to stop',true);setOrbState('speaking');
-  utt.onend=function(){
-    isSpeaking=false;
-    state.busy=false;
-    // Record exactly when BAKER stopped speaking — for echo lockout
-    speakEndTime=Date.now();
-    setMicState('idle');
-    if(voiceMode){
-      var status=state.skipHotWord?'Listening for your answer...':'Listening again...';
-      setVoiceStatus(status,true);
-      setOrbState('listening');
-      // Echo lockout: wait full lockout period before restarting mic
-      setTimeout(function(){
-        if(voiceMode&&!state.busy&&!isSpeaking)startVoice();
-      },ECHO_LOCKOUT_MS);
-    }else if(constantMic){
-      setOrbState('idle');
-      setTimeout(startWakeWord,600);
-    }
-  };
-  utt.onerror=function(){
-    isSpeaking=false;state.busy=false;
-    speakEndTime=Date.now();
-    setMicState('idle');setVoiceStatus('Tap to speak',false);setOrbState('idle');
-  };
+  utt.onend=function(){isSpeaking=false;state.busy=false;speakEndTime=Date.now();setMicState('idle');if(voiceMode){var status=state.skipHotWord?'Listening for your answer...':'Listening again...';setVoiceStatus(status,true);setOrbState('listening');setTimeout(function(){if(voiceMode&&!state.busy&&!isSpeaking)startVoice();},ECHO_LOCKOUT_MS);}else if(constantMic){setOrbState('idle');setTimeout(startWakeWord,600);}};
+  utt.onerror=function(){isSpeaking=false;state.busy=false;speakEndTime=Date.now();setMicState('idle');setVoiceStatus('Tap to speak',false);setOrbState('idle');};
   speechSynthesis.speak(utt);
 }
 
-function stopSpeaking(){
-  if(isSpeaking){
-    speechSynthesis.cancel();
-    isSpeaking=false;
-    speakEndTime=Date.now(); // track stop time even for manual stops
-  }
-  setOrbState('idle');
-}
-
+function stopSpeaking(){if(isSpeaking){speechSynthesis.cancel();isSpeaking=false;speakEndTime=Date.now();}setOrbState('idle');}
 function setMicState(s){var ring=document.getElementById('mic-ring'),icon=document.getElementById('mic-icon');ring.className='mic-ring'+(s==='listening'?' listening':s==='speaking'?' speaking':'');icon.textContent=s==='listening'?'⏹':s==='speaking'?'🔊':'🎙';}
-
 function startWakeWord(){var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR||!constantMic)return;stopWakeWord();var el=document.getElementById('wake-status');if(el)el.textContent='👂 Listening for "Hey BAKER"...';wakeRec=new SR();wakeRec.continuous=true;wakeRec.interimResults=false;wakeRec.lang='en-US';wakeRec.onresult=function(e){var txt=e.results[e.results.length-1][0].transcript.toLowerCase().trim();if(HOT_WORDS.some(function(w){return txt.includes(w);})){stopWakeWord();setMode('voice');var el2=document.getElementById('wake-status');if(el2)el2.textContent='';setTimeout(function(){if(!voiceActive&&!state.busy)startVoice();},400);}};wakeRec.onend=function(){if(constantMic&&!voiceMode){try{wakeRec.start();}catch(e){}}};try{wakeRec.start();}catch(e){}}
 function stopWakeWord(){if(wakeRec){wakeRec.stop();wakeRec=null;}var el=document.getElementById('wake-status');if(el)el.textContent='';}
 function setVoiceStatus(txt,active){var el=document.getElementById('voice-status');el.textContent=txt;el.className='voice-status'+(active?' active':'');}
