@@ -74,7 +74,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .modal-note{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:14px;line-height:1.7;padding:10px;background:var(--bg);border-radius:4px;border:1px solid var(--border)}
 .modal-note a{color:var(--accent)}
 @keyframes glow{0%,100%{opacity:1}50%{opacity:.4}}
-/* Daily Brief */
 .brief-panel{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:none;position:relative}
 .brief-panel.visible{display:block}
 .brief-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
@@ -110,7 +109,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   <button onclick="openSettings()">Set up →</button>
 </div>
 
-<!-- Daily Brief — upgraded with refresh button -->
 <div class="brief-panel" id="brief-panel">
   <div class="brief-hdr">
     <span class="brief-lbl">📋 Daily Brief</span>
@@ -126,24 +124,35 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
 <main class="content">
   <div class="widgets-row" id="widgets-row">
+
     <div class="widget-card loading" id="weather-widget" onclick="openWeatherInConvo()">
       <div class="w-title">⛅ Weather</div>
       <div class="w-main" id="w-temp">—</div>
       <div class="w-sub" id="w-desc">Fetching...</div>
       <div class="w-action" id="w-action">Click to discuss with BAKER →</div>
     </div>
+
     <div class="widget-card" id="clock-widget">
       <div class="w-title">🕐 Right now</div>
       <div class="w-main" id="w-time">—</div>
       <div class="w-sub" id="w-date">—</div>
       <div class="w-action">—</div>
     </div>
+
+    <!-- LOCATION WIDGET — added alongside weather/clock -->
+    <div class="widget-card loading" id="location-widget">
+      <div class="w-title">📍 Location</div>
+      <div class="w-main" id="w-coords">—</div>
+      <div class="w-sub" id="w-coords-sub">Fetching...</div>
+    </div>
+
     <div class="widget-card spotify-card" id="spotify-widget" style="display:none" onclick="openSpotifyInConvo()">
       <div class="w-title">♫ Now playing</div>
       <div class="w-main spotify" id="w-track">—</div>
       <div class="w-sub" id="w-artist">—</div>
       <div class="w-action">Discuss with BAKER →</div>
     </div>
+
   </div>
 
   <div class="phase-hdr"><span class="phase-tag">Phase 2 — AI tools</span><div class="phase-line"></div></div>
@@ -238,13 +247,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
 <script>
 if ('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js')
-    .then(function(){
-      console.log('Service worker registered');
-    })
-    .catch(function(err){
-      console.error('Service worker failed:', err);
-    });
+  navigator.serviceWorker.register('sw.js').catch(function(err){console.error('Service worker failed:', err);});
 }
 
 function getTimeGreeting(){var h=new Date().getHours();if(h>=5&&h<12)return 'Good morning, sir.';if(h>=12&&h<17)return 'Good afternoon, sir.';if(h>=17&&h<21)return 'Good evening, sir.';return "You're up late, sir.";}
@@ -260,6 +263,12 @@ function fetchWeather(){
   if(!navigator.geolocation){document.getElementById('w-desc').textContent='Location unavailable';return;}
   navigator.geolocation.getCurrentPosition(function(pos){
     var lat=pos.coords.latitude.toFixed(4);var lon=pos.coords.longitude.toFixed(4);
+
+    // populate location widget using the coords we already have
+    document.getElementById('w-coords').textContent=lat+', '+lon;
+    document.getElementById('w-coords-sub').textContent='GPS coords';
+    document.getElementById('location-widget').classList.remove('loading');
+
     var url='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto';
     fetch(url).then(function(r){return r.json();}).then(function(d){
       var c=d.current;
@@ -268,7 +277,12 @@ function fetchWeather(){
       document.getElementById('w-desc').textContent=weatherData.desc+' · Feels '+weatherData.feels+'°F · Wind '+weatherData.wind+'mph';
       document.getElementById('weather-widget').classList.remove('loading');
     }).catch(function(){document.getElementById('w-desc').textContent='Weather unavailable';document.getElementById('weather-widget').classList.remove('loading');});
-  },function(){document.getElementById('w-desc').textContent='Allow location for weather';document.getElementById('weather-widget').classList.remove('loading');});
+  },function(){
+    document.getElementById('w-desc').textContent='Allow location for weather';
+    document.getElementById('weather-widget').classList.remove('loading');
+    document.getElementById('w-coords-sub').textContent='Location unavailable';
+    document.getElementById('location-widget').classList.remove('loading');
+  });
 }
 fetchWeather();
 
@@ -304,7 +318,6 @@ function stopGlobalMic(){if(globalMic){globalMic.stop();globalMic=null;}document
 function fetchWeatherAndSpeak(){if(weatherData){openWeatherInConvo();return;}fetchWeather();setTimeout(function(){if(weatherData)openWeatherInConvo();},2000);}
 loadConstantMic();checkSpotifyToken();
 
-// ── Richer Daily Brief (Jarvis V5 upgrade) ─────────────────
 var briefShownKey='baker_brief_date';
 var briefCacheKey='baker_brief_cache';
 
@@ -312,101 +325,40 @@ async function runDailyBrief(){
   var key=localStorage.getItem('baker_api_key');
   if(!key)return;
   var today=new Date().toISOString().split('T')[0];
-
-  // Show cached brief immediately if it's today's
   var cached=localStorage.getItem(briefCacheKey);
   var cachedDate=localStorage.getItem(briefShownKey);
-  if(cached&&cachedDate===today){
-    document.getElementById('brief-panel').classList.add('visible');
-    document.getElementById('brief-content').innerHTML='<div class="brief-txt">'+cached+'</div>';
-    return;
-  }
-
-  // Generate new brief
+  if(cached&&cachedDate===today){document.getElementById('brief-panel').classList.add('visible');document.getElementById('brief-content').innerHTML='<div class="brief-txt">'+cached+'</div>';return;}
   document.getElementById('brief-panel').classList.add('visible');
-
   var h=new Date().getHours();
   var greeting=h>=5&&h<12?'Good morning':h>=12&&h<17?'Good afternoon':h>=17&&h<21?'Good evening':"You're up late";
   var dayName=new Date().toLocaleDateString([],{weekday:'long'});
-
-  var memories=[];
-  try{memories=JSON.parse(localStorage.getItem('baker_memories')||'[]');}catch(e){}
-
-  // Richer memory context — pull up to 3 recent sessions
+  var memories=[];try{memories=JSON.parse(localStorage.getItem('baker_memories')||'[]');}catch(e){}
   var memContext='';
-if(memories.length){
-  memContext = memories.slice(0,3).map(function(m,i){
-    if(i === 0){
-      return 'Most recent session (' + m.date + '): ' + m.summary;
-    } else {
-      return 'Also on ' + m.date + ': ' + m.summary;
-    }
-  }).join(' ');
-}
-
+  if(memories.length){memContext=memories.slice(0,3).map(function(m,i){return(i===0?'Most recent session ('+m.date+'): ':'Also on '+m.date+': ')+m.summary;}).join(' ');}
   var inboxCount=parseInt(localStorage.getItem('baker_inbox_count')||'0');
   var daysSinceWeekly=parseInt(localStorage.getItem('baker_days_since_weekly')||'999');
-
-  // Weather context if already loaded
-  var weatherCtx='';
-  if(weatherData){weatherCtx='Weather: '+weatherData.temp+'°F, '+weatherData.desc+'.';}
-
-  // Streak calculation
+  var weatherCtx='';if(weatherData){weatherCtx='Weather: '+weatherData.temp+'°F, '+weatherData.desc+'.';}
   var streakCtx='';
-  if(memories.length>=3){
-    var dates=memories.map(function(m){return m.date;}).sort().reverse();
-    var streak=0;var check=new Date();
-    for(var i=0;i<7;i++){var d=check.toISOString().split('T')[0];if(dates.indexOf(d)!==-1){streak++;check.setDate(check.getDate()-1);}else if(i===0){check.setDate(check.getDate()-1);}else break;}
-    if(streak>=3)streakCtx=streak+'-day usage streak.';
-  }
-
-  var contextParts=[
-    greeting+', sir. It\'s '+dayName+', '+new Date().toLocaleDateString([],{month:'long',day:'numeric'})+'.',
-    memContext||'No previous session context yet.',
-    inboxCount>0?inboxCount+' note'+(inboxCount>1?'s':'')+' waiting in your inbox.':'Inbox is clear.',
-    daysSinceWeekly>6?'Weekly review is '+daysSinceWeekly+' days overdue.':daysSinceWeekly>0?'Last weekly review '+daysSinceWeekly+' days ago.':'',
-    weatherCtx,
-    streakCtx
-  ].filter(Boolean).join(' ');
-
+  if(memories.length>=3){var dates=memories.map(function(m){return m.date;}).sort().reverse();var streak=0;var check=new Date();for(var i=0;i<7;i++){var d=check.toISOString().split('T')[0];if(dates.indexOf(d)!==-1){streak++;check.setDate(check.getDate()-1);}else if(i===0){check.setDate(check.getDate()-1);}else break;}if(streak>=3)streakCtx=streak+'-day usage streak.';}
+  var contextParts=[greeting+', sir. It\'s '+dayName+', '+new Date().toLocaleDateString([],{month:'long',day:'numeric'})+'.',memContext||'No previous session context yet.',inboxCount>0?inboxCount+' note'+(inboxCount>1?'s':'')+' waiting in your inbox.':'Inbox is clear.',daysSinceWeekly>6?'Weekly review is '+daysSinceWeekly+' days overdue.':daysSinceWeekly>0?'Last weekly review '+daysSinceWeekly+' days ago.':'',weatherCtx,streakCtx].filter(Boolean).join(' ');
   var prompt='Generate a sharp JARVIS-style daily briefing in 2-4 sentences. Use specific details from the context — mention real things discussed, what\'s pending. Be specific, not generic. Address as "sir". Natural speech, no markdown, no lists.\n\nContext: '+contextParts;
-
   try{
-    var resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:200,system:'You are BAKER, an AI assistant modelled after JARVIS from Iron Man. Generate a concise, specific daily briefing. Reference actual details from the context. Be sharp and precise.',messages:[{role:'user',content:prompt}]})
-    });
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:200,system:'You are BAKER, an AI assistant modelled after JARVIS from Iron Man. Generate a concise, specific daily briefing. Reference actual details from the context. Be sharp and precise.',messages:[{role:'user',content:prompt}]})});
     var data=await resp.json();
     if(data.error)throw new Error(data.error.message);
     var briefTxt=data.content.map(function(b){return b.text||'';}).join('').trim();
     document.getElementById('brief-content').innerHTML='<div class="brief-txt">'+briefTxt+'</div>';
     localStorage.setItem(briefCacheKey,briefTxt);
     localStorage.setItem(briefShownKey,today);
- }catch(e){
-  console.error('Daily brief error:', e);
-  document.getElementById('brief-content').innerHTML =
-    '<div class="brief-txt">Unable to generate daily brief.</div>';
+  }catch(e){document.getElementById('brief-content').innerHTML='<div class="brief-txt">Unable to generate daily brief.</div>';}
 }
 
-function regenerateBrief(){
-  localStorage.removeItem(briefShownKey);
-  localStorage.removeItem(briefCacheKey);
-  document.getElementById('brief-content').innerHTML='<div class="brief-loading"><div class="brief-dots"><span></span><span></span><span></span></div><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">Refreshing brief...</span></div>';
-  // Wait a beat for weather to load if it hasn't yet
-  setTimeout(runDailyBrief, weatherData ? 0 : 1500);
-}
-
+function regenerateBrief(){localStorage.removeItem(briefShownKey);localStorage.removeItem(briefCacheKey);document.getElementById('brief-content').innerHTML='<div class="brief-loading"><div class="brief-dots"><span></span><span></span><span></span></div><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">Refreshing brief...</span></div>';setTimeout(runDailyBrief,weatherData?0:1500);}
 function dismissBrief(){document.getElementById('brief-panel').classList.remove('visible');var today=new Date().toISOString().split('T')[0];localStorage.setItem(briefShownKey,today);}
-
-// Run brief after weather has had a chance to load
 setTimeout(runDailyBrief,1500);
 
-// ── Vault badge scanning ──────────────────────────────────
 async function scanVaultForBadges(vaultHandle){if(!vaultHandle)return;try{var inboxCount=0;try{var inboxDir=await vaultHandle.getDirectoryHandle('00-Capture',{create:false});var inboxSub=await inboxDir.getDirectoryHandle('Inbox',{create:false});for await(var entry of inboxSub.values()){if(entry.kind==='file'&&entry.name.endsWith('.md'))inboxCount++;}}catch(e){}localStorage.setItem('baker_inbox_count',inboxCount);var daysSince=999;try{var sysDir=await vaultHandle.getDirectoryHandle('07-System',{create:false});var weeklyDir=await sysDir.getDirectoryHandle('Weekly',{create:false});var latestDate=null;for await(var entry of weeklyDir.values()){if(entry.kind==='file'){var dateMatch=entry.name.match(/(\d{4}-\d{2}-\d{2})/);if(dateMatch){var d=new Date(dateMatch[1]);if(!latestDate||d>latestDate)latestDate=d;}}}if(latestDate)daysSince=Math.floor((Date.now()-latestDate.getTime())/(1000*60*60*24));}catch(e){}localStorage.setItem('baker_days_since_weekly',daysSince);updateBadges(inboxCount,daysSince);}catch(e){}}
-
 function updateBadges(inboxCount,daysSince){var inboxCard=document.querySelector('a[href="inbox.html"]');if(inboxCard&&inboxCount>0){var existing=inboxCard.querySelector('.tool-badge-count');if(existing)existing.remove();var badge=document.createElement('span');badge.className='tool-badge-count red';badge.textContent=inboxCount+' new';inboxCard.appendChild(badge);}var weeklyCard=document.querySelector('a[href="weekly.html"]');if(weeklyCard&&daysSince>6){var existing2=weeklyCard.querySelector('.tool-badge-count');if(existing2)existing2.remove();var badge2=document.createElement('span');badge2.className='tool-badge-count amber';badge2.textContent=daysSince+'d ago';weeklyCard.appendChild(badge2);}}
-
 window.onVaultConnected=function(handle){scanVaultForBadges(handle);};
 
 async function loadSpotifyDevicesForSettings(){var sel=document.getElementById('spotify-device-select');if(!sel)return;var token=localStorage.getItem('baker_spotify_token');var expiry=parseInt(localStorage.getItem('baker_spotify_expiry')||'0');if(!token||Date.now()>expiry){sel.innerHTML='<option>Connect Spotify first</option>';return;}sel.innerHTML='<option>Loading...</option>';try{var r=await fetch('https://api.spotify.com/v1/me/player/devices',{headers:{Authorization:'Bearer '+token}});if(r.status===401){sel.innerHTML='<option>Token expired — reconnect Spotify</option>';return;}var d=await r.json();if(!d.devices||!d.devices.length){sel.innerHTML='<option>No devices found — open Spotify first</option>';return;}var saved=localStorage.getItem('baker_spotify_device')||'';sel.innerHTML='<option value="">Auto (active device)</option>';d.devices.forEach(function(dev){var opt=document.createElement('option');opt.value=dev.id;opt.textContent=dev.name+' ('+dev.type+')'+(dev.is_active?' ▶':'');opt.selected=dev.id===saved;sel.appendChild(opt);});sel.onchange=function(){var chosen=this.value||null;if(chosen)localStorage.setItem('baker_spotify_device',chosen);else localStorage.removeItem('baker_spotify_device');var label=this.options[this.selectedIndex].textContent;var note=document.getElementById('device-saved-note');if(note){note.textContent='✓ Saved: '+label;note.style.color='var(--green)';}};;}catch(e){sel.innerHTML='<option>Error loading devices</option>';}}
