@@ -10,12 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#0f0f10;--surface:#1a1a1d;--surface2:#222226;--border:#2e2e34;
-  --accent:#7c6af7;--accent-dim:#3d3578;--text:#e8e6f0;--muted:#7a7880;
-  --green:#4ade80;--amber:#fbbf24;--red:#f87171;
-  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
-}
+:root{--bg:#0f0f10;--surface:#1a1a1d;--surface2:#222226;--border:#2e2e34;--accent:#7c6af7;--accent-dim:#3d3578;--text:#e8e6f0;--muted:#7a7880;--green:#4ade80;--amber:#fbbf24;--red:#f87171;--blue:#60a5fa;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;}
 body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh}
 .hdr{border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;gap:12px;background:var(--surface);position:sticky;top:0;z-index:10}
 .logo{font-family:var(--mono);font-size:15px;font-weight:500;color:var(--accent);letter-spacing:.12em;background:rgba(124,106,247,.12);border:1px solid var(--accent-dim);padding:5px 12px;border-radius:4px}
@@ -30,8 +25,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .setup-banner p{font-family:var(--mono);font-size:12px;color:var(--red);line-height:1.6}
 .setup-banner button{flex-shrink:0;background:var(--red);border:none;border-radius:4px;padding:8px 14px;font-family:var(--mono);font-size:11px;color:#fff;cursor:pointer}
 .content{padding:24px}
-
-/* Live widgets row */
 .widgets-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px}
 .widget-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;cursor:pointer;transition:all .2s}
 .widget-card:hover{border-color:var(--accent);background:var(--surface2)}
@@ -43,7 +36,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .widget-card.spotify-card{border-color:rgba(29,185,84,.3)}
 .widget-card.spotify-card:hover{border-color:#1db954}
 .w-main.spotify{color:#1db954;font-size:13px;font-weight:400}
-
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:32px}
 .tool-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;transition:all .2s;position:relative;overflow:hidden}
 .tool-card.active{cursor:pointer;text-decoration:none;display:block;color:inherit}
@@ -56,7 +48,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .tool-badge{position:absolute;top:14px;right:14px;font-family:var(--mono);font-size:9px;padding:3px 7px;border-radius:20px}
 .badge-live{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);color:var(--green)}
 .badge-soon{background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
-.badge-next{background:rgba(124,106,247,.1);border:1px solid var(--accent-dim);color:var(--accent)}
 .tool-arrow{font-family:var(--mono);font-size:16px;color:var(--accent);position:absolute;bottom:16px;right:16px;opacity:0;transform:translateX(-4px);transition:all .2s}
 .phase-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .phase-line{flex:1;height:1px;background:var(--border)}
@@ -82,14 +73,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .depth-btn.active{background:rgba(124,106,247,.15);border-color:var(--accent);color:var(--accent)}
 .modal-note{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:14px;line-height:1.7;padding:10px;background:var(--bg);border-radius:4px;border:1px solid var(--border)}
 .modal-note a{color:var(--accent)}
-.greeting-bar{padding:12px 24px 0;font-family:var(--mono);font-size:12px;color:var(--muted)}
 @keyframes glow{0%,100%{opacity:1}50%{opacity:.4}}
-
 /* Daily Brief */
 .brief-panel{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:none;position:relative}
 .brief-panel.visible{display:block}
 .brief-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
 .brief-lbl{font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:.1em;text-transform:uppercase}
+.brief-actions{display:flex;align-items:center;gap:8px}
 .brief-dismiss{background:none;border:none;color:var(--muted);cursor:pointer;font-family:var(--mono);font-size:10px;padding:0;transition:color .15s}
 .brief-dismiss:hover{color:var(--text)}
 .brief-txt{font-size:13px;color:var(--text);line-height:1.7;max-width:700px}
@@ -97,11 +87,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .brief-dots span{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--accent);animation:bnc 1.2s infinite;margin-right:2px}
 .brief-dots span:nth-child(2){animation-delay:.2s}
 .brief-dots span:nth-child(3){animation-delay:.4s}
-/* Badges on tool cards */
+@keyframes bnc{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-4px);opacity:1}}
 .tool-badge-count{position:absolute;top:10px;right:10px;font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:20px;font-weight:500}
 .tool-badge-count.red{background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.4);color:var(--red)}
 .tool-badge-count.amber{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:var(--amber)}
-.tool-card{position:relative}
 </style>
 </head>
 <body>
@@ -121,9 +110,21 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   <button onclick="openSettings()">Set up →</button>
 </div>
 
-<main class="content">
+<!-- Daily Brief — upgraded with refresh button -->
+<div class="brief-panel" id="brief-panel">
+  <div class="brief-hdr">
+    <span class="brief-lbl">📋 Daily Brief</span>
+    <div class="brief-actions">
+      <button class="brief-dismiss" id="brief-regen" onclick="regenerateBrief()" title="Generate a fresh brief">↺ refresh</button>
+      <button class="brief-dismiss" onclick="dismissBrief()">dismiss ×</button>
+    </div>
+  </div>
+  <div id="brief-content">
+    <div class="brief-loading"><div class="brief-dots"><span></span><span></span><span></span></div><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">BAKER is preparing your brief...</span></div>
+  </div>
+</div>
 
-  <!-- Live widgets: weather + spotify -->
+<main class="content">
   <div class="widgets-row" id="widgets-row">
     <div class="widget-card loading" id="weather-widget" onclick="openWeatherInConvo()">
       <div class="w-title">⛅ Weather</div>
@@ -145,95 +146,26 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     </div>
   </div>
 
-  <div class="brief-panel" id="brief-panel">
-    <div class="brief-hdr">
-      <span class="brief-lbl">📋 Daily Brief</span>
-      <button class="brief-dismiss" onclick="dismissBrief()">dismiss ×</button>
-    </div>
-    <div id="brief-content">
-      <div class="brief-loading"><div class="brief-dots"><span></span><span></span><span></span></div><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">BAKER is preparing your brief...</span></div>
-    </div>
+  <div class="phase-hdr"><span class="phase-tag">Phase 2 — AI tools</span><div class="phase-line"></div></div>
+  <div class="grid">
+    <a class="tool-card active" href="lecture.html"><div class="tool-icon">🎓</div><div class="tool-name">Lecture Capture</div><div class="tool-desc">Record or paste a lecture transcript. BAKER summarizes it and formats a note ready to drop into your vault.</div><span class="tool-badge badge-live">live</span><span class="tool-arrow">→</span></a>
+    <a class="tool-card active" href="conversation.html"><div class="tool-icon">💬</div><div class="tool-name">Conversation</div><div class="tool-desc">Talk to BAKER. Voice or text, continuous hands-free mode, weather and Spotify aware, saves to your vault automatically.</div><span class="tool-badge badge-live">live</span><span class="tool-arrow">→</span></a>
+    <a class="tool-card active" href="analyze.html"><div class="tool-icon">🔍</div><div class="tool-name">Scan / Analyze</div><div class="tool-desc">Drop a note, project, or photo. BAKER breaks it down — insights, gaps, risks, and next actions.</div><span class="tool-badge badge-live">live</span><span class="tool-arrow">→</span></a>
+    <a class="tool-card active" href="inbox.html"><div class="tool-icon">📥</div><div class="tool-name">Inbox Processor</div><div class="tool-desc">Drop or paste a raw note. BAKER reads it and sorts it into exactly the right vault folder — now with clipboard paste for iPhone.</div><span class="tool-badge badge-live">live</span><span class="tool-arrow">→</span></a>
+    <a class="tool-card active" href="weekly.html"><div class="tool-icon">📊</div><div class="tool-name">Weekly Summary</div><div class="tool-desc">Feed in your daily logs or connect your vault. BAKER streams your weekly review as it writes it.</div><span class="tool-badge badge-live">live</span><span class="tool-arrow">→</span></a>
+    <a class="tool-card active" href="notelinker.html"><div class="tool-icon">🔗</div><div class="tool-name">Note Linker</div><div class="tool-desc">Paste any note. BAKER maps it to your knowledge graph — finding which vault notes support, extend, contradict, or relate to it.</div><span class="tool-badge badge-live">live</span><span class="tool-arrow">→</span></a>
   </div>
 
-  <div class="phase-hdr">
-    <span class="phase-tag">Phase 2 — AI tools</span>
-    <div class="phase-line"></div>
-  </div>
+  <div class="phase-hdr"><span class="phase-tag">Phase 3 — Digital assistant</span><div class="phase-line"></div></div>
   <div class="grid">
-    <a class="tool-card active" href="lecture.html">
-      <div class="tool-icon">🎓</div>
-      <div class="tool-name">Lecture Capture</div>
-      <div class="tool-desc">Record or paste a lecture transcript. BAKER summarizes it and formats a note ready to drop into your vault.</div>
-      <span class="tool-badge badge-live">live</span>
-      <span class="tool-arrow">→</span>
-    </a>
-    <a class="tool-card active" href="conversation.html">
-      <div class="tool-icon">💬</div>
-      <div class="tool-name">Conversation</div>
-      <div class="tool-desc">Talk to BAKER. Voice or text, continuous hands-free mode, weather and Spotify aware, saves to your vault automatically.</div>
-      <span class="tool-badge badge-live">live</span>
-      <span class="tool-arrow">→</span>
-    </a>
-    <a class="tool-card active" href="analyze.html">
-      <div class="tool-icon">🔍</div>
-      <div class="tool-name">Scan / Analyze</div>
-      <div class="tool-desc">Drop a note, project, or photo. BAKER breaks it down — insights, gaps, risks, and next actions.</div>
-      <span class="tool-badge badge-live">live</span>
-      <span class="tool-arrow">→</span>
-    </a>
-    <a class="tool-card active" href="inbox.html">
-      <div class="tool-icon">📥</div>
-      <div class="tool-name">Inbox Processor</div>
-      <div class="tool-desc">Drop a raw note from BAKER-Inbox. BAKER reads it and sorts it into exactly the right vault folder.</div>
-      <span class="tool-badge badge-live">live</span>
-      <span class="tool-arrow">→</span>
-    </a>
-    <a class="tool-card active" href="weekly.html">
-      <div class="tool-icon">📊</div>
-      <div class="tool-name">Weekly Summary</div>
-      <div class="tool-desc">Feed in your daily logs or connect your vault. BAKER generates your weekly review automatically.</div>
-      <span class="tool-badge badge-live">live</span>
-      <span class="tool-arrow">→</span>
-    </a>
-    <a class="tool-card active" href="notelinker.html">
-      <div class="tool-icon">🔗</div>
-      <div class="tool-name">Note Linker</div>
-      <div class="tool-desc">Paste any note. BAKER maps it to your knowledge graph — finding which vault notes support, extend, contradict, or relate to it.</div>
-      <span class="tool-badge badge-live">live</span>
-      <span class="tool-arrow">→</span>
-    </a>
-  </div>
-
-  <div class="phase-hdr">
-    <span class="phase-tag">Phase 3 — Digital assistant</span>
-    <div class="phase-line"></div>
-  </div>
-  <div class="grid">
-    <a class="tool-card active" href="vaultgraph.html">
-      <div class="tool-icon">🕸</div>
-      <div class="tool-name">Vault Graph</div>
-      <div class="tool-desc">Auto-sweep your entire vault. BAKER finds connections between notes and writes wikilinks directly — building your knowledge graph automatically.</div>
-      <span class="tool-badge badge-live">live</span>
-      <span class="tool-arrow">→</span>
-    </a>
-    <a class="tool-card active" href="vaultchat.html">
-      <div class="tool-icon">🧠</div>
-      <div class="tool-name">Vault Chat</div>
-      <div class="tool-desc">Ask BAKER anything about your notes. It reads your vault and answers from your own knowledge base.</div>
-      <span class="tool-badge badge-live">live</span>
-      <span class="tool-arrow">→</span>
-    </a>
-    <div class="tool-card soon">
-      <div class="tool-icon">📱</div>
-      <div class="tool-name">iPhone App</div>
-      <div class="tool-desc">Capture anywhere. Notes sync to your vault automatically.</div>
-      <span class="tool-badge badge-soon">phase 3</span>
-    </div>
+    <a class="tool-card active" href="vaultgraph.html"><div class="tool-icon">🕸</div><div class="tool-name">Vault Graph</div><div class="tool-desc">Auto-sweep your entire vault. BAKER finds connections and writes wikilinks directly — now with parallel batch processing for 3× speed.</div><span class="tool-badge badge-live">live</span><span class="tool-arrow">→</span></a>
+    <a class="tool-card active" href="vaultchat.html"><div class="tool-icon">🧠</div><div class="tool-name">Vault Chat</div><div class="tool-desc">Ask BAKER anything about your notes. Answers stream in as they're generated. Voice mode with echo lockout.</div><span class="tool-badge badge-live">live</span><span class="tool-arrow">→</span></a>
+    <div class="tool-card soon"><div class="tool-icon">📱</div><div class="tool-name">iPhone App</div><div class="tool-desc">Capture anywhere. Notes sync to your vault automatically.</div><span class="tool-badge badge-soon">phase 3</span></div>
   </div>
 </main>
 
 <footer class="footer">
-  <span>BAKER v0.8 · Phase 3</span>
+  <span>BAKER v0.9 · Phase 3</span>
   <span>vault → G:/My Drive/BAKER</span>
 </footer>
 
@@ -281,7 +213,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         <button class="depth-btn" id="mic-on" onclick="setConstantMic(true)" style="flex:1">🎙 On</button>
         <button class="depth-btn" id="mic-off" onclick="setConstantMic(false)" style="flex:1">🔇 Off</button>
       </div>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:8px">Say "Hey BAKER", "Baker", "Yo Baker", or "Ok Baker" then your command.</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:8px">Say "Hey BAKER" then your command.</div>
     </div>
     <div class="field">
       <label>Spotify Client ID</label>
@@ -295,9 +227,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       </select>
       <div id="device-saved-note" style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px">Open Spotify on any device first, then your devices appear automatically.</div>
     </div>
-    <div class="modal-note">
-      Get your Anthropic key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key.
-    </div>
+    <div class="modal-note">Get your Anthropic key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key.</div>
     <div class="modal-actions">
       <button class="cancel-btn" onclick="closeSettings()">Cancel</button>
       <button class="clear-btn" onclick="clearKey()">Clear key</button>
@@ -309,437 +239,164 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 <script>
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 
-// ── Shared utilities ──────────────────────────────────────
-function getTimeGreeting() {
-  var h = new Date().getHours();
-  if (h >= 5 && h < 12) return 'Good morning, sir.';
-  if (h >= 12 && h < 17) return 'Good afternoon, sir.';
-  if (h >= 17 && h < 21) return 'Good evening, sir.';
-  return "You're up late, sir.";
-}
+function getTimeGreeting(){var h=new Date().getHours();if(h>=5&&h<12)return 'Good morning, sir.';if(h>=12&&h<17)return 'Good afternoon, sir.';if(h>=17&&h<21)return 'Good evening, sir.';return "You're up late, sir.";}
+function getContextBlock(){var now=new Date();return '[Current date: '+now.toLocaleDateString([],{weekday:'long',year:'numeric',month:'long',day:'numeric'})+' | Time: '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+']';}
 
-function getContextBlock() {
-  var now = new Date();
-  var timeStr = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-  var dateStr = now.toLocaleDateString([], {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-  return '[Current date: ' + dateStr + ' | Time: ' + timeStr + ']';
-}
+function updateClock(){var now=new Date();document.getElementById('w-time').textContent=now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});document.getElementById('w-date').textContent=now.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'});document.getElementById('hdr-greeting').textContent=getTimeGreeting();}
+updateClock();setInterval(updateClock,30000);
 
-// ── Clock widget ──────────────────────────────────────────
-function updateClock() {
-  var now = new Date();
-  document.getElementById('w-time').textContent = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-  document.getElementById('w-date').textContent = now.toLocaleDateString([], {weekday:'long', month:'long', day:'numeric'});
-  // Update greeting
-  document.getElementById('hdr-greeting').textContent = getTimeGreeting();
-}
-updateClock();
-setInterval(updateClock, 30000);
+var WMO_CODES={0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',80:'Light showers',81:'Showers',82:'Heavy showers',95:'Thunderstorm',96:'Thunderstorm + hail',99:'Heavy thunderstorm'};
+var weatherData=null;
 
-// ── Weather widget (open-meteo, no API key) ───────────────
-var WMO_CODES = {0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',80:'Light showers',81:'Showers',82:'Heavy showers',95:'Thunderstorm',96:'Thunderstorm + hail',99:'Heavy thunderstorm'};
-var weatherData = null;
-
-function fetchWeather() {
-  if (!navigator.geolocation) { document.getElementById('w-desc').textContent = 'Location unavailable'; return; }
-  navigator.geolocation.getCurrentPosition(function(pos) {
-    var lat = pos.coords.latitude.toFixed(4);
-    var lon = pos.coords.longitude.toFixed(4);
-    var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto';
-    fetch(url).then(function(r){return r.json();}).then(function(d) {
-      var c = d.current;
-      weatherData = {
-        temp: Math.round(c.temperature_2m),
-        feels: Math.round(c.apparent_temperature),
-        desc: WMO_CODES[c.weather_code] || 'Unknown',
-        wind: Math.round(c.wind_speed_10m),
-        humidity: c.relative_humidity_2m
-      };
-      document.getElementById('w-temp').textContent = weatherData.temp + '°F';
-      document.getElementById('w-desc').textContent = weatherData.desc + ' · Feels ' + weatherData.feels + '°F · Wind ' + weatherData.wind + 'mph';
+function fetchWeather(){
+  if(!navigator.geolocation){document.getElementById('w-desc').textContent='Location unavailable';return;}
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var lat=pos.coords.latitude.toFixed(4);var lon=pos.coords.longitude.toFixed(4);
+    var url='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto';
+    fetch(url).then(function(r){return r.json();}).then(function(d){
+      var c=d.current;
+      weatherData={temp:Math.round(c.temperature_2m),feels:Math.round(c.apparent_temperature),desc:WMO_CODES[c.weather_code]||'Unknown',wind:Math.round(c.wind_speed_10m),humidity:c.relative_humidity_2m};
+      document.getElementById('w-temp').textContent=weatherData.temp+'°F';
+      document.getElementById('w-desc').textContent=weatherData.desc+' · Feels '+weatherData.feels+'°F · Wind '+weatherData.wind+'mph';
       document.getElementById('weather-widget').classList.remove('loading');
-    }).catch(function() {
-      document.getElementById('w-desc').textContent = 'Weather unavailable';
-      document.getElementById('weather-widget').classList.remove('loading');
-    });
-  }, function() {
-    document.getElementById('w-desc').textContent = 'Allow location for weather';
-    document.getElementById('weather-widget').classList.remove('loading');
-  });
+    }).catch(function(){document.getElementById('w-desc').textContent='Weather unavailable';document.getElementById('weather-widget').classList.remove('loading');});
+  },function(){document.getElementById('w-desc').textContent='Allow location for weather';document.getElementById('weather-widget').classList.remove('loading');});
 }
 fetchWeather();
 
-function openWeatherInConvo() {
-  if (!weatherData) return;
-  var sysInfo = 'System information: Current weather — ' + weatherData.temp + '°F (feels like ' + weatherData.feels + '°F), ' + weatherData.desc + ', wind ' + weatherData.wind + ' mph, humidity ' + weatherData.humidity + '%.';
-  sessionStorage.setItem('baker_convo_context', JSON.stringify({
-    topic: 'Weather',
-    context: sysInfo,
-    source: 'weather',
-    instruction: 'Tell the user the current weather conditions in one natural sentence as JARVIS would.'
-  }));
-  window.location.href = 'conversation.html';
-}
+function openWeatherInConvo(){if(!weatherData)return;var sysInfo='System information: Current weather — '+weatherData.temp+'°F (feels like '+weatherData.feels+'°F), '+weatherData.desc+', wind '+weatherData.wind+' mph, humidity '+weatherData.humidity+'%.';sessionStorage.setItem('baker_convo_context',JSON.stringify({topic:'Weather',context:sysInfo,source:'weather',instruction:'Tell the user the current weather conditions in one natural sentence as JARVIS would.'}));window.location.href='conversation.html';}
 
-// ── Spotify widget ────────────────────────────────────────
-function checkSpotifyToken() {
-  // Check for OAuth callback token in URL hash
-  var hash = window.location.hash;
-  if (hash) {
-    var params = new URLSearchParams(hash.replace('#','?').slice(1));
-    var token = params.get('access_token');
-    if (token) {
-      localStorage.setItem('baker_spotify_token', token);
-      window.history.replaceState(null, '', window.location.pathname);
-    }
-  }
-  var token = localStorage.getItem('baker_spotify_token');
-  if (token) fetchSpotifyWidget(token);
-}
+function checkSpotifyToken(){var hash=window.location.hash;if(hash){var params=new URLSearchParams(hash.replace('#','?').slice(1));var token=params.get('access_token');if(token){localStorage.setItem('baker_spotify_token',token);window.history.replaceState(null,'',window.location.pathname);}}var token=localStorage.getItem('baker_spotify_token');if(token)fetchSpotifyWidget(token);}
+async function fetchSpotifyWidget(token){try{var r=await fetch('https://api.spotify.com/v1/me/player/currently-playing',{headers:{Authorization:'Bearer '+token}});if(r.status===401){localStorage.removeItem('baker_spotify_token');return;}if(r.status===204)return;var d=await r.json();if(!d||!d.item)return;var track=d.item.name;var artist=d.item.artists.map(function(a){return a.name;}).join(', ');document.getElementById('w-track').textContent=track;document.getElementById('w-artist').textContent=artist+(d.is_playing?' · playing':' · paused');document.getElementById('spotify-widget').style.display='block';}catch(e){}}
+function openSpotifyInConvo(){var track=document.getElementById('w-track').textContent;var artist=document.getElementById('w-artist').textContent;if(!track||track==='—')return;sessionStorage.setItem('baker_convo_context',JSON.stringify({topic:'Spotify',context:'System information: Spotify is currently playing "'+track+'" by '+artist+'.',source:'spotify',instruction:'Comment on the currently playing track as JARVIS would — brief, witty, one sentence.'}));window.location.href='conversation.html';}
 
-async function fetchSpotifyWidget(token) {
-  try {
-    var r = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
-      headers: {Authorization: 'Bearer ' + token}
-    });
-    if (r.status === 401) { localStorage.removeItem('baker_spotify_token'); return; }
-    if (r.status === 204) return; // Nothing playing
-    var d = await r.json();
-    if (!d || !d.item) return;
-    var track = d.item.name;
-    var artist = d.item.artists.map(function(a){return a.name;}).join(', ');
-    document.getElementById('w-track').textContent = track;
-    document.getElementById('w-artist').textContent = artist + (d.is_playing ? ' · playing' : ' · paused');
-    document.getElementById('spotify-widget').style.display = 'block';
-  } catch(e) {}
-}
+function checkKey(){var k=localStorage.getItem('baker_api_key');var b=document.getElementById('api-badge');var bn=document.getElementById('setup-banner');if(k&&k.trim().length>10){b.textContent='API key set';b.className='api-badge set';bn.style.display='none';}else{b.textContent='no API key';b.className='api-badge unset';bn.style.display='flex';}}
 
-function openSpotifyInConvo() {
-  var track = document.getElementById('w-track').textContent;
-  var artist = document.getElementById('w-artist').textContent;
-  if (!track || track === '—') return;
-  sessionStorage.setItem('baker_convo_context', JSON.stringify({
-    topic: 'Spotify',
-    context: 'System information: Spotify is currently playing "' + track + '" by ' + artist + '.',
-    source: 'spotify',
-    instruction: 'Comment on the currently playing track as JARVIS would — brief, witty, one sentence.'
-  }));
-  window.location.href = 'conversation.html';
-}
+function openSettings(){document.getElementById('key-input').value=localStorage.getItem('baker_api_key')||'';document.getElementById('spotify-id-input').value=localStorage.getItem('baker_spotify_id')||'';var sr=parseFloat(localStorage.getItem('baker_speech_rate'))||0.92;var sliderVal=Math.round(sr*100);document.getElementById('speech-rate-slider').value=sliderVal;document.getElementById('speech-rate-display').textContent=sliderVal;document.getElementById('overlay').classList.add('open');setTimeout(loadSpotifyDevicesForSettings,150);loadDepth();loadEffort();loadConstantMic();}
+function closeSettings(){document.getElementById('overlay').classList.remove('open');}
+function closeIfOutside(e){if(e.target===document.getElementById('overlay'))closeSettings();}
+function toggleShow(){var i=document.getElementById('key-input');i.type=i.type==='password'?'text':'password';}
+function saveKey(){var k=document.getElementById('key-input').value.trim();if(!k){alert('Paste your API key first.');return;}localStorage.setItem('baker_api_key',k);var sid=document.getElementById('spotify-id-input').value.trim();if(sid)localStorage.setItem('baker_spotify_id',sid);var sr=parseInt(document.getElementById('speech-rate-slider').value)/100;localStorage.setItem('baker_speech_rate',sr.toString());closeSettings();checkKey();}
+function clearKey(){if(!confirm('Remove API key?'))return;localStorage.removeItem('baker_api_key');document.getElementById('key-input').value='';closeSettings();checkKey();}
 
-// ── API key ───────────────────────────────────────────────
-// Bug fix: removed startsWith('sk-ant-') check — just check key exists
-function checkKey() {
-  var k = localStorage.getItem('baker_api_key');
-  var b = document.getElementById('api-badge');
-  var bn = document.getElementById('setup-banner');
-  if (k && k.trim().length > 10) {
-    b.textContent = 'API key set'; b.className = 'api-badge set'; bn.style.display = 'none';
-  } else {
-    b.textContent = 'no API key'; b.className = 'api-badge unset'; bn.style.display = 'flex';
-  }
-}
-
-function openSettings() {
-  document.getElementById('key-input').value = localStorage.getItem('baker_api_key') || '';
-  document.getElementById('spotify-id-input').value = localStorage.getItem('baker_spotify_id') || '';
-  // Load speech rate
-  var sr = parseFloat(localStorage.getItem('baker_speech_rate')) || 0.92;
-  var sliderVal = Math.round(sr * 100);
-  document.getElementById('speech-rate-slider').value = sliderVal;
-  document.getElementById('speech-rate-display').textContent = sliderVal;
-  document.getElementById('overlay').classList.add('open');
-  // Auto-load Spotify devices
-  setTimeout(loadSpotifyDevicesForSettings, 150);
-  loadDepth(); loadEffort(); loadConstantMic();
-}
-
-function closeSettings() { document.getElementById('overlay').classList.remove('open'); }
-function closeIfOutside(e) { if (e.target === document.getElementById('overlay')) closeSettings(); }
-function toggleShow() { var i = document.getElementById('key-input'); i.type = i.type==='password'?'text':'password'; }
-
-function saveKey() {
-  var k = document.getElementById('key-input').value.trim();
-  if (!k) { alert('Paste your API key first.'); return; }
-  localStorage.setItem('baker_api_key', k);
-  // Save Spotify ID
-  var sid = document.getElementById('spotify-id-input').value.trim();
-  if (sid) localStorage.setItem('baker_spotify_id', sid);
-  // Save speech rate from slider
-  var sr = parseInt(document.getElementById('speech-rate-slider').value) / 100;
-  localStorage.setItem('baker_speech_rate', sr.toString());
-  closeSettings(); checkKey();
-}
-
-function clearKey() {
-  if (!confirm('Remove API key?')) return;
-  localStorage.removeItem('baker_api_key');
-  document.getElementById('key-input').value = '';
-  closeSettings(); checkKey();
-}
-
-// Speech rate slider live update
-document.addEventListener('DOMContentLoaded', function() {
-  var slider = document.getElementById('speech-rate-slider');
-  if (slider) {
-    slider.addEventListener('input', function() {
-      document.getElementById('speech-rate-display').textContent = this.value;
-    });
-  }
-});
-
+document.addEventListener('DOMContentLoaded',function(){var slider=document.getElementById('speech-rate-slider');if(slider)slider.addEventListener('input',function(){document.getElementById('speech-rate-display').textContent=this.value;});});
 checkKey();
 
-// ── Settings helpers ──────────────────────────────────────
-function setDepth(d) {
-  localStorage.setItem('baker_depth', d);
-  document.querySelectorAll('[id^="depth-"]').forEach(function(b){ b.classList.remove('active'); });
-  var el = document.getElementById('depth-'+d); if (el) el.classList.add('active');
-}
-function loadDepth() { setDepth(localStorage.getItem('baker_depth') || 'medium'); }
-loadDepth();
+function setDepth(d){localStorage.setItem('baker_depth',d);document.querySelectorAll('[id^="depth-"]').forEach(function(b){b.classList.remove('active');});var el=document.getElementById('depth-'+d);if(el)el.classList.add('active');}
+function loadDepth(){setDepth(localStorage.getItem('baker_depth')||'medium');}loadDepth();
+function setEffort(e){localStorage.setItem('baker_effort',e);document.querySelectorAll('[id^="effort-"]').forEach(function(b){b.classList.remove('active');});var el=document.getElementById('effort-'+e);if(el)el.classList.add('active');}
+function loadEffort(){setEffort(localStorage.getItem('baker_effort')||'standard');}loadEffort();
 
-function setEffort(e) {
-  localStorage.setItem('baker_effort', e);
-  document.querySelectorAll('[id^="effort-"]').forEach(function(b){ b.classList.remove('active'); });
-  var el = document.getElementById('effort-'+e); if (el) el.classList.add('active');
-}
-function loadEffort() { setEffort(localStorage.getItem('baker_effort') || 'standard'); }
-loadEffort();
+var HOT_WORDS=['hey baker','baker','yo baker','ok baker'];
+var globalMic=null;
+function setConstantMic(on){localStorage.setItem('baker_constant_mic',on?'true':'false');document.getElementById('mic-on').className='depth-btn'+(on?' active':'');document.getElementById('mic-off').className='depth-btn'+(!on?' active':'');on?startGlobalMic():stopGlobalMic();}
+function loadConstantMic(){var on=localStorage.getItem('baker_constant_mic')==='true';document.getElementById('mic-on').className='depth-btn'+(on?' active':'');document.getElementById('mic-off').className='depth-btn'+(!on?' active':'');if(on)startGlobalMic();}
+function startGlobalMic(){var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('Constant mic requires Chrome.');return;}stopGlobalMic();document.getElementById('global-mic-dot').style.display='inline-block';globalMic=new SR();globalMic.continuous=true;globalMic.interimResults=false;globalMic.lang='en-US';var awake=false,awakeTimer=null;globalMic.onresult=function(e){var txt=e.results[e.results.length-1][0].transcript.toLowerCase().trim();var triggered=HOT_WORDS.some(function(w){return txt.includes(w);});if(triggered&&!awake){awake=true;var dot=document.getElementById('global-mic-dot');dot.style.background='#7c6af7';if(awakeTimer)clearTimeout(awakeTimer);awakeTimer=setTimeout(function(){awake=false;dot.style.background='#4ade80';},5000);return;}if(!awake)return;awake=false;if(awakeTimer)clearTimeout(awakeTimer);document.getElementById('global-mic-dot').style.background='#4ade80';if(txt.includes('lecture'))window.location.href='lecture.html';else if(txt.includes('conversation')||txt.includes('chat')||txt.includes('talk'))window.location.href='conversation.html';else if(txt.includes('scan')||txt.includes('analyze')||txt.includes('analyse'))window.location.href='analyze.html';else if(txt.includes('inbox'))window.location.href='inbox.html';else if(txt.includes('vault chat'))window.location.href='vaultchat.html';else if(txt.includes('settings'))openSettings();else if(txt.includes('weather')){closeSettings();fetchWeatherAndSpeak();}};globalMic.onend=function(){if(localStorage.getItem('baker_constant_mic')==='true')try{globalMic.start();}catch(e){}};try{globalMic.start();}catch(e){}}
+function stopGlobalMic(){if(globalMic){globalMic.stop();globalMic=null;}document.getElementById('global-mic-dot').style.display='none';}
+function fetchWeatherAndSpeak(){if(weatherData){openWeatherInConvo();return;}fetchWeather();setTimeout(function(){if(weatherData)openWeatherInConvo();},2000);}
+loadConstantMic();checkSpotifyToken();
 
-// ── Constant mic (expanded hot words from Concept Bytes) ──
-var HOT_WORDS = ['hey baker', 'baker', 'yo baker', 'ok baker'];
-var globalMic = null;
-
-function setConstantMic(on) {
-  localStorage.setItem('baker_constant_mic', on ? 'true' : 'false');
-  document.getElementById('mic-on').className = 'depth-btn' + (on ? ' active' : '');
-  document.getElementById('mic-off').className = 'depth-btn' + (!on ? ' active' : '');
-  on ? startGlobalMic() : stopGlobalMic();
-}
-
-function loadConstantMic() {
-  var on = localStorage.getItem('baker_constant_mic') === 'true';
-  document.getElementById('mic-on').className = 'depth-btn' + (on ? ' active' : '');
-  document.getElementById('mic-off').className = 'depth-btn' + (!on ? ' active' : '');
-  if (on) startGlobalMic();
-}
-
-function startGlobalMic() {
-  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { alert('Constant mic requires Chrome.'); return; }
-  stopGlobalMic();
-  document.getElementById('global-mic-dot').style.display = 'inline-block';
-  globalMic = new SR();
-  globalMic.continuous = true; globalMic.interimResults = false; globalMic.lang = 'en-US';
-  var awake = false, awakeTimer = null;
-  globalMic.onresult = function(e) {
-    var txt = e.results[e.results.length-1][0].transcript.toLowerCase().trim();
-    // From Concept Bytes: check expanded hot words list
-    var triggered = HOT_WORDS.some(function(w){ return txt.includes(w); });
-    if (triggered && !awake) {
-      awake = true;
-      var dot = document.getElementById('global-mic-dot');
-      dot.style.background = '#7c6af7';
-      if (awakeTimer) clearTimeout(awakeTimer);
-      awakeTimer = setTimeout(function(){ awake = false; dot.style.background = '#4ade80'; }, 5000);
-      return;
-    }
-    if (!awake) return;
-    awake = false;
-    if (awakeTimer) clearTimeout(awakeTimer);
-    document.getElementById('global-mic-dot').style.background = '#4ade80';
-    if (txt.includes('lecture')) window.location.href = 'lecture.html';
-    else if (txt.includes('conversation') || txt.includes('chat') || txt.includes('talk')) window.location.href = 'conversation.html';
-    else if (txt.includes('scan') || txt.includes('analyze') || txt.includes('analyse')) window.location.href = 'analyze.html';
-    else if (txt.includes('settings')) openSettings();
-    else if (txt.includes('weather')) { closeSettings(); fetchWeatherAndSpeak(); }
-  };
-  globalMic.onend = function() {
-    if (localStorage.getItem('baker_constant_mic') === 'true') {
-      try { globalMic.start(); } catch(e) {}
-    }
-  };
-  try { globalMic.start(); } catch(e) {}
-}
-
-function stopGlobalMic() {
-  if (globalMic) { globalMic.stop(); globalMic = null; }
-  document.getElementById('global-mic-dot').style.display = 'none';
-}
-
-// Voice-triggered weather — opens conversation with context
-function fetchWeatherAndSpeak() {
-  if (weatherData) { openWeatherInConvo(); return; }
-  fetchWeather();
-  setTimeout(function() { if (weatherData) openWeatherInConvo(); }, 2000);
-}
-
-loadConstantMic();
-checkSpotifyToken();
-
-// ── Daily Brief ───────────────────────────────────────────
+// ── Richer Daily Brief (Jarvis V5 upgrade) ─────────────────
 var briefShownKey='baker_brief_date';
+var briefCacheKey='baker_brief_cache';
 
 async function runDailyBrief(){
   var key=localStorage.getItem('baker_api_key');
   if(!key)return;
-  // Only run once per day
   var today=new Date().toISOString().split('T')[0];
-  if(localStorage.getItem(briefShownKey)===today)return;
+
+  // Show cached brief immediately if it's today's
+  var cached=localStorage.getItem(briefCacheKey);
+  var cachedDate=localStorage.getItem(briefShownKey);
+  if(cached&&cachedDate===today){
+    document.getElementById('brief-panel').classList.add('visible');
+    document.getElementById('brief-content').innerHTML='<div class="brief-txt">'+cached+'</div>';
+    return;
+  }
+
+  // Generate new brief
   document.getElementById('brief-panel').classList.add('visible');
 
-  // Gather context
   var h=new Date().getHours();
-  var greeting=h>=5&&h<12?'Good morning':'Good afternoon';
-  if(h>=17&&h<21)greeting='Good evening';
-  if(h<5||h>=21)greeting="You're up late";
+  var greeting=h>=5&&h<12?'Good morning':h>=12&&h<17?'Good afternoon':h>=17&&h<21?'Good evening':"You're up late";
+  var dayName=new Date().toLocaleDateString([],{weekday:'long'});
 
-  // Get memories from conversation page
   var memories=[];
   try{memories=JSON.parse(localStorage.getItem('baker_memories')||'[]');}catch(e){}
-  var recentMemory=memories.length?memories[0].summary:'No recent conversations.';
 
-  // Check inbox badge counts
+  // Richer memory context — pull up to 3 recent sessions
+  var memContext='';
+  if(memories.length){
+    memContext=memories.slice(0,3).map(function(m,i){
+      return(i===0?'Most recent session ('+m.date+')':'Also on '+m.date+')+': '+m.summary;
+    }).join(' ');
+  }
+
   var inboxCount=parseInt(localStorage.getItem('baker_inbox_count')||'0');
-  var daysSinceWeekly=parseInt(localStorage.getItem('baker_days_since_weekly')||'0');
+  var daysSinceWeekly=parseInt(localStorage.getItem('baker_days_since_weekly')||'999');
+
+  // Weather context if already loaded
+  var weatherCtx='';
+  if(weatherData){weatherCtx='Weather: '+weatherData.temp+'°F, '+weatherData.desc+'.';}
+
+  // Streak calculation
+  var streakCtx='';
+  if(memories.length>=3){
+    var dates=memories.map(function(m){return m.date;}).sort().reverse();
+    var streak=0;var check=new Date();
+    for(var i=0;i<7;i++){var d=check.toISOString().split('T')[0];if(dates.indexOf(d)!==-1){streak++;check.setDate(check.getDate()-1);}else if(i===0){check.setDate(check.getDate()-1);}else break;}
+    if(streak>=3)streakCtx=streak+'-day usage streak.';
+  }
 
   var contextParts=[
-    greeting+', sir. Today is '+new Date().toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'})+'.',
-    memories.length?'Last session: '+recentMemory:'No previous sessions found.',
-    inboxCount>0?inboxCount+' notes waiting in your inbox.':'Inbox is clear.',
-    daysSinceWeekly>5?'Your last weekly review was '+daysSinceWeekly+' days ago.':'Weekly review is current.'
-  ];
+    greeting+', sir. It\'s '+dayName+', '+new Date().toLocaleDateString([],{month:'long',day:'numeric'})+'.',
+    memContext||'No previous session context yet.',
+    inboxCount>0?inboxCount+' note'+(inboxCount>1?'s':'')+' waiting in your inbox.':'Inbox is clear.',
+    daysSinceWeekly>6?'Weekly review is '+daysSinceWeekly+' days overdue.':daysSinceWeekly>0?'Last weekly review '+daysSinceWeekly+' days ago.':'',
+    weatherCtx,
+    streakCtx
+  ].filter(Boolean).join(' ');
 
-  var prompt='Generate a brief JARVIS-style morning briefing in 2-3 sentences. Be specific, use the context provided. Address as "sir". Mention what needs attention. No markdown, no bullets, natural speech.\n\nContext:\n'+contextParts.join('\n');
+  var prompt='Generate a sharp JARVIS-style daily briefing in 2-4 sentences. Use specific details from the context — mention real things discussed, what\'s pending. Be specific, not generic. Address as "sir". Natural speech, no markdown, no lists.\n\nContext: '+contextParts;
 
   try{
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:150,system:'You are BAKER, an AI assistant modelled after JARVIS. Generate a brief daily briefing.',messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:200,system:'You are BAKER, an AI assistant modelled after JARVIS from Iron Man. Generate a concise, specific daily briefing. Reference actual details from the context. Be sharp and precise.',messages:[{role:'user',content:prompt}]})
     });
     var data=await resp.json();
     if(data.error)throw new Error(data.error.message);
     var briefTxt=data.content.map(function(b){return b.text||'';}).join('').trim();
     document.getElementById('brief-content').innerHTML='<div class="brief-txt">'+briefTxt+'</div>';
+    localStorage.setItem(briefCacheKey,briefTxt);
     localStorage.setItem(briefShownKey,today);
   }catch(e){
     document.getElementById('brief-panel').classList.remove('visible');
   }
 }
 
-function dismissBrief(){
-  document.getElementById('brief-panel').classList.remove('visible');
-  var today=new Date().toISOString().split('T')[0];
-  localStorage.setItem(briefShownKey,today);
+function regenerateBrief(){
+  localStorage.removeItem(briefShownKey);
+  localStorage.removeItem(briefCacheKey);
+  document.getElementById('brief-content').innerHTML='<div class="brief-loading"><div class="brief-dots"><span></span><span></span><span></span></div><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">Refreshing brief...</span></div>';
+  // Wait a beat for weather to load if it hasn't yet
+  setTimeout(runDailyBrief, weatherData ? 0 : 1500);
 }
 
-// Run brief after short delay to let page settle
-setTimeout(runDailyBrief,1200);
+function dismissBrief(){document.getElementById('brief-panel').classList.remove('visible');var today=new Date().toISOString().split('T')[0];localStorage.setItem(briefShownKey,today);}
+
+// Run brief after weather has had a chance to load
+setTimeout(runDailyBrief,1500);
 
 // ── Vault badge scanning ──────────────────────────────────
-async function scanVaultForBadges(vaultHandle){
-  if(!vaultHandle)return;
-  try{
-    // Count inbox notes
-    var inboxCount=0;
-    try{
-      var inboxDir=await vaultHandle.getDirectoryHandle('00-Capture',{create:false});
-      var inboxSub=await inboxDir.getDirectoryHandle('Inbox',{create:false});
-      for await(var entry of inboxSub.values()){
-        if(entry.kind==='file'&&entry.name.endsWith('.md'))inboxCount++;
-      }
-    }catch(e){}
-    localStorage.setItem('baker_inbox_count',inboxCount);
+async function scanVaultForBadges(vaultHandle){if(!vaultHandle)return;try{var inboxCount=0;try{var inboxDir=await vaultHandle.getDirectoryHandle('00-Capture',{create:false});var inboxSub=await inboxDir.getDirectoryHandle('Inbox',{create:false});for await(var entry of inboxSub.values()){if(entry.kind==='file'&&entry.name.endsWith('.md'))inboxCount++;}}catch(e){}localStorage.setItem('baker_inbox_count',inboxCount);var daysSince=999;try{var sysDir=await vaultHandle.getDirectoryHandle('07-System',{create:false});var weeklyDir=await sysDir.getDirectoryHandle('Weekly',{create:false});var latestDate=null;for await(var entry of weeklyDir.values()){if(entry.kind==='file'){var dateMatch=entry.name.match(/(\d{4}-\d{2}-\d{2})/);if(dateMatch){var d=new Date(dateMatch[1]);if(!latestDate||d>latestDate)latestDate=d;}}}if(latestDate)daysSince=Math.floor((Date.now()-latestDate.getTime())/(1000*60*60*24));}catch(e){}localStorage.setItem('baker_days_since_weekly',daysSince);updateBadges(inboxCount,daysSince);}catch(e){}}
 
-    // Check days since last weekly review
-    var daysSince=999;
-    try{
-      var sysDir=await vaultHandle.getDirectoryHandle('07-System',{create:false});
-      var weeklyDir=await sysDir.getDirectoryHandle('Weekly',{create:false});
-      var latestDate=null;
-      for await(var entry of weeklyDir.values()){
-        if(entry.kind==='file'){
-          var dateMatch=entry.name.match(/(\\d{4}-\\d{2}-\\d{2})/);
-          if(dateMatch){
-            var d=new Date(dateMatch[1]);
-            if(!latestDate||d>latestDate)latestDate=d;
-          }
-        }
-      }
-      if(latestDate){
-        daysSince=Math.floor((Date.now()-latestDate.getTime())/(1000*60*60*24));
-      }
-    }catch(e){}
-    localStorage.setItem('baker_days_since_weekly',daysSince);
+function updateBadges(inboxCount,daysSince){var inboxCard=document.querySelector('a[href="inbox.html"]');if(inboxCard&&inboxCount>0){var existing=inboxCard.querySelector('.tool-badge-count');if(existing)existing.remove();var badge=document.createElement('span');badge.className='tool-badge-count red';badge.textContent=inboxCount+' new';inboxCard.appendChild(badge);}var weeklyCard=document.querySelector('a[href="weekly.html"]');if(weeklyCard&&daysSince>6){var existing2=weeklyCard.querySelector('.tool-badge-count');if(existing2)existing2.remove();var badge2=document.createElement('span');badge2.className='tool-badge-count amber';badge2.textContent=daysSince+'d ago';weeklyCard.appendChild(badge2);}}
 
-    // Update badge UI
-    updateBadges(inboxCount,daysSince);
-  }catch(e){}
-}
+window.onVaultConnected=function(handle){scanVaultForBadges(handle);};
 
-function updateBadges(inboxCount,daysSince){
-  // Add inbox badge
-  var inboxCard=document.querySelector('a[href="inbox.html"]');
-  if(inboxCard&&inboxCount>0){
-    var existing=inboxCard.querySelector('.tool-badge-count');
-    if(existing)existing.remove();
-    var badge=document.createElement('span');
-    badge.className='tool-badge-count red';
-    badge.textContent=inboxCount+' new';
-    inboxCard.appendChild(badge);
-  }
-  // Add weekly badge
-  var weeklyCard=document.querySelector('a[href="weekly.html"]');
-  if(weeklyCard&&daysSince>6){
-    var existing2=weeklyCard.querySelector('.tool-badge-count');
-    if(existing2)existing2.remove();
-    var badge2=document.createElement('span');
-    badge2.className='tool-badge-count amber';
-    badge2.textContent=daysSince+'d ago';
-    weeklyCard.appendChild(badge2);
-  }
-}
-
-// Hook into existing vault connect to trigger badge scan
-var origConnectVault=window.connectVaultCallback;
-window.onVaultConnected=function(handle){
-  scanVaultForBadges(handle);
-};
-
-// ── Spotify device selector for settings ─────────────────
-async function loadSpotifyDevicesForSettings(){
-  var sel=document.getElementById('spotify-device-select');
-  if(!sel)return;
-  var token=localStorage.getItem('baker_spotify_token');
-  var expiry=parseInt(localStorage.getItem('baker_spotify_expiry')||'0');
-  if(!token||Date.now()>expiry){sel.innerHTML='<option>Connect Spotify first</option>';return;}
-  sel.innerHTML='<option>Loading...</option>';
-  try{
-    var r=await fetch('https://api.spotify.com/v1/me/player/devices',{headers:{Authorization:'Bearer '+token}});
-    if(r.status===401){sel.innerHTML='<option>Token expired — reconnect Spotify</option>';return;}
-    var d=await r.json();
-    if(!d.devices||!d.devices.length){sel.innerHTML='<option>No devices found — open Spotify first</option>';return;}
-    var saved=localStorage.getItem('baker_spotify_device')||'';
-    sel.innerHTML='<option value="">Auto (active device)</option>';
-    d.devices.forEach(function(dev){
-      var opt=document.createElement('option');
-      opt.value=dev.id;
-      opt.textContent=dev.name+' ('+dev.type+')'+(dev.is_active?' ▶':'');
-      opt.selected=dev.id===saved;
-      sel.appendChild(opt);
-    });
-    sel.onchange=function(){
-      var chosen=this.value||null;
-      if(chosen)localStorage.setItem('baker_spotify_device',chosen);
-      else localStorage.removeItem('baker_spotify_device');
-      var label=this.options[this.selectedIndex].textContent;
-      var note=document.getElementById('device-saved-note');
-      if(note){note.textContent='✓ Saved: '+label;note.style.color='var(--green)';}
-    };
-  }catch(e){sel.innerHTML='<option>Error loading devices</option>';}
-}
+async function loadSpotifyDevicesForSettings(){var sel=document.getElementById('spotify-device-select');if(!sel)return;var token=localStorage.getItem('baker_spotify_token');var expiry=parseInt(localStorage.getItem('baker_spotify_expiry')||'0');if(!token||Date.now()>expiry){sel.innerHTML='<option>Connect Spotify first</option>';return;}sel.innerHTML='<option>Loading...</option>';try{var r=await fetch('https://api.spotify.com/v1/me/player/devices',{headers:{Authorization:'Bearer '+token}});if(r.status===401){sel.innerHTML='<option>Token expired — reconnect Spotify</option>';return;}var d=await r.json();if(!d.devices||!d.devices.length){sel.innerHTML='<option>No devices found — open Spotify first</option>';return;}var saved=localStorage.getItem('baker_spotify_device')||'';sel.innerHTML='<option value="">Auto (active device)</option>';d.devices.forEach(function(dev){var opt=document.createElement('option');opt.value=dev.id;opt.textContent=dev.name+' ('+dev.type+')'+(dev.is_active?' ▶':'');opt.selected=dev.id===saved;sel.appendChild(opt);});sel.onchange=function(){var chosen=this.value||null;if(chosen)localStorage.setItem('baker_spotify_device',chosen);else localStorage.removeItem('baker_spotify_device');var label=this.options[this.selectedIndex].textContent;var note=document.getElementById('device-saved-note');if(note){note.textContent='✓ Saved: '+label;note.style.color='var(--green)';}};;}catch(e){sel.innerHTML='<option>Error loading devices</option>';}}
 </script>
 </body>
 </html>
