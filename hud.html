@@ -78,6 +78,15 @@ nav{display:flex;align-items:center;gap:10px;padding:0 20px;height:48px;border-b
 .url-widget{height:100%;display:flex;flex-direction:column}
 .url-widget iframe{flex:1;border:none;background:var(--surface2)}
 
+/* SPOTIFY WIDGET */
+.spotify-widget{padding:24px;display:flex;flex-direction:column;gap:16px;align-items:flex-start}
+.sp-track{font-family:var(--mono);font-size:16px;font-weight:500;color:#1db954;line-height:1.3}
+.sp-artist{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:4px}
+.sp-controls{display:flex;gap:10px;margin-top:8px}
+.sp-btn{background:transparent;border:1px solid #1db954;border-radius:4px;padding:8px 18px;font-family:var(--mono);font-size:12px;color:#1db954;cursor:pointer;transition:all .15s}
+.sp-btn:hover{background:rgba(29,185,84,.12)}
+.sp-no-token{font-family:var(--mono);font-size:12px;color:var(--muted);padding:24px}
+
 /* BOTTOM STATUS BAR */
 .status-bar{padding:6px 16px;border-top:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:10px;flex-shrink:0;min-height:32px}
 .sb-pill{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid var(--border);color:var(--muted);white-space:nowrap}
@@ -154,6 +163,11 @@ nav{display:flex;align-items:center;gap:10px;padding:0 20px;height:48px;border-b
       <!-- URL WIDGET (hidden by default) -->
       <div id="url-view" style="display:none;width:100%;height:100%" class="url-widget">
         <iframe id="url-iframe" src="" title="Web view"></iframe>
+      </div>
+
+      <!-- SPOTIFY WIDGET (hidden by default) -->
+      <div id="spotify-view" style="display:none;width:100%;height:100%">
+        <div class="spotify-widget" id="spotify-widget-content"></div>
       </div>
 
     </div>
@@ -266,6 +280,7 @@ function showWidget(type,title,data){
   document.getElementById('text-note-view').style.display='none';
   document.getElementById('pdf-view').style.display='none';
   document.getElementById('url-view').style.display='none';
+  document.getElementById('spotify-view').style.display='none';
   if(type==='graph'){
     document.getElementById('graph-view').style.display='block';
   } else if(type==='text'){
@@ -277,7 +292,57 @@ function showWidget(type,title,data){
   } else if(type==='url'){
     document.getElementById('url-view').style.display='flex';
     document.getElementById('url-iframe').src=data||'';
+  } else if(type==='spotify'){
+    document.getElementById('spotify-view').style.display='block';
   }
+}
+
+// ── Spotify ───────────────────────────────────────────────
+async function spotifyAPI(endpoint,method,body){
+  var token=localStorage.getItem('baker_spotify_token');
+  var expiry=parseInt(localStorage.getItem('baker_spotify_expiry')||'0');
+  if(!token||Date.now()>expiry){speakResponse('Spotify is not connected, sir. Connect it in the conversation page.');return null;}
+  try{
+    var opts={method:method||'GET',headers:{Authorization:'Bearer '+token}};
+    if(body){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body);}
+    var r=await fetch('https://api.spotify.com/v1/'+endpoint,opts);
+    if(r.status===401){speakResponse('Spotify session expired, sir. Reconnect in the conversation page.');return null;}
+    if(r.status===204||r.status===202)return{ok:true};
+    if(r.ok)return await r.json();
+    return null;
+  }catch(e){return null;}
+}
+
+async function showNowPlaying(){
+  setStatus('Checking Spotify...','active');
+  var d=await spotifyAPI('me/player/currently-playing');
+  if(!d||!d.item){speakResponse('Nothing is playing on Spotify right now, sir.');setOrbState('idle');startWakeWord();return;}
+  var track=d.item.name;
+  var artist=d.item.artists.map(function(a){return a.name;}).join(', ');
+  var playing=d.is_playing;
+  var content=document.getElementById('spotify-widget-content');
+  content.innerHTML=
+    '<div class="sp-track">♫ '+track+'</div>'+
+    '<div class="sp-artist">'+artist+' · '+d.item.album.name+'</div>'+
+    '<div class="sp-artist" style="margin-top:8px">'+(playing?'▶ Playing':'⏸ Paused')+'</div>'+
+    '<div class="sp-controls">'+
+      '<button class="sp-btn" onclick="hudSpotifyControl(\'previous\')">⏮</button>'+
+      '<button class="sp-btn" onclick="hudSpotifyControl(\'toggle\')">'+(playing?'⏸':'▶')+'</button>'+
+      '<button class="sp-btn" onclick="hudSpotifyControl(\'next\')">⏭</button>'+
+    '</div>';
+  showWidget('spotify','♫ Now Playing');
+  speakResponse((playing?'Currently playing ':'Paused on ')+track+' by '+artist+'.');
+}
+
+async function hudSpotifyControl(action){
+  if(action==='next')await spotifyAPI('me/player/next','POST');
+  else if(action==='previous')await spotifyAPI('me/player/previous','POST');
+  else if(action==='toggle'){
+    var s=await spotifyAPI('me/player');
+    if(s&&s.is_playing)await spotifyAPI('me/player/pause','PUT');
+    else await spotifyAPI('me/player/play','PUT');
+  }
+  setTimeout(showNowPlaying,800);
 }
 
 function closeWidget(){
@@ -370,6 +435,29 @@ async function processCommand(txt){
   var key=localStorage.getItem('baker_api_key');
   if(!key){setStatus('No API key — check Settings','standby');setOrbState('idle');startWakeWord();return;}
   var lower=txt.toLowerCase();
+
+  // Spotify — now playing
+  if(lower.includes('now playing')||lower.includes('what\'s playing')||lower.includes('whats playing')||lower.includes('what is playing')||lower.includes('show spotify')){
+    await showNowPlaying();return;
+  }
+
+  // Spotify — controls
+  if(lower.includes('skip')||lower.includes('next song')||lower.includes('next track')){
+    await spotifyAPI('me/player/next','POST');
+    speakResponse('Skipping, sir.');return;
+  }
+  if(lower.includes('previous')||lower.includes('go back')||lower.includes('last song')){
+    await spotifyAPI('me/player/previous','POST');
+    speakResponse('Going back, sir.');return;
+  }
+  if(lower.includes('pause music')||lower.includes('pause spotify')||lower.includes('stop music')){
+    await spotifyAPI('me/player/pause','PUT');
+    speakResponse('Paused, sir.');return;
+  }
+  if(lower.includes('resume music')||lower.includes('play music')||lower.includes('resume spotify')){
+    await spotifyAPI('me/player/play','PUT');
+    speakResponse('Resuming, sir.');return;
+  }
 
   // Open URL
   if(lower.includes('open ')||lower.includes('go to ')||lower.includes('navigate to ')){
