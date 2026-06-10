@@ -2,7 +2,7 @@
   "name": "BAKER",
   "short_name": "BAKER",
   "description": "Your AI-powered second brain",
-  "start_url": "/BAKER/",
+  "start_url": "/BAKER/hud.html",
   "scope": "/BAKER/",
   "display": "standalone",
   "background_color": "#0f0f10",
