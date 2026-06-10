@@ -87,6 +87,28 @@ nav{display:flex;align-items:center;gap:10px;padding:0 20px;height:48px;border-b
 .sp-btn:hover{background:rgba(29,185,84,.12)}
 .sp-no-token{font-family:var(--mono);font-size:12px;color:var(--muted);padding:24px}
 
+/* SETTINGS MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;padding:24px}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.modal-title{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--text);margin-bottom:6px}
+.modal-sub{font-size:12px;color:var(--muted);margin-bottom:22px;line-height:1.6}
+.field{margin-bottom:16px}
+.field label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:5px}
+.key-wrap{position:relative}
+.key-wrap input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:9px 36px 9px 10px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none}
+.key-wrap input::placeholder{opacity:.4}
+.show-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px}
+.modal-actions{display:flex;gap:8px;margin-top:20px}
+.save-btn{flex:1;background:var(--accent);border:none;border-radius:4px;padding:10px;font-family:var(--mono);font-size:11px;color:#fff;cursor:pointer}
+.cancel-btn{flex:1;background:transparent;border:1px solid var(--border);border-radius:4px;padding:10px;font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer}
+.clear-btn{background:transparent;border:1px solid rgba(248,113,113,.3);border-radius:4px;padding:10px 14px;font-family:var(--mono);font-size:11px;color:var(--red);cursor:pointer}
+.depth-btn{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:8px;font-family:var(--mono);font-size:10px;color:var(--muted);cursor:pointer;transition:all .15s;text-align:center}
+.depth-btn:hover{border-color:var(--accent);color:var(--text)}
+.depth-btn.active{background:rgba(124,106,247,.15);border-color:var(--accent);color:var(--accent)}
+.modal-note{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:14px;line-height:1.7;padding:10px;background:var(--bg);border-radius:4px;border:1px solid var(--border)}
+.modal-note a{color:var(--accent)}
+
 /* BOTTOM STATUS BAR */
 .status-bar{padding:6px 16px;border-top:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:10px;flex-shrink:0;min-height:32px}
 .sb-pill{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid var(--border);color:var(--muted);white-space:nowrap}
@@ -107,7 +129,8 @@ nav{display:flex;align-items:center;gap:10px;padding:0 20px;height:48px;border-b
   <div class="nav-right">
     <button class="hbtn" id="vault-btn" onclick="handleVaultBtn()">⬡ Connect Vault</button>
     <a class="hbtn" href="conversation.html">💬 Conversation</a>
-    <a class="hbtn" href="index.html">⌂ Home</a>
+    <a class="hbtn" href="index.html">⊞ Tools</a>
+    <button class="hbtn" onclick="openSettings()">⚙ Settings</button>
   </div>
 </nav>
 
@@ -178,6 +201,48 @@ nav{display:flex;align-items:center;gap:10px;padding:0 20px;height:48px;border-b
 <div class="status-bar">
   <span class="sb-pill" id="sb-mode">standby</span>
   <span class="sb-txt" id="sb-txt">HUD ready — connect vault or say "Baker" to begin</span>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="overlay" id="overlay" onclick="closeIfOutside(event)">
+  <div class="modal">
+    <div class="modal-title">⚙ Settings</div>
+    <div class="modal-sub">Your API key is stored only in this browser. It never leaves your device.</div>
+    <div class="field">
+      <label>Anthropic API Key</label>
+      <div class="key-wrap">
+        <input type="password" id="key-input" placeholder="sk-ant-..." />
+        <button class="show-btn" onclick="toggleShow()">👁</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Conversation Effort</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:2px">
+        <button class="depth-btn" id="effort-deep" onclick="setEffort('deep')">🔬 Deep</button>
+        <button class="depth-btn" id="effort-standard" onclick="setEffort('standard')">💬 Standard</button>
+        <button class="depth-btn" id="effort-quick" onclick="setEffort('quick')">⚡ Quick</button>
+        <button class="depth-btn" id="effort-minimal" onclick="setEffort('minimal')">🔹 Minimal</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Voice Speed</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+        <input type="range" id="speech-rate-slider" min="30" max="200" step="5" style="flex:1;accent-color:var(--accent)">
+        <span class="depth-btn" id="speech-rate-display" style="cursor:default;min-width:40px;text-align:center">92</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Spotify Client ID</label>
+      <input type="text" id="spotify-id-input" placeholder="Your Spotify app client ID" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:9px 10px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px">Optional. Get from <a href="https://developer.spotify.com/dashboard" target="_blank" style="color:var(--accent)">developer.spotify.com</a></div>
+    </div>
+    <div class="modal-note">Get your Anthropic key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key.</div>
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeSettings()">Cancel</button>
+      <button class="clear-btn" onclick="clearKey()">Clear key</button>
+      <button class="save-btn" onclick="saveKey()">Save</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -256,6 +321,39 @@ document.addEventListener('DOMContentLoaded',function(){
 });
 
 function loadVoices(){cachedVoices=speechSynthesis.getVoices();}
+
+// ── Settings ──────────────────────────────────────────────
+function openSettings(){
+  document.getElementById('key-input').value=localStorage.getItem('baker_api_key')||'';
+  document.getElementById('spotify-id-input').value=localStorage.getItem('baker_spotify_id')||'';
+  var sr=parseFloat(localStorage.getItem('baker_speech_rate'))||0.92;
+  var sliderVal=Math.round(sr*100);
+  document.getElementById('speech-rate-slider').value=sliderVal;
+  document.getElementById('speech-rate-display').textContent=sliderVal;
+  loadEffort();
+  document.getElementById('overlay').classList.add('open');
+}
+function closeSettings(){document.getElementById('overlay').classList.remove('open');}
+function closeIfOutside(e){if(e.target===document.getElementById('overlay'))closeSettings();}
+function toggleShow(){var i=document.getElementById('key-input');i.type=i.type==='password'?'text':'password';}
+function saveKey(){
+  var k=document.getElementById('key-input').value.trim();
+  if(!k){alert('Paste your API key first.');return;}
+  localStorage.setItem('baker_api_key',k);
+  var sid=document.getElementById('spotify-id-input').value.trim();
+  if(sid)localStorage.setItem('baker_spotify_id',sid);
+  var sr=parseInt(document.getElementById('speech-rate-slider').value)/100;
+  localStorage.setItem('baker_speech_rate',sr.toString());
+  speechRate=sr;
+  closeSettings();
+}
+function clearKey(){if(!confirm('Remove API key?'))return;localStorage.removeItem('baker_api_key');document.getElementById('key-input').value='';closeSettings();}
+function setEffort(e){localStorage.setItem('baker_effort',e);document.querySelectorAll('[id^="effort-"]').forEach(function(b){b.classList.remove('active');});var el=document.getElementById('effort-'+e);if(el)el.classList.add('active');}
+function loadEffort(){setEffort(localStorage.getItem('baker_effort')||'standard');}
+document.addEventListener('DOMContentLoaded',function(){
+  var slider=document.getElementById('speech-rate-slider');
+  if(slider)slider.addEventListener('input',function(){document.getElementById('speech-rate-display').textContent=this.value;});
+});
 
 // ── Nav/status helpers ────────────────────────────────────
 function setStatus(txt,mode){
@@ -435,6 +533,18 @@ async function processCommand(txt){
   var key=localStorage.getItem('baker_api_key');
   if(!key){setStatus('No API key — check Settings','standby');setOrbState('idle');startWakeWord();return;}
   var lower=txt.toLowerCase();
+
+  // Open index / tools
+  if(lower.includes('open index')||lower.includes('open tools')||lower.includes('show tools')||lower.includes('go to tools')){
+    showWidget('url','⊞ Tools','index.html');
+    speakResponse('Opening tools, sir.');return;
+  }
+
+  // Open settings
+  if(lower.includes('open settings')||lower.includes('settings')){
+    openSettings();
+    speakResponse('Opening settings, sir.');return;
+  }
 
   // Spotify — now playing
   if(lower.includes('now playing')||lower.includes('what\'s playing')||lower.includes('whats playing')||lower.includes('what is playing')||lower.includes('show spotify')){
