@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAKER — Map</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7c6af7">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f10;--surface:#1a1a1d;--surface2:#222226;--border:#2e2e34;
+  --accent:#7c6af7;--accent-dim:#3d3578;--text:#e8e6f0;--muted:#7a7880;
+  --green:#4ade80;--amber:#fbbf24;--red:#f87171;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+html,body{background:var(--bg);color:var(--text);font-family:var(--sans);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* NAV */
+.hdr{border-bottom:1px solid var(--border);padding:11px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--surface)}
+a.back{background:transparent;border:1px solid var(--border);border-radius:4px;padding:4px 9px;font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;transition:all .15s}
+a.back:hover{border-color:var(--accent);color:var(--text)}
+.logo{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--accent);letter-spacing:.1em;background:rgba(124,106,247,.12);border:1px solid var(--accent-dim);padding:3px 8px;border-radius:4px}
+.hdr-sub{font-size:12px;color:var(--muted)}
+.hdr-right{margin-left:auto;display:flex;gap:7px;align-items:center}
+.hbtn{border:1px solid var(--border);border-radius:4px;padding:5px 10px;font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);white-space:nowrap}
+.hbtn:hover{border-color:var(--accent);color:var(--text)}
+.hbtn.active{color:var(--accent);border-color:var(--accent-dim);background:rgba(124,106,247,.08)}
+
+/* SEARCH BAR */
+.search-bar{padding:8px 18px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.search-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:7px 12px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;transition:border-color .15s}
+.search-input:focus{border-color:var(--accent)}
+.search-input::placeholder{color:var(--muted);opacity:.5}
+.search-btn{background:var(--accent);border:none;border-radius:4px;padding:7px 14px;font-family:var(--mono);font-size:11px;color:#fff;cursor:pointer;transition:opacity .15s;white-space:nowrap}
+.search-btn:hover{opacity:.85}
+.route-btn{background:transparent;border:1px solid var(--border);border-radius:4px;padding:7px 14px;font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap}
+.route-btn:hover{border-color:var(--accent);color:var(--text)}
+.route-btn.active{color:var(--accent);border-color:var(--accent-dim);background:rgba(124,106,247,.08)}
+.clear-btn{background:transparent;border:1px solid var(--border);border-radius:4px;padding:7px 10px;font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s}
+.clear-btn:hover{border-color:var(--red);color:var(--red)}
+
+/* MAP */
+#map{flex:1;z-index:0}
+
+/* Leaflet dark theme overrides */
+.leaflet-container{background:#0f0f10 !important}
+.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(0.85) saturate(0.7)}
+.leaflet-control-zoom a{background:var(--surface) !important;color:var(--text) !important;border-color:var(--border) !important;font-family:var(--mono)}
+.leaflet-control-zoom a:hover{background:var(--surface2) !important;border-color:var(--accent) !important}
+.leaflet-control-attribution{background:rgba(26,26,29,.8) !important;color:var(--muted) !important;font-size:9px}
+.leaflet-control-attribution a{color:var(--accent) !important}
+.leaflet-popup-content-wrapper{background:var(--surface) !important;border:1px solid var(--border) !important;border-radius:8px !important;color:var(--text) !important;box-shadow:0 4px 20px rgba(0,0,0,.5) !important}
+.leaflet-popup-tip{background:var(--surface) !important}
+.leaflet-popup-content{font-family:var(--mono);font-size:11px;line-height:1.7;margin:10px 14px !important}
+.leaflet-popup-close-button{color:var(--muted) !important}
+.leaflet-popup-close-button:hover{color:var(--text) !important}
+
+/* STATUS BAR */
+.status-bar{padding:5px 18px;border-top:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:10px;flex-shrink:0;min-height:28px}
+.sb-pill{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid var(--border);color:var(--muted);flex-shrink:0}
+.sb-pill.ok{color:var(--green);border-color:rgba(74,222,128,.35)}
+.sb-pill.route{color:var(--accent);border-color:var(--accent-dim)}
+.sb-txt{font-family:var(--mono);font-size:10px;color:var(--muted);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* MARKER */
+.baker-marker{width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid rgba(255,255,255,.8);box-shadow:0 0 10px rgba(124,106,247,.8)}
+.baker-marker-you{width:14px;height:14px;border-radius:50%;background:var(--green);border:2px solid rgba(255,255,255,.9);box-shadow:0 0 12px rgba(74,222,128,.8)}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <a class="back" href="index.html">← BAKER</a>
+  <span class="logo">🗺</span>
+  <span class="hdr-sub" id="hdr-sub">map</span>
+  <div class="hdr-right">
+    <button class="hbtn" id="locate-btn" onclick="flyToMe()">📍 My Location</button>
+    <button class="hbtn" id="clear-btn" onclick="clearMap()">✕ Clear</button>
+  </div>
+</div>
+
+<div class="search-bar">
+  <input class="search-input" id="search-input" placeholder="Fly to a city or place..." onkeydown="if(event.key==='Enter')flyTo()">
+  <button class="search-btn" onclick="flyTo()">→ Fly</button>
+  <button class="route-btn" id="route-btn" onclick="toggleRouteMode()">⟶ Directions</button>
+  <button class="clear-btn" onclick="clearMap()" title="Clear markers and routes">✕</button>
+</div>
+
+<div id="map"></div>
+
+<div class="status-bar">
+  <span class="sb-pill" id="sb-pill">ready</span>
+  <span class="sb-txt" id="sb-txt">Search for a place or click the map to drop a marker</span>
+</div>
+
+<script>
+// ── Map init ──────────────────────────────────────────────
+var map=L.map('map',{zoomControl:true,attributionControl:true}).setView([20,0],2);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  maxZoom:19
+}).addTo(map);
+
+var markers=[];
+var routeLine=null;
+var routeMode=false;
+var routePoints=[];
+var userMarker=null;
+var userCoords=null;
+
+// Custom marker icons
+var accentIcon=L.divIcon({className:'',html:'<div class="baker-marker"></div>',iconSize:[12,12],iconAnchor:[6,6],popupAnchor:[0,-10]});
+var youIcon=L.divIcon({className:'',html:'<div class="baker-marker-you"></div>',iconSize:[14,14],iconAnchor:[7,7],popupAnchor:[0,-10]});
+
+// Click map to drop marker
+map.on('click',function(e){
+  if(routeMode){
+    addRoutePoint(e.latlng);
+  } else {
+    dropMarker(e.latlng,'Marked location');
+  }
+});
+
+function setStatus(txt,mode){
+  document.getElementById('sb-txt').textContent=txt;
+  var pill=document.getElementById('sb-pill');
+  pill.textContent=mode||'ready';
+  pill.className='sb-pill'+(mode==='route'?' route':mode==='ok'?' ok':'');
+}
+
+// ── Fly to location ───────────────────────────────────────
+async function flyTo(query){
+  query=query||document.getElementById('search-input').value.trim();
+  if(!query){setStatus('Enter a place to fly to','ready');return;}
+  setStatus('Searching for '+query+'...','ready');
+  try{
+    var r=await fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(query)+'&limit=1',{headers:{'Accept-Language':'en'}});
+    var d=await r.json();
+    if(!d.length){setStatus('Could not find "'+query+'" — try being more specific','ready');return;}
+    var place=d[0];
+    var lat=parseFloat(place.lat);
+    var lon=parseFloat(place.lon);
+    var zoom=place.type==='country'?5:place.type==='state'?7:place.type==='city'||place.type==='town'?12:14;
+    map.flyTo([lat,lon],zoom,{duration:1.5,easeLinearity:0.25});
+    dropMarker([lat,lon],place.display_name.split(',').slice(0,2).join(','));
+    setStatus('Flew to '+place.display_name.split(',').slice(0,2).join(','),'ok');
+    document.getElementById('search-input').value='';
+  }catch(e){setStatus('Search failed — check connection','ready');}
+}
+
+// ── Drop marker ───────────────────────────────────────────
+function dropMarker(latlng,label){
+  var m=L.marker(latlng,{icon:accentIcon}).addTo(map);
+  m.bindPopup('<strong>'+label+'</strong><br><span style="color:var(--muted);font-size:10px">'+latlng.lat.toFixed(4)+', '+latlng.lng.toFixed(4)+'</span>');
+  markers.push(m);
+  return m;
+}
+
+// ── My location ───────────────────────────────────────────
+function flyToMe(){
+  if(!navigator.geolocation){setStatus('Geolocation not available','ready');return;}
+  setStatus('Getting your location...','ready');
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var lat=pos.coords.latitude;var lon=pos.coords.longitude;
+    userCoords={lat:lat,lon:lon};
+    if(userMarker)map.removeLayer(userMarker);
+    userMarker=L.marker([lat,lon],{icon:youIcon}).addTo(map);
+    userMarker.bindPopup('<strong>You are here</strong><br><span style="color:var(--muted);font-size:10px">'+lat.toFixed(4)+', '+lon.toFixed(4)+'</span>').openPopup();
+    map.flyTo([lat,lon],14,{duration:1.5});
+    setStatus('Showing your current location','ok');
+  },function(){setStatus('Location access denied','ready');});
+}
+
+// ── Route mode ────────────────────────────────────────────
+function toggleRouteMode(){
+  routeMode=!routeMode;
+  var btn=document.getElementById('route-btn');
+  if(routeMode){
+    btn.className='route-btn active';
+    routePoints=[];
+    if(routeLine){map.removeLayer(routeLine);routeLine=null;}
+    setStatus('Directions mode — click two points on the map to draw a route','route');
+  } else {
+    btn.className='route-btn';
+    setStatus('Directions mode off','ready');
+  }
+}
+
+function addRoutePoint(latlng){
+  routePoints.push(latlng);
+  dropMarker(latlng,routePoints.length===1?'Start':'End');
+  if(routePoints.length===2){
+    drawRoute(routePoints[0],routePoints[1]);
+    routeMode=false;
+    document.getElementById('route-btn').className='route-btn';
+  } else {
+    setStatus('Start point set — now click the destination','route');
+  }
+}
+
+function drawRoute(from,to){
+  if(routeLine)map.removeLayer(routeLine);
+  // Glowing styled line — two layers (glow + solid)
+  var glowLine=L.polyline([from,to],{
+    color:'rgba(124,106,247,0.25)',weight:12,lineCap:'round',lineJoin:'round'
+  }).addTo(map);
+  routeLine=L.polyline([from,to],{
+    color:'#7c6af7',weight:3,lineCap:'round',lineJoin:'round',
+    dashArray:null,opacity:0.9
+  }).addTo(map);
+  markers.push(glowLine);
+  // Fit bounds
+  var bounds=L.latLngBounds([from,to]);
+  map.flyToBounds(bounds,{padding:[60,60],duration:1.2});
+  // Distance
+  var dist=from.distanceTo(to);
+  var distStr=dist>1000?(dist/1000).toFixed(1)+' km':(dist).toFixed(0)+' m';
+  setStatus('Route drawn — '+distStr+' as the crow flies','ok');
+}
+
+// ── Directions to a place from current location ───────────
+async function directionsTo(query){
+  if(!userCoords){
+    // Try to get location first
+    navigator.geolocation.getCurrentPosition(async function(pos){
+      userCoords={lat:pos.coords.latitude,lon:pos.coords.longitude};
+      if(userMarker)map.removeLayer(userMarker);
+      userMarker=L.marker([userCoords.lat,userCoords.lon],{icon:youIcon}).addTo(map);
+      await drawDirectionsTo(query);
+    },function(){setStatus('Location access denied — cannot draw directions','ready');});
+  } else {
+    await drawDirectionsTo(query);
+  }
+}
+
+async function drawDirectionsTo(query){
+  setStatus('Finding '+query+'...','route');
+  try{
+    var r=await fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(query)+'&limit=1',{headers:{'Accept-Language':'en'}});
+    var d=await r.json();
+    if(!d.length){setStatus('Could not find "'+query+'"','ready');return;}
+    var place=d[0];
+    var destLat=parseFloat(place.lat);var destLon=parseFloat(place.lon);
+    var dest=L.latLng(destLat,destLon);
+    var origin=L.latLng(userCoords.lat,userCoords.lon);
+    dropMarker(dest,place.display_name.split(',').slice(0,2).join(','));
+    drawRoute(origin,dest);
+  }catch(e){setStatus('Directions search failed','ready');}
+}
+
+// ── Clear ─────────────────────────────────────────────────
+function clearMap(){
+  markers.forEach(function(m){map.removeLayer(m);});
+  markers=[];
+  if(routeLine){map.removeLayer(routeLine);routeLine=null;}
+  if(userMarker){map.removeLayer(userMarker);userMarker=null;}
+  routePoints=[];routeMode=false;userCoords=null;
+  document.getElementById('route-btn').className='route-btn';
+  setStatus('Map cleared','ready');
+}
+
+// ── Expose functions for HUD voice commands ───────────────
+window.BAKER_MAP={
+  flyTo:flyTo,
+  directionsTo:directionsTo,
+  flyToMe:flyToMe,
+  clearMap:clearMap
+};
+
+// ── Boot ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',function(){
+  setStatus('Map ready — search above or click to drop a marker','ready');
+  // Check if launched with a query param e.g. map.html?fly=New+York
+  var params=new URLSearchParams(window.location.search);
+  var flyQuery=params.get('fly');
+  var dirQuery=params.get('directions');
+  if(flyQuery)setTimeout(function(){flyTo(flyQuery);},800);
+  if(dirQuery)setTimeout(function(){directionsTo(dirQuery);},800);
+});
+</script>
+</body>
+</html>
