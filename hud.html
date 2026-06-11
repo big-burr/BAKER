@@ -288,9 +288,12 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
       </div>
     </div>
     <div class="field">
-      <label>Spotify Client ID</label>
-      <input type="text" id="spotify-id-input" placeholder="Your Spotify app client ID" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:9px 10px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none">
-      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px">Optional. Get from <a href="https://developer.spotify.com/dashboard" target="_blank" style="color:var(--accent)">developer.spotify.com</a></div>
+      <label>Spotify</label>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <input type="text" id="spotify-id-input" placeholder="Spotify Client ID" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:9px 10px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none">
+        <button onclick="connectSpotifyFromHUD()" id="spotify-connect-btn" style="background:transparent;border:1px solid #1db954;border-radius:4px;padding:8px 14px;font-family:var(--mono);font-size:11px;color:#1db954;cursor:pointer;white-space:nowrap;transition:all .15s">Connect</button>
+      </div>
+      <div id="spotify-auth-status" style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:8px">Get Client ID from <a href="https://developer.spotify.com/dashboard" target="_blank" style="color:var(--accent)">developer.spotify.com</a>. Add <code style="color:var(--accent)">https://big-burr.github.io/BAKER/hud.html</code> as a redirect URI in your Spotify app.</div>
     </div>
     <div class="field">
       <label>Spotify Playback Device</label>
@@ -300,7 +303,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
         </select>
         <button onclick="loadSpotifyDevices()" style="background:transparent;border:1px solid var(--border);border-radius:4px;padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">↺ Refresh</button>
       </div>
-      <div id="device-saved-note" style="font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.6">Open Spotify on your phone or computer first, then click Refresh.</div>
+      <div id="device-saved-note" style="font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.6">Open Spotify on your phone first, then click Refresh.</div>
     </div>
     <div class="modal-note">Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key.</div>
     <div class="modal-actions">
@@ -1030,13 +1033,53 @@ function updateSearchToggle(){
   updateWebSearchBtn();
 }
 
+// ── Spotify PKCE auth (independent of conversation.html) ──
+async function generateCodeVerifier(){var a=new Uint8Array(32);window.crypto.getRandomValues(a);return btoa(String.fromCharCode.apply(null,a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');}
+async function generateCodeChallenge(v){var d=new TextEncoder().encode(v);var h=await window.crypto.subtle.digest('SHA-256',d);return btoa(String.fromCharCode.apply(null,new Uint8Array(h))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');}
+
+async function connectSpotifyFromHUD(){
+  var clientId=document.getElementById('spotify-id-input').value.trim()||localStorage.getItem('baker_spotify_id')||'';
+  if(!clientId){alert('Enter your Spotify Client ID first.');return;}
+  localStorage.setItem('baker_spotify_id',clientId);
+  var verifier=await generateCodeVerifier();
+  var challenge=await generateCodeChallenge(verifier);
+  localStorage.setItem('spotify_verifier',verifier);
+  var redirect=encodeURIComponent('https://big-burr.github.io/BAKER/hud.html');
+  var scopes=encodeURIComponent('user-read-currently-playing user-read-playback-state user-modify-playback-state streaming user-read-private playlist-read-private playlist-modify-public playlist-modify-private');
+  window.location.href='https://accounts.spotify.com/authorize?client_id='+clientId+'&response_type=code&redirect_uri='+redirect+'&scope='+scopes+'&code_challenge_method=S256&code_challenge='+challenge;
+}
+
+async function checkSpotifyCallback(){
+  var params=new URLSearchParams(window.location.search);
+  var code=params.get('code');
+  if(!code)return;
+  window.history.replaceState(null,'',window.location.pathname);
+  var verifier=localStorage.getItem('spotify_verifier');
+  if(!verifier)return;
+  var clientId=localStorage.getItem('baker_spotify_id')||'';
+  if(!clientId)return;
+  try{
+    var resp=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:clientId,grant_type:'authorization_code',code:code,redirect_uri:'https://big-burr.github.io/BAKER/hud.html',code_verifier:verifier})});
+    var data=await resp.json();
+    if(data.access_token){
+      localStorage.setItem('baker_spotify_token',data.access_token);
+      if(data.refresh_token)localStorage.setItem('baker_spotify_refresh',data.refresh_token);
+      localStorage.setItem('baker_spotify_expiry',Date.now()+(data.expires_in*1000));
+      localStorage.removeItem('spotify_verifier');
+      var statusEl=document.getElementById('spotify-auth-status');
+      if(statusEl){statusEl.textContent='✓ Spotify connected successfully!';statusEl.style.color='var(--green)';}
+      setStatus('Spotify connected, sir.');
+    }
+  }catch(e){console.error('Spotify auth failed:',e);}
+}
+
 async function loadSpotifyDevices(){
   var token=localStorage.getItem('baker_spotify_token');
   var expiry=parseInt(localStorage.getItem('baker_spotify_expiry')||'0');
   var sel=document.getElementById('spotify-device-select');
   var note=document.getElementById('device-saved-note');
   if(!token||Date.now()>expiry){
-    sel.innerHTML='<option>Connect Spotify in conversation.html first</option>';
+    sel.innerHTML='<option>Connect Spotify first using the Connect button</option>';
     return;
   }
   sel.innerHTML='<option>Loading...</option>';
@@ -1114,6 +1157,15 @@ document.addEventListener('DOMContentLoaded',function(){
   startWakeWord();
   updateWebSearchBtn();
   loadEffort();
+  checkSpotifyCallback();
+
+  // Show connected status if already authed
+  var token=localStorage.getItem('baker_spotify_token');
+  var expiry=parseInt(localStorage.getItem('baker_spotify_expiry')||'0');
+  if(token&&Date.now()<expiry){
+    var statusEl=document.getElementById('spotify-auth-status');
+    if(statusEl){statusEl.textContent='✓ Spotify connected';statusEl.style.color='var(--green)';}
+  }
 
   // Slider
   var slider=document.getElementById('speech-rate-slider');
