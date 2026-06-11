@@ -888,21 +888,27 @@ async function showNowPlaying(){
   var track=d.item.name;
   var artist=d.item.artists.map(function(a){return a.name;}).join(', ');
   var playing=d.is_playing;
-  showWidget('spotify','♫ Now Playing',null,'♫');
-  setTimeout(function(){
-    var content=document.getElementById('spotify-widget-content');
-    if(content){
-      content.innerHTML=
-        '<div class="sp-track">♫ '+track+'</div>'+
-        '<div class="sp-artist">'+artist+'</div>'+
-        '<div class="sp-artist" style="margin-top:4px;font-size:10px">'+d.item.album.name+' · '+(playing?'▶ Playing':'⏸ Paused')+'</div>'+
-        '<div class="sp-controls">'+
-          '<button class="sp-btn" onclick="hudSpotify(\'previous\')">⏮</button>'+
-          '<button class="sp-btn" onclick="hudSpotify(\'toggle\')">'+(playing?'⏸':'▶')+'</button>'+
-          '<button class="sp-btn" onclick="hudSpotify(\'next\')">⏭</button>'+
-        '</div>';
-    }
-  },50);
+
+  // Build HTML directly into widget-body before showing panel
+  var body=document.getElementById('widget-body');
+  var panel=document.getElementById('widget-panel');
+  document.getElementById('widget-title').textContent='♫ Now Playing';
+  document.getElementById('widget-icon').textContent='♫';
+  body.innerHTML=
+    '<div class="sp-card">'+
+    '<div class="sp-track">♫ '+track+'</div>'+
+    '<div class="sp-artist">'+artist+'</div>'+
+    '<div class="sp-artist" style="margin-top:4px;font-size:10px">'+d.item.album.name+' · '+(playing?'▶ Playing':'⏸ Paused')+'</div>'+
+    '<div class="sp-controls">'+
+      '<button class="sp-btn" onclick="hudSpotify(\'previous\')">⏮</button>'+
+      '<button class="sp-btn" onclick="hudSpotify(\'toggle\')">'+(playing?'⏸':'▶')+'</button>'+
+      '<button class="sp-btn" onclick="hudSpotify(\'next\')">⏭</button>'+
+    '</div></div>';
+  openPanel('widget-panel');
+  if(!panel.style.left||panel.style.left===''){
+    panel.style.left=Math.max(0,(window.innerWidth-360)/2)+'px';
+    panel.style.top='64px';panel.style.width='360px';panel.style.height='auto';
+  }
   speakResponse((playing?'Playing ':'Paused on ')+track+' by '+artist+'.');
 }
 
