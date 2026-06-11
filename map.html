@@ -10,299 +10,265 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0f0f10;--surface:rgba(26,26,29,.92);--surface2:#222226;
-  --border:#2e2e34;--accent:#7c6af7;--accent-dim:#3d3578;
-  --text:#e8e6f0;--muted:#7a7880;--green:#4ade80;--red:#f87171;
+  --bg:#0f0f10;--surface:rgba(22,22,25,.95);--border:#2e2e34;
+  --accent:#7c6af7;--text:#e8e6f0;--muted:#7a7880;--green:#4ade80;
   --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
 }
 html,body{width:100%;height:100%;background:var(--bg);font-family:var(--sans);overflow:hidden}
-
-/* ── MAP ── */
 #map{width:100%;height:100%;background:var(--bg)}
 
-/* ── Leaflet overrides ── */
-.leaflet-container{background:#0f0f10;font-family:var(--sans)}
+/* Leaflet dark overrides */
+.leaflet-container{background:#0d0d0f;font-family:var(--sans)}
 .leaflet-control-zoom{border:1px solid var(--border)!important;background:var(--surface)!important;backdrop-filter:blur(12px);border-radius:6px!important;overflow:hidden}
 .leaflet-control-zoom a{background:transparent!important;color:var(--muted)!important;border-color:var(--border)!important;font-size:16px!important;width:28px!important;height:28px!important;line-height:28px!important;transition:all .15s}
 .leaflet-control-zoom a:hover{color:var(--text)!important;background:rgba(124,106,247,.12)!important}
 .leaflet-bar{border:none!important}
-.leaflet-popup-content-wrapper{background:var(--surface)!important;border:1px solid var(--border)!important;border-radius:8px!important;box-shadow:0 8px 24px rgba(0,0,0,.6)!important;backdrop-filter:blur(16px);color:var(--text)!important;font-family:var(--mono)!important;font-size:11px!important}
-.leaflet-popup-tip{background:var(--surface)!important;border:1px solid var(--border)!important}
-.leaflet-popup-close-button{color:var(--muted)!important;font-size:16px!important}
+.leaflet-popup-content-wrapper{background:var(--surface)!important;border:1px solid var(--border)!important;border-radius:8px!important;box-shadow:0 8px 24px rgba(0,0,0,.6)!important;backdrop-filter:blur(16px);color:var(--text)!important;font-family:var(--mono)!important;font-size:11px!important;padding:8px 12px!important}
+.leaflet-popup-content{margin:0!important;line-height:1.5}
+.leaflet-popup-tip{background:var(--surface)!important}
+.leaflet-popup-close-button{color:var(--muted)!important;font-size:16px!important;top:4px!important;right:6px!important}
 .leaflet-popup-close-button:hover{color:var(--text)!important}
-.leaflet-control-attribution{background:rgba(15,15,16,.7)!important;color:#4a4850!important;font-size:9px!important;border-radius:4px 0 0 0!important;backdrop-filter:blur(8px)}
-.leaflet-control-attribution a{color:#5a5870!important}
+.leaflet-control-attribution{background:rgba(13,13,15,.8)!important;color:#3a3850!important;font-size:9px!important;border-radius:4px 0 0 0!important}
+.leaflet-control-attribution a{color:#4a4870!important}
 
-/* ── TOP BAR ── */
-#top-bar{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 10px;backdrop-filter:blur(16px);box-shadow:0 4px 20px rgba(0,0,0,.5);max-width:calc(100vw - 40px)}
-#search-input{background:transparent;border:none;outline:none;color:var(--text);font-family:var(--mono);font-size:11px;width:220px;padding:2px 4px}
+/* Top search bar */
+#top-bar{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:5px 8px;backdrop-filter:blur(16px);box-shadow:0 4px 24px rgba(0,0,0,.6);max-width:calc(100vw - 24px);width:360px}
+#search-input{background:transparent;border:none;outline:none;color:var(--text);font-family:var(--mono);font-size:11px;flex:1;padding:2px 4px;min-width:0}
 #search-input::placeholder{color:var(--muted)}
-#search-btn{background:var(--accent);border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:12px;padding:4px 10px;font-family:var(--mono);font-size:10px;transition:background .15s;white-space:nowrap}
+#search-btn{background:var(--accent);border:none;border-radius:5px;color:#fff;cursor:pointer;font-family:var(--mono);font-size:10px;padding:4px 10px;transition:background .15s;white-space:nowrap;flex-shrink:0}
 #search-btn:hover{background:#9585ff}
-.top-sep{width:1px;height:16px;background:var(--border);flex-shrink:0}
-#loc-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;font-size:13px;padding:3px 8px;transition:all .15s;white-space:nowrap}
+.sep{width:1px;height:14px;background:var(--border);flex-shrink:0}
+#loc-btn{background:none;border:1px solid var(--border);border-radius:5px;color:var(--muted);cursor:pointer;font-size:11px;padding:3px 8px;transition:all .15s;white-space:nowrap;flex-shrink:0;font-family:var(--mono)}
 #loc-btn:hover{border-color:var(--accent);color:var(--text)}
 #loc-btn.active{border-color:var(--green);color:var(--green)}
 
-/* ── BOTTOM STATUS ── */
-#status-strip{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:1000;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:5px 14px;backdrop-filter:blur(16px);font-family:var(--mono);font-size:10px;color:var(--muted);display:none;align-items:center;gap:8px;max-width:calc(100vw - 40px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#status-strip.visible{display:flex}
-#status-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;animation:spulse 1.5s ease-in-out infinite}
-@keyframes spulse{0%,100%{opacity:1}50%{opacity:.3}}
-#status-txt{overflow:hidden;text-overflow:ellipsis}
+/* Status strip */
+#status-strip{position:absolute;bottom:34px;left:50%;transform:translateX(-50%);z-index:1000;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:5px 14px;backdrop-filter:blur(16px);font-family:var(--mono);font-size:10px;color:var(--muted);display:none;align-items:center;gap:7px;max-width:calc(100vw - 24px);white-space:nowrap}
+#status-strip.vis{display:flex}
+#sdot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;animation:dp 1.5s ease-in-out infinite}
+@keyframes dp{0%,100%{opacity:1}50%{opacity:.25}}
+#stxt{overflow:hidden;text-overflow:ellipsis}
 
-/* ── ROUTE LEGEND ── */
-#route-legend{position:absolute;bottom:10px;right:10px;z-index:1000;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;backdrop-filter:blur(16px);font-family:var(--mono);font-size:10px;color:var(--muted);display:none;min-width:160px}
-#route-legend.visible{display:block}
-.rl-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
-.rl-row:last-child{margin-bottom:0}
-.rl-line{width:18px;height:3px;border-radius:2px;flex-shrink:0}
-.rl-clear{background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;font-family:var(--mono);font-size:9px;padding:3px 8px;margin-top:8px;width:100%;transition:all .15s}
-.rl-clear:hover{border-color:var(--red);color:var(--red)}
+/* Route info panel */
+#route-info{position:absolute;bottom:34px;right:10px;z-index:1000;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;backdrop-filter:blur(16px);font-family:var(--mono);font-size:10px;color:var(--muted);display:none;min-width:170px;line-height:1.8}
+#route-info.vis{display:block}
+#ri-dest{color:var(--text);font-size:11px;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#ri-stats{color:var(--accent)}
+.ri-btn{background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;font-family:var(--mono);font-size:9px;padding:3px 8px;margin-top:7px;width:100%;transition:all .15s}
+.ri-btn:hover{border-color:#f87171;color:#f87171}
 
-/* ── CUSTOM MARKERS ── */
-.baker-pin{width:10px;height:10px;border-radius:50%;border:2px solid;box-shadow:0 0 8px currentColor}
-.baker-pin.you{background:var(--green);border-color:var(--green);box-shadow:0 0 12px var(--green)}
-.baker-pin.dest{background:var(--accent);border-color:var(--accent);box-shadow:0 0 12px var(--accent)}
-.baker-pin.drop{background:var(--amber,#fbbf24);border-color:var(--amber,#fbbf24)}
+/* Custom markers via divIcon */
+.bpin{width:12px;height:12px;border-radius:50%;border:2px solid;position:relative}
+.bpin.you{background:var(--green);border-color:var(--green);box-shadow:0 0 0 3px rgba(74,222,128,.2),0 0 12px rgba(74,222,128,.5)}
+.bpin.dest{background:var(--accent);border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,106,247,.2),0 0 12px rgba(124,106,247,.5)}
+.bpin.drop{background:#fbbf24;border-color:#fbbf24;box-shadow:0 0 0 3px rgba(251,191,36,.2)}
 </style>
 </head>
 <body>
-
 <div id="map"></div>
 
-<!-- Search / locate bar -->
 <div id="top-bar">
-  <input id="search-input" placeholder="Search or say "fly to…"" type="text">
+  <input id="search-input" type="text" placeholder='Search or "fly to…"'>
   <button id="search-btn" onclick="doSearch()">Go</button>
-  <div class="top-sep"></div>
-  <button id="loc-btn" onclick="locateMe()" title="My location">⌖ Me</button>
+  <div class="sep"></div>
+  <button id="loc-btn" onclick="locateMe()">⌖ Me</button>
 </div>
 
-<!-- Status strip -->
-<div id="status-strip">
-  <div id="status-dot"></div>
-  <span id="status-txt">Ready</span>
-</div>
+<div id="status-strip"><div id="sdot"></div><span id="stxt"></span></div>
 
-<!-- Route legend -->
-<div id="route-legend">
-  <div class="rl-row"><div class="rl-line" style="background:#7c6af7;box-shadow:0 0 4px #7c6af7"></div><span id="rl-from">You</span></div>
-  <div class="rl-row"><div class="rl-line" style="background:#4ade80;box-shadow:0 0 4px #4ade80"></div><span id="rl-to">Destination</span></div>
-  <button class="rl-clear" onclick="clearRoute()">✕ Clear route</button>
+<div id="route-info">
+  <div id="ri-dest">Route</div>
+  <div id="ri-stats"></div>
+  <button class="ri-btn" onclick="clearRoute()">✕ Clear route</button>
 </div>
 
 <script>
-// ── Init map ────────────────────────────────────────────────
-var map = L.map('map', {
-  center: [39.8283, -98.5795], // center of US as fallback
-  zoom: 4,
-  zoomControl: true,
-  attributionControl: true,
-});
-
-// Dark tile layer — CartoDB Dark Matter
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
-  subdomains: 'abcd',
-  maxZoom: 19,
+// ── Map init ─────────────────────────────────────────────────
+var map = L.map('map',{center:[39.83,-98.58],zoom:4,zoomControl:true});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+  attribution:'&copy; <a href="https://openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com">CARTO</a>',
+  subdomains:'abcd',maxZoom:19
 }).addTo(map);
 
-// ── State ───────────────────────────────────────────────────
-var myLat = null, myLng = null;
-var myMarker = null;
-var destMarker = null;
-var routeLine = null;
-var glowLine = null;
-var droppedMarkers = [];
+// ── State ────────────────────────────────────────────────────
+var myLat=null,myLng=null;
+var myMarker=null,destMarker=null;
+var routeLine=null,glowLine=null;
+var drops=[];
+var ready=false; // signals to parent that map is fully loaded
 
-// ── Custom icon factory ─────────────────────────────────────
-function makeIcon(cls) {
-  return L.divIcon({
-    className: '',
-    html: '<div class="baker-pin ' + cls + '"></div>',
-    iconSize: [10, 10],
-    iconAnchor: [5, 5],
-    popupAnchor: [0, -8],
-  });
+// ── Icons ─────────────────────────────────────────────────────
+function icon(cls){
+  return L.divIcon({className:'',html:'<div class="bpin '+cls+'"></div>',iconSize:[12,12],iconAnchor:[6,6],popupAnchor:[0,-10]});
 }
 
-// ── Status ──────────────────────────────────────────────────
-function setStatus(txt, persist) {
-  var strip = document.getElementById('status-strip');
-  var el = document.getElementById('status-txt');
-  el.textContent = txt;
-  strip.classList.add('visible');
-  if (!persist) setTimeout(function() { strip.classList.remove('visible'); }, 3500);
+// ── Status ────────────────────────────────────────────────────
+var _stTimer=null;
+function setStatus(txt,persist){
+  document.getElementById('stxt').textContent=txt;
+  document.getElementById('status-strip').classList.add('vis');
+  clearTimeout(_stTimer);
+  if(!persist)_stTimer=setTimeout(()=>document.getElementById('status-strip').classList.remove('vis'),4000);
+}
+function clearStatus(){
+  clearTimeout(_stTimer);
+  document.getElementById('status-strip').classList.remove('vis');
 }
 
-// ── Geocode (Nominatim) ─────────────────────────────────────
-async function geocode(query) {
-  var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(query);
-  var r = await fetch(url, { headers: { 'Accept-Language': 'en', 'User-Agent': 'BAKER-App' } });
-  var data = await r.json();
-  if (!data || !data.length) return null;
-  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), name: data[0].display_name.split(',').slice(0, 2).join(', ') };
+// ── Geocode (Nominatim) ───────────────────────────────────────
+async function geocode(q){
+  try{
+    var url='https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q);
+    var r=await fetch(url,{headers:{'Accept-Language':'en','User-Agent':'BAKER-HUD/1.0'}});
+    var d=await r.json();
+    if(!d||!d.length)return null;
+    return{lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon),name:d[0].display_name.split(',').slice(0,2).join(', ')};
+  }catch(e){return null;}
 }
 
-// ── Fly to ──────────────────────────────────────────────────
-async function flyTo(query) {
-  setStatus('Finding ' + query + '…', true);
-  var result = await geocode(query);
-  if (!result) { setStatus('Could not find: ' + query); return null; }
-  map.flyTo([result.lat, result.lng], 13, { animate: true, duration: 1.4 });
-  if (destMarker) map.removeLayer(destMarker);
-  destMarker = L.marker([result.lat, result.lng], { icon: makeIcon('dest') })
-    .addTo(map)
-    .bindPopup('<b>' + result.name + '</b>')
-    .openPopup();
-  setStatus('Flew to ' + result.name);
-  return result;
+// ── Fly to ────────────────────────────────────────────────────
+async function flyTo(q){
+  setStatus('Finding '+q+'…',true);
+  var r=await geocode(q);
+  if(!r){setStatus('Not found: '+q);return;}
+  if(destMarker){map.removeLayer(destMarker);destMarker=null;}
+  destMarker=L.marker([r.lat,r.lng],{icon:icon('dest')}).addTo(map).bindPopup('<b>'+r.name+'</b>').openPopup();
+  map.flyTo([r.lat,r.lng],13,{animate:true,duration:1.4});
+  setStatus(r.name);
 }
 
-// ── Drop pin ────────────────────────────────────────────────
-function dropPin(lat, lng, label) {
-  var m = L.marker([lat, lng], { icon: makeIcon('drop') })
-    .addTo(map)
-    .bindPopup(label || ('Pin: ' + lat.toFixed(4) + ', ' + lng.toFixed(4)));
-  droppedMarkers.push(m);
-  map.flyTo([lat, lng], 14, { animate: true, duration: 1.2 });
-  setStatus('Pin dropped');
-}
-
-// ── Directions (glowing line) ───────────────────────────────
-async function directionsTo(query) {
-  if (myLat === null) {
-    setStatus('Getting your location first…', true);
-    await new Promise(function(res) { locateMe(res); });
-    if (myLat === null) { setStatus('Location unavailable'); return; }
+// ── Directions ───────────────────────────────────────────────
+async function directionsTo(q){
+  // Get location if we don't have it
+  if(myLat===null){
+    setStatus('Getting your location…',true);
+    await new Promise(function(res){
+      navigator.geolocation.getCurrentPosition(
+        function(p){myLat=p.coords.latitude;myLng=p.coords.longitude;placeMyMarker();res();},
+        function(){res();},
+        {enableHighAccuracy:true,timeout:12000}
+      );
+    });
   }
-  setStatus('Routing to ' + query + '…', true);
-  var result = await geocode(query);
-  if (!result) { setStatus('Could not find: ' + query); return; }
+  if(myLat===null){setStatus('Location unavailable — allow GPS and try again');return;}
 
-  // Remove old route
+  setStatus('Finding '+q+'…',true);
+  var dest=await geocode(q);
+  if(!dest){setStatus('Not found: '+q);return;}
+
   clearRoute(true);
+  if(destMarker){map.removeLayer(destMarker);destMarker=null;}
+  destMarker=L.marker([dest.lat,dest.lng],{icon:icon('dest')}).addTo(map).bindPopup('<b>'+dest.name+'</b>').openPopup();
 
-  // Destination marker
-  if (destMarker) map.removeLayer(destMarker);
-  destMarker = L.marker([result.lat, result.lng], { icon: makeIcon('dest') })
-    .addTo(map)
-    .bindPopup('<b>' + result.name + '</b>');
+  setStatus('Drawing route…',true);
 
-  var coords = [[myLat, myLng], [result.lat, result.lng]];
+  // Try OSRM — if CORS blocked, fall back to straight line
+  var coords=[[myLat,myLng],[dest.lat,dest.lng]];
+  var distKm=null,durMin=null;
 
-  // Try OSRM for a real road route
-  try {
-    var osrmUrl = 'https://router.project-osrm.org/route/v1/driving/' +
-      myLng + ',' + myLat + ';' + result.lng + ',' + result.lat +
-      '?overview=full&geometries=geojson';
-    var rr = await fetch(osrmUrl);
-    var rd = await rr.json();
-    if (rd.routes && rd.routes[0]) {
-      var pts = rd.routes[0].geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
-      coords = pts;
-      var dist = (rd.routes[0].distance / 1000).toFixed(1);
-      var dur = Math.round(rd.routes[0].duration / 60);
-      document.getElementById('rl-from').textContent = 'You → ' + result.name;
-      document.getElementById('rl-to').textContent = dist + ' km · ~' + dur + ' min';
+  try{
+    var osrm='https://router.project-osrm.org/route/v1/driving/'+myLng+','+myLat+';'+dest.lng+','+dest.lat+'?overview=full&geometries=geojson';
+    var rr=await fetch(osrm);
+    if(rr.ok){
+      var rd=await rr.json();
+      if(rd.routes&&rd.routes[0]){
+        coords=rd.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+        distKm=(rd.routes[0].distance/1000).toFixed(1);
+        durMin=Math.round(rd.routes[0].duration/60);
+      }
     }
-  } catch(e) { /* fallback to straight line */ }
+  }catch(e){/* CORS or network — use straight line */}
 
-  // Glow line (outer, wider, dimmer)
-  glowLine = L.polyline(coords, {
-    color: '#7c6af7',
-    weight: 8,
-    opacity: 0.18,
-    lineJoin: 'round',
-    lineCap: 'round',
-  }).addTo(map);
+  // Draw glow layer first, then the solid line on top
+  glowLine=L.polyline(coords,{color:'#7c6af7',weight:14,opacity:0.12,lineJoin:'round',lineCap:'round'}).addTo(map);
+  routeLine=L.polyline(coords,{color:'#7c6af7',weight:3,opacity:0.9,lineJoin:'round',lineCap:'round'}).addTo(map);
 
-  // Main route line
-  routeLine = L.polyline(coords, {
-    color: '#7c6af7',
-    weight: 2.5,
-    opacity: 0.85,
-    lineJoin: 'round',
-    lineCap: 'round',
-    dashArray: null,
-  }).addTo(map);
+  // Fit both points in view
+  var bounds=L.latLngBounds([[myLat,myLng],[dest.lat,dest.lng]]);
+  map.fitBounds(bounds.pad(0.3),{animate:true,duration:1.2});
 
-  // Fit bounds with padding
-  map.fitBounds(L.latLngBounds([[myLat, myLng], [result.lat, result.lng]]).pad(0.25), { animate: true, duration: 1.2 });
-  document.getElementById('route-legend').classList.add('visible');
-  document.getElementById('rl-from').textContent = 'You → ' + result.name.split(',')[0];
-  setStatus('Route to ' + result.name.split(',')[0]);
+  // Route info panel
+  var ri=document.getElementById('route-info');
+  var shortName=dest.name.split(',')[0];
+  document.getElementById('ri-dest').textContent='→ '+shortName;
+  document.getElementById('ri-stats').textContent=distKm?distKm+' km · ~'+durMin+' min':'Straight line (GPS route unavailable)';
+  ri.classList.add('vis');
+  setStatus('Route to '+shortName);
 }
 
-function clearRoute(silent) {
-  if (routeLine) { map.removeLayer(routeLine); routeLine = null; }
-  if (glowLine)  { map.removeLayer(glowLine);  glowLine  = null; }
-  if (destMarker){ map.removeLayer(destMarker); destMarker = null; }
-  document.getElementById('route-legend').classList.remove('visible');
-  if (!silent) setStatus('Route cleared');
+// ── Clear route ───────────────────────────────────────────────
+function clearRoute(silent){
+  if(routeLine){map.removeLayer(routeLine);routeLine=null;}
+  if(glowLine){map.removeLayer(glowLine);glowLine=null;}
+  if(destMarker){map.removeLayer(destMarker);destMarker=null;}
+  document.getElementById('route-info').classList.remove('vis');
+  if(!silent)setStatus('Route cleared');
 }
 
-// ── My Location ─────────────────────────────────────────────
-function locateMe(cb) {
-  var btn = document.getElementById('loc-btn');
-  btn.textContent = '⌖ …';
+// ── My Location ───────────────────────────────────────────────
+function placeMyMarker(){
+  if(!myLat)return;
+  if(myMarker){map.removeLayer(myMarker);}
+  myMarker=L.marker([myLat,myLng],{icon:icon('you')}).addTo(map).bindPopup('<b>You are here</b>');
+  document.getElementById('loc-btn').classList.add('active');
+}
+function locateMe(){
+  var btn=document.getElementById('loc-btn');
+  btn.textContent='⌖ …';
+  setStatus('Locating…',true);
   navigator.geolocation.getCurrentPosition(
-    function(pos) {
-      myLat = pos.coords.latitude;
-      myLng = pos.coords.longitude;
-      if (myMarker) map.removeLayer(myMarker);
-      myMarker = L.marker([myLat, myLng], { icon: makeIcon('you') })
-        .addTo(map)
-        .bindPopup('<b>You are here</b>');
-      map.flyTo([myLat, myLng], 14, { animate: true, duration: 1.2 });
-      btn.textContent = '⌖ Me';
-      btn.classList.add('active');
-      setStatus('Location found');
-      if (cb) cb();
+    function(p){
+      myLat=p.coords.latitude;myLng=p.coords.longitude;
+      placeMyMarker();
+      map.flyTo([myLat,myLng],14,{animate:true,duration:1.2});
+      btn.textContent='⌖ Me';
+      setStatus('Located');
     },
-    function(err) {
-      btn.textContent = '⌖ Me';
-      setStatus('Location denied');
-      if (cb) cb();
-    },
-    { enableHighAccuracy: true, timeout: 10000 }
+    function(){btn.textContent='⌖ Me';setStatus('Location denied');},
+    {enableHighAccuracy:true,timeout:12000}
   );
 }
 
-// ── Search bar ──────────────────────────────────────────────
-function doSearch() {
-  var q = document.getElementById('search-input').value.trim();
-  if (q) flyTo(q);
+// ── Drop pin ──────────────────────────────────────────────────
+function dropPin(lat,lng,label){
+  var m=L.marker([lat,lng],{icon:icon('drop')}).addTo(map).bindPopup(label||'Pin');
+  drops.push(m);
+  map.flyTo([lat,lng],14,{animate:true,duration:1.0});
+  setStatus('Pin dropped');
 }
-document.getElementById('search-input').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') doSearch();
-});
 
-// ── Click to drop pin ────────────────────────────────────────
-map.on('contextmenu', function(e) {
-  dropPin(e.latlng.lat, e.latlng.lng, 'Dropped pin');
-});
+// ── Search bar ────────────────────────────────────────────────
+function doSearch(){
+  var q=document.getElementById('search-input').value.trim();
+  if(q)flyTo(q);
+}
+document.getElementById('search-input').addEventListener('keydown',function(e){if(e.key==='Enter')doSearch();});
+map.on('contextmenu',function(e){dropPin(e.latlng.lat,e.latlng.lng,'Dropped pin');});
 
-// ── postMessage API (called from hud.html) ──────────────────
-// Commands: {cmd:'flyTo', query:'...'} | {cmd:'directionsTo', query:'...'} |
-//           {cmd:'dropPin', lat, lng, label} | {cmd:'locate'} | {cmd:'clearRoute'}
-window.addEventListener('message', async function(e) {
-  if (!e.data || typeof e.data !== 'object') return;
-  var d = e.data;
-  switch (d.cmd) {
-    case 'flyTo':        await flyTo(d.query); break;
-    case 'directionsTo': await directionsTo(d.query); break;
-    case 'dropPin':      dropPin(d.lat, d.lng, d.label); break;
-    case 'locate':       locateMe(); break;
-    case 'clearRoute':   clearRoute(); break;
+// ── postMessage API ───────────────────────────────────────────
+window.addEventListener('message',async function(e){
+  if(!e.data||typeof e.data!=='object')return;
+  switch(e.data.cmd){
+    case 'flyTo':        await flyTo(e.data.query);break;
+    case 'directionsTo': await directionsTo(e.data.query);break;
+    case 'dropPin':      dropPin(e.data.lat,e.data.lng,e.data.label);break;
+    case 'locate':       locateMe();break;
+    case 'clearRoute':   clearRoute();break;
   }
-  // Notify parent of result
-  if (e.source) e.source.postMessage({ type: 'mapReady' }, '*');
+  // ACK back to parent
+  try{window.parent.postMessage({type:'mapAck',cmd:e.data.cmd},'*');}catch(err){}
 });
 
-// ── Auto-locate on load ──────────────────────────────────────
-window.addEventListener('load', function() {
+// ── Signal ready to parent ────────────────────────────────────
+// Tell parent window the map is loaded and accepting messages
+function signalReady(){
+  ready=true;
+  try{window.parent.postMessage({type:'mapReady'},'*');}catch(err){}
+}
+
+// Auto-locate and signal ready
+window.addEventListener('load',function(){
+  signalReady();
   locateMe();
 });
 </script>
