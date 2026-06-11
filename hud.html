@@ -10,24 +10,23 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0f0f10;--surface:#1a1a1d;--surface2:#222226;--border:#2e2e34;
-  --accent:#7c6af7;--accent-dim:#3d3578;--text:#e8e6f0;--muted:#7a7880;
-  --green:#4ade80;--amber:#fbbf24;--red:#f87171;--blue:#60a5fa;
-  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+--bg:#0f0f10;--surface:#1a1a1d;--surface2:#222226;--border:#2e2e34;
+--accent:#7c6af7;--accent-dim:#3d3578;--text:#e8e6f0;--muted:#7a7880;
+--green:#4ade80;--amber:#fbbf24;--red:#f87171;--blue:#60a5fa;
+--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
 }
 html,body{background:var(--bg);color:var(--text);font-family:var(--sans);width:100vw;height:100vh;overflow:hidden;position:relative}
-
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 @keyframes fadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
-@keyframes glow-pulse{0%,100%{box-shadow:0 0 0 0 rgba(124,106,247,.3)}50%{box-shadow:0 0 20px 4px rgba(124,106,247,.15)}}
 @keyframes listening-pulse{0%,100%{box-shadow:0 0 0 0 rgba(124,106,247,.5)}50%{box-shadow:0 0 28px 8px rgba(124,106,247,.2)}}
-
-/* ── GRAPH BACKGROUND ── */
+@keyframes sp-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+/* ── Record mode ── */
+#orb-panel.music-mode .fp-hdr{border-bottom-color:rgba(29,185,84,.25)}
+#orb-panel.music-mode .fp-icon{color:#1db954}
+#orb-panel.music-mode{border-color:rgba(29,185,84,.3)}
 #graph-bg{position:fixed;inset:0;z-index:0;cursor:grab}
 #graph-bg:active{cursor:grabbing}
 #vault-graph-canvas{display:block;width:100%;height:100%}
-
-/* ── NAV BAR ── */
 nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;gap:10px;padding:0 20px;height:44px;background:rgba(15,15,16,.75);backdrop-filter:blur(16px);border-bottom:1px solid rgba(46,46,52,.6)}
 .nav-logo{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--accent);letter-spacing:.12em;background:rgba(124,106,247,.12);border:1px solid var(--accent-dim);padding:3px 10px;border-radius:4px}
 .nav-status{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--muted)}
@@ -37,59 +36,52 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
 .status-dot.speaking{background:var(--green);animation:blink .6s ease-in-out infinite}
 .status-dot.thinking{background:var(--amber);animation:blink 1s ease-in-out infinite}
 .nav-right{margin-left:auto;display:flex;gap:6px;align-items:center}
-.hbtn{border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;background:rgba(15,15,16,.5);color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+.hbtn{border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;background:rgba(15,15,16,.5);color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:5px}
 .hbtn:hover{border-color:var(--accent);color:var(--text);background:rgba(124,106,247,.08)}
 .hbtn.on{color:var(--accent);border-color:var(--accent-dim);background:rgba(124,106,247,.1)}
-
-/* ── FLOATING PANEL BASE ── */
-.fp{position:fixed;z-index:30;border:1px solid var(--border);border-radius:10px;background:rgba(26,26,29,.92);backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.5);display:flex;flex-direction:column;animation:fadeIn .2s ease both;min-width:200px;min-height:80px}
+.hbtn.sp-playing{color:#1db954;border-color:rgba(29,185,84,.4);background:rgba(29,185,84,.06);animation:blink 2s ease-in-out infinite}
+.fp{position:fixed;z-index:30;border:1px solid var(--border);border-radius:10px;background:rgba(26,26,29,.92);backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.5);display:flex;flex-direction:column;animation:fadeIn .2s ease both;min-width:180px;min-height:80px;overflow:visible}
 .fp-hdr{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);cursor:move;flex-shrink:0;user-select:none;border-radius:10px 10px 0 0}
 .fp-hdr:hover{background:rgba(124,106,247,.04)}
+/* ── RESIZE HANDLES ── */
+.rh{position:absolute;z-index:10;user-select:none;pointer-events:all}
+.rh-n{top:-4px;left:8px;right:8px;height:8px;cursor:n-resize}
+.rh-s{bottom:-4px;left:8px;right:8px;height:8px;cursor:s-resize}
+.rh-e{right:-4px;top:8px;bottom:8px;width:8px;cursor:e-resize}
+.rh-w{left:-4px;top:8px;bottom:8px;width:8px;cursor:w-resize}
+.rh-nw{top:-4px;left:-4px;width:12px;height:12px;cursor:nw-resize}
+.rh-ne{top:-4px;right:-4px;width:12px;height:12px;cursor:ne-resize}
+.rh-sw{bottom:-4px;left:-4px;width:12px;height:12px;cursor:sw-resize}
+.rh-se{bottom:-4px;right:-4px;width:12px;height:12px;cursor:se-resize}
+.rh-se::after{content:'';position:absolute;bottom:4px;right:4px;width:6px;height:6px;border-right:2px solid var(--border);border-bottom:2px solid var(--border);border-radius:0 0 2px 0;opacity:.6}
+/* Spotify panel inner content must not eat pointer events at the panel edge */
+#spotify-panel>div:not(.rh){overflow:hidden;border-radius:14px}
 .fp-icon{font-size:12px;flex-shrink:0}
 .fp-title{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;flex:1}
 .fp-btns{display:flex;gap:4px;flex-shrink:0}
 .fp-btn{background:none;border:1px solid var(--border);border-radius:3px;width:18px;height:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:9px;color:var(--muted);transition:all .15s;flex-shrink:0}
 .fp-btn:hover{border-color:var(--accent);color:var(--text)}
 .fp-btn.close:hover{border-color:var(--red);color:var(--red)}
-.fp-body{flex:1;overflow:hidden;border-radius:0 0 10px 10px}
+.fp-body{flex:1;overflow:hidden;border-radius:0 0 10px 10px;min-height:0}
 .fp.minimized .fp-body{display:none}
 .fp.minimized{min-height:0}
-
-/* ── ORB PANEL (always visible, not closeable) ── */
 #orb-panel{width:220px;height:280px;bottom:60px;left:24px;z-index:40}
 #orb-panel.listening{animation:listening-pulse 1.5s ease-in-out infinite;border-color:rgba(124,106,247,.5)}
-#orb-canvas{display:block;width:100%;cursor:pointer;border-radius:0 0 0 0}
+#orb-canvas{display:block;width:100%;cursor:pointer}
 .orb-foot{padding:8px 12px;border-top:1px solid var(--border);flex-shrink:0}
 .orb-status-txt{font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;min-height:14px}
 .orb-status-txt.active{color:var(--text)}
 .orb-live{font-family:var(--mono);font-size:9px;color:var(--muted);font-style:italic;text-align:center;min-height:12px;margin-top:3px;line-height:1.4;word-break:break-word}
 .wake-indicator{font-family:var(--mono);font-size:9px;color:var(--accent);text-align:center;margin-top:3px;letter-spacing:.06em;opacity:.6}
-
-/* ── NOTE DETAIL PANEL ── */
 #note-panel{width:340px;height:420px;top:64px;right:24px;display:none}
 .note-content{padding:16px;overflow-y:auto;height:100%;font-family:var(--mono);font-size:11px;line-height:1.8;color:var(--text);white-space:pre-wrap;word-break:break-word}
 .note-content::-webkit-scrollbar{width:3px}
 .note-content::-webkit-scrollbar-thumb{background:var(--border)}
-
-/* ── WIDGET PANEL (url/pdf/spotify/text) ── */
 #widget-panel{width:480px;height:360px;top:64px;left:260px;display:none}
 #widget-frame{width:100%;height:100%;border:none;background:var(--surface2);border-radius:0 0 10px 10px}
-.widget-inner{padding:16px;overflow-y:auto;height:100%}
-
-/* ── SPOTIFY CARD ── */
-.sp-card{padding:20px;display:flex;flex-direction:column;gap:12px}
-.sp-track{font-family:var(--mono);font-size:15px;font-weight:500;color:#1db954;line-height:1.3}
-.sp-artist{font-family:var(--mono);font-size:11px;color:var(--muted)}
-.sp-controls{display:flex;gap:8px;margin-top:4px}
-.sp-btn{background:transparent;border:1px solid #1db954;border-radius:4px;padding:7px 16px;font-family:var(--mono);font-size:11px;color:#1db954;cursor:pointer;transition:all .15s}
-.sp-btn:hover{background:rgba(29,185,84,.12)}
-
-/* ── GRAPH STATS OVERLAY ── */
 #graph-stats{position:fixed;bottom:60px;right:24px;display:none;flex-direction:column;gap:4px;z-index:20;pointer-events:none}
 .graph-stat{font-family:var(--mono);font-size:10px;color:var(--muted);background:rgba(15,15,16,.8);padding:3px 8px;border-radius:3px;border:1px solid var(--border)}
 .graph-stat span{color:var(--accent)}
-
-/* ── GRAPH OVERLAY (no vault) ── */
 #graph-overlay{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;pointer-events:none}
 #graph-overlay.hidden{display:none}
 .graph-ph-icon{font-size:40px;opacity:.1}
@@ -97,22 +89,16 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
 .graph-ph-sub{font-family:var(--mono);font-size:10px;color:var(--muted);opacity:.35;text-align:center;line-height:1.9;max-width:280px}
 .graph-connect-btn{pointer-events:all;background:transparent;border:1px solid var(--accent-dim);border-radius:4px;padding:8px 16px;font-family:var(--mono);font-size:11px;color:var(--accent);cursor:pointer;transition:all .15s}
 .graph-connect-btn:hover{background:rgba(124,106,247,.1)}
-
-/* ── STATUS BAR ── */
 #status-bar{position:fixed;bottom:0;left:0;right:0;z-index:50;padding:5px 16px;background:rgba(15,15,16,.75);backdrop-filter:blur(16px);border-top:1px solid rgba(46,46,52,.6);display:flex;align-items:center;gap:10px;min-height:30px}
 .sb-pill{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid var(--border);color:var(--muted);white-space:nowrap;flex-shrink:0}
 .sb-pill.listening{color:var(--accent);border-color:var(--accent-dim)}
 .sb-pill.speaking{color:var(--green);border-color:rgba(74,222,128,.35)}
 .sb-pill.thinking{color:var(--amber);border-color:rgba(251,191,36,.35)}
 .sb-txt{font-family:var(--mono);font-size:10px;color:var(--muted);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-/* ── TOOLTIP ── */
 #graph-tooltip{position:fixed;z-index:60;background:rgba(26,26,29,.95);border:1px solid var(--border);border-radius:6px;padding:8px 12px;pointer-events:none;display:none;max-width:240px}
 .tt-name{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--text);margin-bottom:3px}
 .tt-path{font-family:var(--mono);font-size:9px;color:var(--muted)}
 .tt-type{font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:3px;margin-top:4px;display:inline-block}
-
-/* ── SETTINGS MODAL ── */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;padding:24px}
 .overlay.open{display:flex}
 .modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
@@ -143,16 +129,119 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
 .toggle-thumb{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--muted);top:3px;left:3px;transition:all .25s}
 .toggle input:checked~.toggle-thumb{left:23px;background:var(--accent)}
 .toggle-lbl{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.06em;text-align:right;min-width:24px}
+/* ─── SPOTIFY FULL PANEL ─────────────────────────────── */
+#spotify-panel{position:fixed;bottom:40px;right:24px;width:340px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:280px;min-height:120px}
+#spotify-panel.sp-vis{display:flex}
+#spotify-panel>div:not(.rh){overflow:hidden;border-radius:14px}
+#spp-body{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;border-radius:0 0 14px 14px}
+.spp-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--border);cursor:move;user-select:none;border-radius:14px 14px 0 0;flex-shrink:0}
+.spp-left{display:flex;align-items:center;gap:7px}
+.spp-logo{fill:#1db954}
+.spp-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+.spp-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0 2px;line-height:1;transition:color .15s}
+.spp-close:hover{color:var(--text)}
+.spp-tabs{display:flex;border-bottom:1px solid var(--border)}
+.spp-tab{flex:1;background:none;border:none;color:var(--muted);font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;padding:7px 3px;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+.spp-tab.act{color:var(--accent);border-bottom-color:var(--accent)}
+.spp-tab:hover:not(.act){color:var(--text)}
+.spp-view{display:none;flex-direction:column}
+.spp-view.act{display:flex}
+/* Now Playing */
+.spp-np{padding:13px;display:flex;flex-direction:column;gap:9px}
+.spp-trow{display:flex;align-items:center;gap:11px}
+.spp-art{width:50px;height:50px;border-radius:7px;object-fit:cover;background:var(--surface2);flex-shrink:0}
+.spp-art-ph{width:50px;height:50px;border-radius:7px;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent-dim);font-size:18px}
+.spp-meta{flex:1;min-width:0}
+.spp-tn{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.spp-an{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.spp-aln{font-size:10px;color:#484650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.spp-prog-wrap{display:flex;align-items:center;gap:7px}
+.spp-t{font-family:var(--mono);font-size:10px;color:var(--muted);width:30px;flex-shrink:0}
+.spp-t.r{text-align:right}
+.spp-prog{flex:1;height:4px;background:var(--surface2);border-radius:2px;cursor:pointer;position:relative;overflow:visible}
+.spp-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s linear;pointer-events:none}
+.spp-prog:hover .spp-fill{background:#1db954}
+.spp-ctrls{display:flex;align-items:center;justify-content:center;gap:7px}
+.spp-btn{background:none;border:none;color:var(--muted);cursor:pointer;padding:5px;border-radius:7px;font-size:17px;line-height:1;transition:all .15s;display:flex;align-items:center;justify-content:center}
+.spp-btn:hover{color:var(--text);background:var(--surface2)}
+.spp-btn.spp-main{width:36px;height:36px;background:var(--accent);color:#fff;font-size:17px;border-radius:50%;padding:0}
+.spp-btn.spp-main:hover{background:#9585ff;color:#fff}
+.spp-vol{display:flex;align-items:center;gap:7px;padding:0 2px}
+.spp-vi{font-size:12px;color:var(--muted)}
+input[type=range].spp-slider{-webkit-appearance:none;flex:1;height:4px;border-radius:2px;background:var(--surface2);cursor:pointer;outline:none}
+input[type=range].spp-slider::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:var(--accent);cursor:pointer;transition:background .15s}
+input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
+.spp-idle{padding:26px 14px;text-align:center;color:var(--muted);font-size:12px;line-height:1.7}
+/* Search */
+.spp-sw{padding:10px}
+.spp-srow{display:flex;gap:6px;margin-bottom:8px}
+.spp-si{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:12px;padding:7px 10px;outline:none;transition:border-color .2s}
+.spp-si:focus{border-color:var(--accent)}
+.spp-si::placeholder{color:#484650}
+.spp-sg{background:var(--accent);border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:14px;padding:0 10px;transition:background .15s}
+.spp-sg:hover{background:#9585ff}
+.spp-res{overflow-y:auto;max-height:236px}
+.spp-rsec{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#484650;padding:5px 3px 3px}
+.spp-ri{display:flex;align-items:center;gap:9px;padding:5px 3px;border-radius:7px;cursor:pointer;transition:background .15s}
+.spp-ri:hover{background:var(--surface2)}
+.spp-rthumb{width:32px;height:32px;border-radius:4px;object-fit:cover;background:var(--surface2);flex-shrink:0}
+.spp-rm{flex:1;min-width:0}
+.spp-rn{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.spp-rs{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Library */
+.spp-lw{padding:4px 8px 10px}
+.spp-ltabs{display:flex;gap:4px;margin-bottom:6px;padding:4px 0}
+.spp-ltab{background:var(--surface2);border:none;color:var(--muted);font-family:var(--mono);font-size:9px;padding:4px 8px;border-radius:20px;cursor:pointer;transition:all .15s}
+.spp-ltab.lact{background:var(--accent-dim);color:var(--text)}
+.spp-ltab:hover:not(.lact){color:var(--text)}
+.spp-li{overflow-y:auto;max-height:236px}
+/* Devices */
+.spp-dw{padding:10px}
+.spp-dhdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.spp-dlbl{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.spp-dref{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:5px;transition:all .2s}
+.spp-dref:hover{color:var(--accent);background:var(--surface2)}
+.spp-di{display:flex;align-items:center;gap:9px;padding:7px 4px;border-radius:7px;cursor:pointer;transition:background .15s;border:1px solid transparent}
+.spp-di:hover{background:var(--surface2)}
+.spp-di.spp-dact{border-color:var(--accent-dim);background:rgba(61,53,120,.2)}
+.spp-dico{font-size:17px;color:var(--muted)}
+.spp-dinfo{flex:1}
+.spp-dname{font-size:12px;color:var(--text)}
+.spp-dtype{font-size:10px;color:var(--muted);text-transform:capitalize}
+.spp-ddot{width:7px;height:7px;border-radius:50%;background:#1db954;flex-shrink:0}
+/* Not connected */
+.spp-nc{padding:22px 14px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:9px}
+.spp-nct{font-family:var(--mono);font-size:12px;color:var(--text)}
+.spp-ncs{font-size:11px;color:var(--muted);line-height:1.6}
+.spp-ncbtn{background:#1db954;border:none;border-radius:20px;color:#000;cursor:pointer;font-family:var(--sans);font-size:12px;font-weight:600;padding:9px 22px;transition:all .15s}
+.spp-ncbtn:hover{background:#1ed760;transform:scale(1.02)}
+.spp-ncbtn:disabled{opacity:.45;cursor:default;transform:none}
+/* Settings Spotify section */
+.sp-set-sep{border-top:1px solid var(--border);padding-top:14px;margin-top:14px}
+.sp-set-hd{font-family:var(--mono);font-size:10px;color:#484650;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.sp-set-status{font-size:11px;color:var(--muted);margin-bottom:7px}
+.sp-set-status.ok{color:var(--green)}
+.sp-set-row{display:flex;gap:6px;margin-bottom:6px}
+.sp-set-inp{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:8px 10px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;transition:border-color .2s}
+.sp-set-inp:focus{border-color:var(--accent)}
+.sp-set-inp::placeholder{opacity:.4}
+.sp-set-gbtn{background:transparent;border:1px solid #1db954;border-radius:4px;padding:0 12px;font-family:var(--mono);font-size:11px;color:#1db954;cursor:pointer;white-space:nowrap;transition:all .15s}
+.sp-set-gbtn:hover{background:rgba(29,185,84,.1)}
+.sp-disc{background:transparent;border:1px solid rgba(248,113,113,.35);border-radius:4px;padding:7px 12px;font-family:var(--mono);font-size:11px;color:var(--red);cursor:pointer;transition:all .15s;width:100%;margin-top:4px}
+.sp-disc:hover{background:rgba(248,113,113,.08)}
+/* Scrollbars */
+.spp-res::-webkit-scrollbar,.spp-li::-webkit-scrollbar{width:3px}
+.spp-res::-webkit-scrollbar-thumb,.spp-li::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 </style>
 </head>
 <body>
 
-<!-- GRAPH BACKGROUND (full screen) -->
+<!-- GRAPH BACKGROUND -->
 <div id="graph-bg">
   <canvas id="vault-graph-canvas"></canvas>
 </div>
 
-<!-- GRAPH PLACEHOLDER (no vault) -->
+<!-- GRAPH PLACEHOLDER -->
 <div id="graph-overlay">
   <div class="graph-ph-icon">🕸</div>
   <div class="graph-ph-title">No vault connected</div>
@@ -185,30 +274,51 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
     <a class="hbtn" href="conversation.html">💬 Conversation</a>
     <a class="hbtn" href="index.html">⊞ Tools</a>
     <button class="hbtn" id="web-search-btn" onclick="toggleWebSearch()">🌐 Web</button>
+    <button class="hbtn" id="sp-nav-btn" onclick="SP.togglePanel()" title="Spotify">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+      <span id="sp-nav-lbl">Music</span>
+    </button>
     <button class="hbtn" onclick="openSettings()">⚙ Settings</button>
   </div>
 </nav>
 
-<!-- ORB PANEL (floating, draggable, always visible) -->
+<!-- ORB PANEL -->
 <div class="fp" id="orb-panel">
   <div class="fp-hdr" id="orb-panel-hdr">
-    <span class="fp-icon">◈</span>
-    <span class="fp-title">BAKER</span>
+    <span class="fp-icon" id="orb-mode-icon">◈</span>
+    <span class="fp-title" id="orb-panel-label">BAKER</span>
     <div class="fp-btns">
       <button class="fp-btn" onclick="toggleMinimize('orb-panel')" title="Minimize">−</button>
     </div>
   </div>
-  <div class="fp-body" style="display:flex;flex-direction:column">
-    <canvas id="orb-canvas" onclick="handleOrbClick()" style="flex:1;display:block;cursor:pointer;min-height:160px"></canvas>
+  <div class="fp-body" style="display:flex;flex-direction:column;position:relative">
+    <!-- WebGL orb (normal mode) -->
+    <canvas id="orb-canvas" style="flex:1;display:block;cursor:pointer;min-height:160px;position:relative;z-index:1"></canvas>
+    <!-- Record canvas (music mode, overlays orb) -->
+    <canvas id="record-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;display:none;cursor:pointer;z-index:2"></canvas>
     <div class="orb-foot">
-      <div class="orb-status-txt" id="orb-status-txt">Say "Baker" to begin</div>
-      <div class="orb-live" id="orb-live"></div>
-      <div class="wake-indicator" id="wake-status">👂 listening for wake word</div>
+      <!-- Normal mode footer -->
+      <div id="orb-foot-normal">
+        <div class="orb-status-txt" id="orb-status-txt">Say "Baker" to begin</div>
+        <div class="orb-live" id="orb-live"></div>
+        <div class="wake-indicator" id="wake-status">👂 listening for wake word</div>
+      </div>
+      <!-- Music mode footer -->
+      <div id="orb-foot-music" style="display:none">
+        <div id="orb-track-name" style="font-family:var(--mono);font-size:10px;color:var(--text);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px;padding:0 4px"></div>
+        <div id="orb-artist-name" style="font-family:var(--mono);font-size:9px;color:var(--muted);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px;padding:0 4px"></div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px">
+          <button onclick="SP.prev()" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;width:26px;height:26px;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">⏮</button>
+          <button id="orb-music-pp" onclick="orbMusicTogglePlay()" style="background:var(--accent);border:none;border-radius:50%;color:#fff;cursor:pointer;width:30px;height:30px;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .15s">⏸</button>
+          <button onclick="SP.next()" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;width:26px;height:26px;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">⏭</button>
+        </div>
+        <div style="font-family:var(--mono);font-size:8px;color:var(--accent);text-align:center;margin-top:5px;opacity:.5;letter-spacing:.06em">double-click to exit</div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- NOTE DETAIL PANEL (floating) -->
+<!-- NOTE PANEL -->
 <div class="fp" id="note-panel">
   <div class="fp-hdr" id="note-panel-hdr">
     <span class="fp-icon">📄</span>
@@ -223,7 +333,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
   </div>
 </div>
 
-<!-- WIDGET PANEL (floating — url/pdf/spotify/text) -->
+<!-- WIDGET PANEL -->
 <div class="fp" id="widget-panel">
   <div class="fp-hdr" id="widget-panel-hdr">
     <span class="fp-icon" id="widget-icon">⬡</span>
@@ -234,6 +344,18 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
     </div>
   </div>
   <div class="fp-body" id="widget-body"></div>
+</div>
+
+<!-- SPOTIFY PANEL -->
+<div id="spotify-panel">
+  <div class="spp-hdr">
+    <div class="spp-left">
+      <svg class="spp-logo" width="16" height="16" viewBox="0 0 24 24"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+      <span class="spp-title">Spotify</span>
+    </div>
+    <button class="spp-close" onclick="SP.hidePanel()">×</button>
+  </div>
+  <div id="spp-body"><!-- filled by SP.render() --></div>
 </div>
 
 <!-- STATUS BAR -->
@@ -247,6 +369,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
   <div class="modal">
     <div class="modal-title">⚙ Settings</div>
     <div class="modal-sub">Stored only in this browser. Never leaves your device.</div>
+
     <div class="field">
       <label>Anthropic API Key</label>
       <div class="key-wrap">
@@ -254,6 +377,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
         <button class="show-btn" onclick="toggleShow()">👁</button>
       </div>
     </div>
+
     <div class="field">
       <label>Web Search</label>
       <div class="toggle-row">
@@ -271,6 +395,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
         </div>
       </div>
     </div>
+
     <div class="field">
       <label>Conversation Effort</label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:2px">
@@ -280,6 +405,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
         <button class="depth-btn" id="effort-minimal" onclick="setEffort('minimal')">🔹 Minimal</button>
       </div>
     </div>
+
     <div class="field">
       <label>Voice Speed</label>
       <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
@@ -287,24 +413,25 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
         <span class="depth-btn" id="speech-rate-display" style="cursor:default;min-width:40px;text-align:center">92</span>
       </div>
     </div>
-    <div class="field">
-      <label>Spotify</label>
-      <div style="display:flex;gap:6px;margin-bottom:8px">
-        <input type="text" id="spotify-id-input" placeholder="Spotify Client ID" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:9px 10px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none">
-        <button onclick="connectSpotifyFromHUD()" id="spotify-connect-btn" style="background:transparent;border:1px solid #1db954;border-radius:4px;padding:8px 14px;font-family:var(--mono);font-size:11px;color:#1db954;cursor:pointer;white-space:nowrap;transition:all .15s">Connect</button>
+
+    <!-- SPOTIFY SETTINGS SECTION -->
+    <div class="sp-set-sep">
+      <div class="sp-set-hd">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="#1db954"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+        Spotify
       </div>
-      <div id="spotify-auth-status" style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:8px">Get Client ID from <a href="https://developer.spotify.com/dashboard" target="_blank" style="color:var(--accent)">developer.spotify.com</a>. Add <code style="color:var(--accent)">https://big-burr.github.io/BAKER/hud.html</code> as a redirect URI in your Spotify app.</div>
-    </div>
-    <div class="field">
-      <label>Spotify Playback Device</label>
-      <div style="display:flex;gap:6px;margin-bottom:6px">
-        <select id="spotify-device-select" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:8px 10px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;cursor:pointer">
-          <option value="">— click Refresh to load devices —</option>
-        </select>
-        <button onclick="loadSpotifyDevices()" style="background:transparent;border:1px solid var(--border);border-radius:4px;padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">↺ Refresh</button>
+      <div id="sp-set-status" class="sp-set-status">Not connected</div>
+      <div class="sp-set-row" id="sp-set-id-row">
+        <input class="sp-set-inp" id="sp-set-id-inp" type="text" placeholder="Spotify Client ID">
+        <button class="sp-set-gbtn" id="sp-set-save-btn" onclick="SP.saveClientId()">Save</button>
       </div>
-      <div id="device-saved-note" style="font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.6">Open Spotify on your phone first, then click Refresh.</div>
+      <div id="sp-set-auth-row"></div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px;line-height:1.6">
+        Get Client ID from <a href="https://developer.spotify.com/dashboard" target="_blank" style="color:var(--accent)">developer.spotify.com</a>.<br>
+        Add <code style="color:var(--accent)">https://big-burr.github.io/BAKER/hud.html</code> as a Redirect URI.
+      </div>
     </div>
+
     <div class="modal-note">Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key.</div>
     <div class="modal-actions">
       <button class="cancel-btn" onclick="closeSettings()">Cancel</button>
@@ -316,92 +443,37 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
 
 <script>
 // ═══════════════════════════════════════════════════════════
-// ORB — WebGL, 30 FPS
+// ORB — WebGL 30 FPS
 // ═══════════════════════════════════════════════════════════
 (function(){
-  var canvas=document.getElementById('orb-canvas');
-  var gl=canvas&&canvas.getContext('webgl');
-  if(!gl)return;
-  var W=0,H=0;
-  function resize(){
-    W=canvas.offsetWidth;H=canvas.offsetHeight;
-    canvas.width=W;canvas.height=H;
-  }
-  resize();
-  // Observe orb panel size changes
-  if(window.ResizeObserver){
-    new ResizeObserver(resize).observe(canvas);
-  }
-  var vert='attribute vec2 a;void main(){gl_Position=vec4(a,0,1);}';
-  var fragOrb=['precision highp float;','uniform vec2 R;uniform float T;uniform sampler2D C0;','#define PI 3.14159265359','const vec3 theme=vec3(0.486,0.416,0.969);','float gR=(1.0+pow(5.0,0.5))/2.0;','float h11(float p){p=fract(p*.1031);p*=p+33.33;p*=p+p;return fract(p);}','float circ(vec2 uv,float r,float b){return smoothstep(r,r-b,length(uv)-r);}','void main(){','  vec2 uv=(2.0*gl_FragCoord.xy-R)/R.y;float bias=8.0/R.x;','  vec3 col=vec3(0.0);float t=(T+80.0)/3.0;','  for(float i=0.0;i<300.0;i++){','    float th=2.0*PI*i/gR;float ph=sin(acos(1.0-2.0*i/300.0))*0.475;','    float rd=(h11(i)>0.5?1.0:-1.0);th-=t*rd;','    col+=circ(uv+vec2(cos(th)*ph,sin(th)*ph),14.0/R.x,bias)*theme*((abs(sin(th)*ph)+abs(cos(th)*ph))/5.0);','  }','  col+=circ(uv,0.25,bias);col-=circ(uv,0.25-(3.0/R.y),bias);','  vec3 prv=texture2D(C0,gl_FragCoord.xy/R).rgb;col=mix(col,prv,0.95);','  gl_FragColor=vec4(col,1.0);}'].join('\n');
-  var fragComp=['precision highp float;','uniform vec2 R;uniform float T;uniform float AU;uniform float SPD;uniform sampler2D C0;','#define PI 3.14159265359','#define TAU 6.28318530718','const vec3 theme=vec3(0.486,0.416,0.969);','vec3 hsb2rgb(vec3 c){vec3 rgb=clamp(abs(mod(c.x*6.0+vec3(0,4,2),6.0)-3.0)-1.0,0.0,1.0);rgb*=rgb*(3.0-2.0*rgb);return c.z*mix(vec3(1),rgb,c.y);}','float circ(vec2 uv,float r,float b){return smoothstep(r,r-b,length(uv)-r);}','vec2 sv=vec2(1.0,1.7320508);','float hexSDF(vec2 p){p=abs(p);return max(dot(p,sv*0.5),p.x);}','vec4 getHex(vec2 p){vec4 hC=floor(vec4(p,p-vec2(0.5,1.0))/sv.xyxy)+0.5;vec4 h=vec4(p-hC.xy*sv,p-(hC.zw+0.5)*sv);return dot(h.xy,h.xy)<dot(h.zw,h.zw)?vec4(h.xy,hC.xy):vec4(h.zw,hC.zw+0.5);}','vec3 hexLayer(vec2 uv,float sc,vec3 col){float asp=R.x/R.y;vec2 hv=getHex(sc*uv*vec2(asp,1.0)).xy;float d=hexSDF(hv);return mix(vec3(0),vec3(1),smoothstep(0.0,0.03,d-0.5+0.04))*col;}','vec3 arcLayer(vec2 p,float r,float o,vec3 col,float bias){float d=circ(p,r,bias);d-=circ(p,r-o,bias);float angle=atan(p.y,p.x)+PI+T*SPD;float lA=TAU/3.0,sA=TAU/48.0;if(abs(mod(angle,lA)-lA/2.0)<0.06)d-=1.0;if(abs(mod(angle,sA)-sA/2.0)<0.01)d-=1.0;return max(0.0,d)*col*0.2;}','void main(){','  vec2 uv=gl_FragCoord.xy/R;vec2 p=(uv-0.5)*vec2(R.x/R.y,1.0);float bias=8.0/R.x;vec3 col=vec3(0.0);','  col+=arcLayer(p,0.18,0.025,theme*vec3(0.75,0.75,1.25),bias);','  col+=texture2D(C0,uv).rgb;','  float audio=pow(AU,3.5);float d=length(p)-0.4;','  vec3 wm=vec3(1.0);wm*=smoothstep(0.2,0.4,uv.x);wm*=smoothstep(0.2,0.4,1.0-uv.x);','  col+=(1.0-smoothstep(0.0,0.02,abs(audio-d)))*theme*max(0.001,audio*5.0)*wm;','  col+=pow(abs(0.025/d*audio),1.2)*theme*wm;','  vec3 hl=hexLayer(uv,25.0,theme*1.5);col+=col*hl;','  float ga=atan(p.y,p.x)+PI-T;col*=hsb2rgb(vec3(ga/TAU,length(p)*1.25,0.8));','  col=(col*(2.51*col+0.03))/(col*(2.43*col+0.59)+0.14);col=pow(col,vec3(1.0/2.2));','  gl_FragColor=vec4(col,1.0);}'].join('\n');
-  var fragBlit='precision mediump float;uniform sampler2D uT;uniform vec2 R;void main(){gl_FragColor=texture2D(uT,gl_FragCoord.xy/R);}';
-  function mkProg(fs){
-    function sh(t,src){var s=gl.createShader(t);gl.shaderSource(s,src);gl.compileShader(s);return s;}
-    var p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,vert));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);return p;
-  }
-  var orbProg=mkProg(fragOrb),compProg=mkProg(fragComp),blitProg=mkProg(fragBlit);
-  var buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
-  function bindQ(p){var l=gl.getAttribLocation(p,'a');gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,2,gl.FLOAT,false,0,0);}
-  function mkFBO(){
-    var tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);
-    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-    var fb=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fb);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tex,0);
-    return{tex:tex,fb:fb};
-  }
-  var orbA=mkFBO(),orbB=mkFBO(),compFBO=mkFBO();
-  function resizeFBO(f){gl.bindTexture(gl.TEXTURE_2D,f.tex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,W,H,0,gl.RGBA,gl.UNSIGNED_BYTE,null);}
-  var oU={R:gl.getUniformLocation(orbProg,'R'),T:gl.getUniformLocation(orbProg,'T'),C0:gl.getUniformLocation(orbProg,'C0')};
-  var cU={R:gl.getUniformLocation(compProg,'R'),T:gl.getUniformLocation(compProg,'T'),AU:gl.getUniformLocation(compProg,'AU'),SPD:gl.getUniformLocation(compProg,'SPD'),C0:gl.getUniformLocation(compProg,'C0')};
-  var bU={uT:gl.getUniformLocation(blitProg,'uT'),R:gl.getUniformLocation(blitProg,'R')};
-  var analyser=null,dataArr=null,audioCtx=null,audioLevel=0;
-  window.orbInitAudio=function(){
-    if(audioCtx)return;
-    try{
-      audioCtx=new AudioContext();
-      navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){
-        var src=audioCtx.createMediaStreamSource(s);
-        analyser=audioCtx.createAnalyser();analyser.fftSize=256;
-        dataArr=new Uint8Array(analyser.frequencyBinCount);
-        src.connect(analyser);
-      }).catch(function(){});
-    }catch(e){}
-  };
-  function getMicLevel(){if(!analyser)return 0;analyser.getByteFrequencyData(dataArr);var sum=0;for(var i=0;i<dataArr.length;i++)sum+=dataArr[i];return(sum/dataArr.length)/255;}
-  window.orbState='idle';
-  var start=performance.now();
-  // 30 FPS — interval = 1000/30 ≈ 33ms
-  var FPS_INTERVAL=1000/30;
-  var lastFrame=0;
-  var lastW=0,lastH=0;
-  function draw(now){
-    requestAnimationFrame(draw);
-    if(now-lastFrame<FPS_INTERVAL)return;
-    lastFrame=now;
-    var cW=canvas.offsetWidth,cH=canvas.offsetHeight;
-    if(cW!==lastW||cH!==lastH){
-      W=canvas.width=cW;H=canvas.height=cH;
-      resizeFBO(orbA);resizeFBO(orbB);resizeFBO(compFBO);
-      lastW=cW;lastH=cH;
-    }
-    if(!W||!H)return;
-    var t=(now-start)/1000,s=window.orbState||'idle',a=0;
-    if(s==='listening'){a=getMicLevel();if(a<0.02)a=0.04+0.03*Math.abs(Math.sin(t*2.1));}
-    else if(s==='speaking'){a=0.12+0.10*Math.abs(Math.sin(t*4.5))+0.06*Math.abs(Math.sin(t*7.3));}
-    else if(s==='thinking'){a=0.06+0.04*Math.abs(Math.sin(t*3.0));}
-    else{a=0.03+0.02*Math.abs(Math.sin(t*1.3));}
-    audioLevel=audioLevel*0.75+a*0.25;
-    var spd=s==='thinking'?3.0:s==='speaking'?1.8:s==='listening'?1.2:0.5;
-    gl.useProgram(orbProg);bindQ(orbProg);gl.bindFramebuffer(gl.FRAMEBUFFER,orbB.fb);gl.viewport(0,0,W,H);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,orbA.tex);gl.uniform1i(oU.C0,0);gl.uniform2f(oU.R,W,H);gl.uniform1f(oU.T,t);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
-    var tmp=orbA;orbA=orbB;orbB=tmp;
-    gl.useProgram(compProg);bindQ(compProg);gl.bindFramebuffer(gl.FRAMEBUFFER,compFBO.fb);gl.viewport(0,0,W,H);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,orbA.tex);gl.uniform1i(cU.C0,0);gl.uniform2f(cU.R,W,H);gl.uniform1f(cU.T,t);gl.uniform1f(cU.AU,audioLevel);gl.uniform1f(cU.SPD,spd);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
-    gl.useProgram(blitProg);bindQ(blitProg);gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,W,H);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,compFBO.tex);gl.uniform1i(bU.uT,0);gl.uniform2f(bU.R,W,H);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
-  }
-  requestAnimationFrame(draw);
+var canvas=document.getElementById('orb-canvas');
+var gl=canvas&&canvas.getContext('webgl');
+if(!gl)return;
+var W=0,H=0;
+function resize(){W=canvas.offsetWidth;H=canvas.offsetHeight;canvas.width=W;canvas.height=H;}
+resize();
+if(window.ResizeObserver)new ResizeObserver(resize).observe(canvas);
+var vert='attribute vec2 a;void main(){gl_Position=vec4(a,0,1);}';
+var fragOrb=['precision highp float;','uniform vec2 R;uniform float T;uniform sampler2D C0;','#define PI 3.14159265359','const vec3 theme=vec3(0.486,0.416,0.969);','float gR=(1.0+pow(5.0,0.5))/2.0;','float h11(float p){p=fract(p*.1031);p*=p+33.33;p*=p+p;return fract(p);}','float circ(vec2 uv,float r,float b){return smoothstep(r,r-b,length(uv)-r);}','void main(){','vec2 uv=(2.0*gl_FragCoord.xy-R)/R.y;float bias=8.0/R.x;','vec3 col=vec3(0.0);float t=(T+80.0)/3.0;','for(float i=0.0;i<300.0;i++){','float th=2.0*PI*i/gR;float ph=sin(acos(1.0-2.0*i/300.0))*0.475;','float rd=(h11(i)>0.5?1.0:-1.0);th-=t*rd;','col+=circ(uv+vec2(cos(th)*ph,sin(th)*ph),14.0/R.x,bias)*theme*((abs(sin(th)*ph)+abs(cos(th)*ph))/5.0);}','col+=circ(uv,0.25,bias);col-=circ(uv,0.25-(3.0/R.y),bias);','vec3 prv=texture2D(C0,gl_FragCoord.xy/R).rgb;col=mix(col,prv,0.95);','gl_FragColor=vec4(col,1.0);}'].join('\n');
+var fragComp=['precision highp float;','uniform vec2 R;uniform float T;uniform float AU;uniform float SPD;uniform sampler2D C0;','#define PI 3.14159265359','#define TAU 6.28318530718','const vec3 theme=vec3(0.486,0.416,0.969);','vec3 hsb2rgb(vec3 c){vec3 rgb=clamp(abs(mod(c.x*6.0+vec3(0,4,2),6.0)-3.0)-1.0,0.0,1.0);rgb*=rgb*(3.0-2.0*rgb);return c.z*mix(vec3(1),rgb,c.y);}','float circ(vec2 uv,float r,float b){return smoothstep(r,r-b,length(uv)-r);}','vec2 sv=vec2(1.0,1.7320508);','float hexSDF(vec2 p){p=abs(p);return max(dot(p,sv*0.5),p.x);}','vec4 getHex(vec2 p){vec4 hC=floor(vec4(p,p-vec2(0.5,1.0))/sv.xyxy)+0.5;vec4 h=vec4(p-hC.xy*sv,p-(hC.zw+0.5)*sv);return dot(h.xy,h.xy)<dot(h.zw,h.zw)?vec4(h.xy,hC.xy):vec4(h.zw,hC.zw+0.5);}','vec3 hexLayer(vec2 uv,float sc,vec3 col){float asp=R.x/R.y;vec2 hv=getHex(sc*uv*vec2(asp,1.0)).xy;float d=hexSDF(hv);return mix(vec3(0),vec3(1),smoothstep(0.0,0.03,d-0.5+0.04))*col;}','vec3 arcLayer(vec2 p,float r,float o,vec3 col,float bias){float d=circ(p,r,bias);d-=circ(p,r-o,bias);float angle=atan(p.y,p.x)+PI+T*SPD;float lA=TAU/3.0,sA=TAU/48.0;if(abs(mod(angle,lA)-lA/2.0)<0.06)d-=1.0;if(abs(mod(angle,sA)-sA/2.0)<0.01)d-=1.0;return max(0.0,d)*col*0.2;}','void main(){','vec2 uv=gl_FragCoord.xy/R;vec2 p=(uv-0.5)*vec2(R.x/R.y,1.0);float bias=8.0/R.x;vec3 col=vec3(0.0);','col+=arcLayer(p,0.18,0.025,theme*vec3(0.75,0.75,1.25),bias);','col+=texture2D(C0,uv).rgb;','float audio=pow(AU,3.5);float d=length(p)-0.4;','vec3 wm=vec3(1.0);wm*=smoothstep(0.2,0.4,uv.x);wm*=smoothstep(0.2,0.4,1.0-uv.x);','col+=(1.0-smoothstep(0.0,0.02,abs(audio-d)))*theme*max(0.001,audio*5.0)*wm;','col+=pow(abs(0.025/d*audio),1.2)*theme*wm;','vec3 hl=hexLayer(uv,25.0,theme*1.5);col+=col*hl;','float ga=atan(p.y,p.x)+PI-T;col*=hsb2rgb(vec3(ga/TAU,length(p)*1.25,0.8));','col=(col*(2.51*col+0.03))/(col*(2.43*col+0.59)+0.14);col=pow(col,vec3(1.0/2.2));','gl_FragColor=vec4(col,1.0);}'].join('\n');
+var fragBlit='precision mediump float;uniform sampler2D uT;uniform vec2 R;void main(){gl_FragColor=texture2D(uT,gl_FragCoord.xy/R);}';
+function mkProg(fs){function sh(t,src){var s=gl.createShader(t);gl.shaderSource(s,src);gl.compileShader(s);return s;}var p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,vert));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);return p;}
+var orbProg=mkProg(fragOrb),compProg=mkProg(fragComp),blitProg=mkProg(fragBlit);
+var buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+function bindQ(p){var l=gl.getAttribLocation(p,'a');gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,2,gl.FLOAT,false,0,0);}
+function mkFBO(){var tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,null);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);var fb=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fb);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tex,0);return{tex:tex,fb:fb};}
+var orbA=mkFBO(),orbB=mkFBO(),compFBO=mkFBO();
+function resizeFBO(f){gl.bindTexture(gl.TEXTURE_2D,f.tex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,W,H,0,gl.RGBA,gl.UNSIGNED_BYTE,null);}
+var oU={R:gl.getUniformLocation(orbProg,'R'),T:gl.getUniformLocation(orbProg,'T'),C0:gl.getUniformLocation(orbProg,'C0')};
+var cU={R:gl.getUniformLocation(compProg,'R'),T:gl.getUniformLocation(compProg,'T'),AU:gl.getUniformLocation(compProg,'AU'),SPD:gl.getUniformLocation(compProg,'SPD'),C0:gl.getUniformLocation(compProg,'C0')};
+var bU={uT:gl.getUniformLocation(blitProg,'uT'),R:gl.getUniformLocation(blitProg,'R')};
+var analyser=null,dataArr=null,audioCtx=null,audioLevel=0;
+window.orbInitAudio=function(){if(audioCtx)return;try{audioCtx=new AudioContext();navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){var src=audioCtx.createMediaStreamSource(s);analyser=audioCtx.createAnalyser();analyser.fftSize=256;dataArr=new Uint8Array(analyser.frequencyBinCount);src.connect(analyser);}).catch(function(){});}catch(e){}};
+function getMicLevel(){if(!analyser)return 0;analyser.getByteFrequencyData(dataArr);var sum=0;for(var i=0;i<dataArr.length;i++)sum+=dataArr[i];return(sum/dataArr.length)/255;}
+window.orbState='idle';
+var start=performance.now(),FPS_INTERVAL=1000/30,lastFrame=0,lastW=0,lastH=0;
+function draw(now){requestAnimationFrame(draw);if(now-lastFrame<FPS_INTERVAL)return;lastFrame=now;var cW=canvas.offsetWidth,cH=canvas.offsetHeight;if(cW!==lastW||cH!==lastH){W=canvas.width=cW;H=canvas.height=cH;resizeFBO(orbA);resizeFBO(orbB);resizeFBO(compFBO);lastW=cW;lastH=cH;}if(!W||!H)return;var t=(now-start)/1000,s=window.orbState||'idle',a=0;if(s==='listening'){a=getMicLevel();if(a<0.02)a=0.04+0.03*Math.abs(Math.sin(t*2.1));}else if(s==='speaking'){a=0.12+0.10*Math.abs(Math.sin(t*4.5))+0.06*Math.abs(Math.sin(t*7.3));}else if(s==='thinking'){a=0.06+0.04*Math.abs(Math.sin(t*3.0));}else{a=0.03+0.02*Math.abs(Math.sin(t*1.3));}audioLevel=audioLevel*0.75+a*0.25;var spd=s==='thinking'?3.0:s==='speaking'?1.8:s==='listening'?1.2:0.5;gl.useProgram(orbProg);bindQ(orbProg);gl.bindFramebuffer(gl.FRAMEBUFFER,orbB.fb);gl.viewport(0,0,W,H);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,orbA.tex);gl.uniform1i(oU.C0,0);gl.uniform2f(oU.R,W,H);gl.uniform1f(oU.T,t);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);var tmp=orbA;orbA=orbB;orbB=tmp;gl.useProgram(compProg);bindQ(compProg);gl.bindFramebuffer(gl.FRAMEBUFFER,compFBO.fb);gl.viewport(0,0,W,H);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,orbA.tex);gl.uniform1i(cU.C0,0);gl.uniform2f(cU.R,W,H);gl.uniform1f(cU.T,t);gl.uniform1f(cU.AU,audioLevel);gl.uniform1f(cU.SPD,spd);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);gl.useProgram(blitProg);bindQ(blitProg);gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,W,H);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,compFBO.tex);gl.uniform1i(bU.uT,0);gl.uniform2f(bU.R,W,H);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);}
+requestAnimationFrame(draw);
 })();
 
 function setOrbState(s){
@@ -410,8 +482,7 @@ function setOrbState(s){
   var pill=document.getElementById('sb-mode');
   var panel=document.getElementById('orb-panel');
   dot.className='status-dot '+s;
-  pill.textContent=s;
-  pill.className='sb-pill '+s;
+  pill.textContent=s;pill.className='sb-pill '+s;
   panel.className='fp'+(s==='listening'?' listening':'');
   document.getElementById('nav-status-txt').textContent=s;
 }
@@ -419,45 +490,151 @@ function setOrbState(s){
 // ═══════════════════════════════════════════════════════════
 // DRAGGABLE PANELS
 // ═══════════════════════════════════════════════════════════
-function makeDraggable(panelId,hdrId){
-  var panel=document.getElementById(panelId);
-  var hdr=document.getElementById(hdrId);
-  var dragging=false,ox=0,oy=0;
-  hdr.addEventListener('mousedown',function(e){
-    if(e.target.closest('.fp-btns'))return;
-    dragging=true;
-    var rect=panel.getBoundingClientRect();
-    ox=e.clientX-rect.left;oy=e.clientY-rect.top;
-    panel.style.transition='none';
-    document.addEventListener('mousemove',onMove);
-    document.addEventListener('mouseup',onUp);
-  });
-  function onMove(e){
-    if(!dragging)return;
-    var x=e.clientX-ox,y=e.clientY-oy;
-    x=Math.max(0,Math.min(window.innerWidth-panel.offsetWidth,x));
-    y=Math.max(44,Math.min(window.innerHeight-panel.offsetHeight-30,y));
-    panel.style.left=x+'px';panel.style.top=y+'px';
-    panel.style.bottom='auto';panel.style.right='auto';
+// ── Universal window behavior: drag via header + 8-direction resize ──
+function makeWindowBehavior(panelEl, hdrEl, opts) {
+  opts = opts || {};
+  var MIN_W = opts.minW || 180;
+  var MIN_H = opts.minH || 80;
+  var NAV_H = 44;
+  var _normalised = false;
+
+  // Convert bottom/right/% positioning to explicit top/left/width/height px
+  // Safe to call anytime — if panel is hidden it's a no-op
+  function normalise() {
+    if (panelEl.offsetParent === null && panelEl.style.display === 'none') return;
+    var r = panelEl.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    panelEl.style.left   = r.left + 'px';
+    panelEl.style.top    = r.top  + 'px';
+    panelEl.style.bottom = 'auto';
+    panelEl.style.right  = 'auto';
+    panelEl.style.width  = r.width  + 'px';
+    panelEl.style.height = r.height + 'px';
+    _normalised = true;
   }
-  function onUp(){dragging=false;panel.style.transition='';document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);}
+
+  // For visible panels normalise immediately; hidden ones get normalised on first drag/resize
+  if (panelEl.style.display !== 'none') normalise();
+
+  // Expose normalise so openPanel / showPanel can call it after making visible
+  panelEl._wbNormalise = normalise;
+
+  // Inject resize handles
+  ['nw','n','ne','e','se','s','sw','w'].forEach(function(dir){
+    var h = document.createElement('div');
+    h.className = 'rh rh-' + dir;
+    h.dataset.dir = dir;
+    panelEl.appendChild(h);
+  });
+
+  // ── DRAG ──────────────────────────────────────────────────
+  var dragging = false, dox = 0, doy = 0;
+  hdrEl.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    if (e.target.closest('.fp-btns,.spp-close,.spp-tabs,.spp-tab')) return;
+    e.preventDefault();
+    normalise(); // always re-normalise before drag starts
+    dragging = true;
+    var r = panelEl.getBoundingClientRect();
+    dox = e.clientX - r.left;
+    doy = e.clientY - r.top;
+    panelEl.style.transition = 'none';
+    bringToFront(panelEl);
+    document.addEventListener('mousemove', onDragMove);
+    document.addEventListener('mouseup',   onDragUp);
+  });
+  function onDragMove(e) {
+    if (!dragging) return;
+    var x = e.clientX - dox;
+    var y = e.clientY - doy;
+    x = Math.max(0, Math.min(window.innerWidth  - panelEl.offsetWidth,  x));
+    y = Math.max(NAV_H, Math.min(window.innerHeight - panelEl.offsetHeight - 30, y));
+    panelEl.style.left = x + 'px';
+    panelEl.style.top  = y + 'px';
+  }
+  function onDragUp() {
+    dragging = false;
+    panelEl.style.transition = '';
+    document.removeEventListener('mousemove', onDragMove);
+    document.removeEventListener('mouseup',   onDragUp);
+  }
+
+  // ── RESIZE ────────────────────────────────────────────────
+  var resizing = false, rdir = '', rsx = 0, rsy = 0, rx = 0, ry = 0, rw = 0, rh = 0;
+  panelEl.addEventListener('mousedown', function(e) {
+    var handle = e.target.closest('.rh');
+    if (!handle) return;
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    normalise();
+    resizing = true;
+    rdir = handle.dataset.dir;
+    rsx = e.clientX; rsy = e.clientY;
+    var r = panelEl.getBoundingClientRect();
+    rx = r.left; ry = r.top; rw = r.width; rh = r.height;
+    panelEl.style.transition = 'none';
+    bringToFront(panelEl);
+    document.addEventListener('mousemove', onResizeMove);
+    document.addEventListener('mouseup',   onResizeUp);
+  });
+  function onResizeMove(e) {
+    if (!resizing) return;
+    var dx = e.clientX - rsx;
+    var dy = e.clientY - rsy;
+    var nx = rx, ny = ry, nw = rw, nh = rh;
+    // horizontal
+    if (rdir.includes('e')) nw = Math.max(MIN_W, rw + dx);
+    if (rdir.includes('w')) { nw = Math.max(MIN_W, rw - dx); nx = rx + rw - nw; }
+    // vertical
+    if (rdir.includes('s')) nh = Math.max(MIN_H, rh + dy);
+    if (rdir.includes('n')) { nh = Math.max(MIN_H, rh - dy); ny = ry + rh - nh; }
+    // clamp to viewport
+    nx = Math.max(0, Math.min(window.innerWidth  - MIN_W, nx));
+    ny = Math.max(NAV_H, Math.min(window.innerHeight - MIN_H - 30, ny));
+    panelEl.style.left   = nx + 'px';
+    panelEl.style.top    = ny + 'px';
+    panelEl.style.width  = nw + 'px';
+    panelEl.style.height = nh + 'px';
+  }
+  function onResizeUp() {
+    resizing = false;
+    panelEl.style.transition = '';
+    document.removeEventListener('mousemove', onResizeMove);
+    document.removeEventListener('mouseup',   onResizeUp);
+  }
+
+  // click on panel brings it to front
+  panelEl.addEventListener('mousedown', function(e) {
+    if (!e.target.closest('.rh')) bringToFront(panelEl);
+  });
 }
 
-function toggleMinimize(id){
-  var p=document.getElementById(id);p.classList.toggle('minimized');
+var _zTop = 30;
+function bringToFront(el) {
+  el.style.zIndex = ++_zTop;
 }
-function closePanel(id){
-  document.getElementById(id).style.display='none';
+
+// Legacy shim — kept so any existing calls still work
+function makeDraggable(panelId, hdrId) {
+  var p = document.getElementById(panelId);
+  var h = document.getElementById(hdrId);
+  if (p && h) makeWindowBehavior(p, h);
 }
+function toggleMinimize(id){document.getElementById(id).classList.toggle('minimized');}
+function closePanel(id){document.getElementById(id).style.display='none';}
 function openPanel(id){
-  var p=document.getElementById(id);p.style.display='flex';p.classList.remove('minimized');
+  var p=document.getElementById(id);
+  p.style.display='flex';
+  p.classList.remove('minimized');
+  // Trigger normalise on the window behaviour instance if first show
+  if(p._wbNormalise)p._wbNormalise();
 }
 
 // ═══════════════════════════════════════════════════════════
-// VAULT GRAPH — full screen, pannable, zoomable
+// VAULT GRAPH
 // ═══════════════════════════════════════════════════════════
-var graphNodes=[],graphEdges=[];
-var graphAnim=null;
+var graphNodes=[],graphEdges=[],graphAnim=null;
 var graphTransform={x:0,y:0,scale:1};
 var graphPanning=false,graphPanStart={x:0,y:0};
 var hoveredNode=null,simTick=0;
@@ -466,67 +643,22 @@ var typeColors={conversation:'#a78bfa',project:'#60a5fa',lecture:'#fde047',daily
 function initGraphCanvas(){
   var canvas=document.getElementById('vault-graph-canvas');
   canvas.width=window.innerWidth;canvas.height=window.innerHeight;
-  window.addEventListener('resize',function(){
-    canvas.width=window.innerWidth;canvas.height=window.innerHeight;
-  });
-
-  // Pan
-  canvas.addEventListener('mousedown',function(e){
-    if(e.target!==canvas)return;
-    graphPanning=true;
-    graphPanStart={x:e.clientX-graphTransform.x,y:e.clientY-graphTransform.y};
-  });
+  window.addEventListener('resize',function(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
+  canvas.addEventListener('mousedown',function(e){if(e.target!==canvas)return;graphPanning=true;graphPanStart={x:e.clientX-graphTransform.x,y:e.clientY-graphTransform.y};});
   window.addEventListener('mousemove',function(e){
-    if(graphPanning){
-      graphTransform.x=e.clientX-graphPanStart.x;
-      graphTransform.y=e.clientY-graphPanStart.y;
-    }
-    // Tooltip
+    if(graphPanning){graphTransform.x=e.clientX-graphPanStart.x;graphTransform.y=e.clientY-graphPanStart.y;}
     if(graphNodes.length){
-      var mx=(e.clientX-graphTransform.x)/graphTransform.scale;
-      var my=(e.clientY-graphTransform.y)/graphTransform.scale;
-      hoveredNode=null;
-      for(var i=0;i<graphNodes.length;i++){
-        var n=graphNodes[i];
-        var dx=mx-n.x,dy=my-n.y;
-        if(Math.sqrt(dx*dx+dy*dy)<n.radius+6){hoveredNode=n;break;}
-      }
+      var mx=(e.clientX-graphTransform.x)/graphTransform.scale;var my=(e.clientY-graphTransform.y)/graphTransform.scale;hoveredNode=null;
+      for(var i=0;i<graphNodes.length;i++){var n=graphNodes[i];var dx=mx-n.x,dy=my-n.y;if(Math.sqrt(dx*dx+dy*dy)<n.radius+6){hoveredNode=n;break;}}
       var tip=document.getElementById('graph-tooltip');
-      if(hoveredNode){
-        document.getElementById('tt-name').textContent=hoveredNode.name;
-        document.getElementById('tt-path').textContent=hoveredNode.path;
-        var typeEl=document.getElementById('tt-type');
-        typeEl.textContent=hoveredNode.type;
-        typeEl.style.background=typeColors[hoveredNode.type]+'22';
-        typeEl.style.color=typeColors[hoveredNode.type];
-        typeEl.style.border='1px solid '+typeColors[hoveredNode.type]+'44';
-        tip.style.display='block';
-        tip.style.left=Math.min(e.clientX+14,window.innerWidth-260)+'px';
-        tip.style.top=Math.min(e.clientY-10,window.innerHeight-100)+'px';
-        canvas.style.cursor='pointer';
-      } else {
-        tip.style.display='none';
-        canvas.style.cursor=graphPanning?'grabbing':'grab';
-      }
+      if(hoveredNode){document.getElementById('tt-name').textContent=hoveredNode.name;document.getElementById('tt-path').textContent=hoveredNode.path;var typeEl=document.getElementById('tt-type');typeEl.textContent=hoveredNode.type;typeEl.style.background=typeColors[hoveredNode.type]+'22';typeEl.style.color=typeColors[hoveredNode.type];typeEl.style.border='1px solid '+typeColors[hoveredNode.type]+'44';tip.style.display='block';tip.style.left=Math.min(e.clientX+14,window.innerWidth-260)+'px';tip.style.top=Math.min(e.clientY-10,window.innerHeight-100)+'px';canvas.style.cursor='pointer';}
+      else{tip.style.display='none';canvas.style.cursor=graphPanning?'grabbing':'grab';}
     }
   });
   window.addEventListener('mouseup',function(){graphPanning=false;});
-
-  // Zoom
-  canvas.addEventListener('wheel',function(e){
-    e.preventDefault();
-    var factor=e.deltaY>0?0.9:1.1;
-    var mx=e.clientX,my=e.clientY;
-    graphTransform.x=mx-(mx-graphTransform.x)*factor;
-    graphTransform.y=my-(my-graphTransform.y)*factor;
-    graphTransform.scale=Math.max(0.1,Math.min(5,graphTransform.scale*factor));
-  },{passive:false});
-
-  // Click node → open note panel
+  canvas.addEventListener('wheel',function(e){e.preventDefault();var factor=e.deltaY>0?0.9:1.1;var mx=e.clientX,my=e.clientY;graphTransform.x=mx-(mx-graphTransform.x)*factor;graphTransform.y=my-(my-graphTransform.y)*factor;graphTransform.scale=Math.max(0.1,Math.min(5,graphTransform.scale*factor));},{passive:false});
   canvas.addEventListener('click',function(e){
-    if(!hoveredNode)return;
-    var note=vaultIndex[hoveredNode.id];
-    if(!note)return;
+    if(!hoveredNode)return;var note=vaultIndex[hoveredNode.id];if(!note)return;
     document.getElementById('note-panel-title').textContent=hoveredNode.name;
     document.getElementById('note-content').textContent=note.content;
     openPanel('note-panel');
@@ -536,27 +668,15 @@ function initGraphCanvas(){
 function buildGraph(){
   document.getElementById('graph-overlay').classList.add('hidden');
   document.getElementById('graph-stats').style.display='flex';
-  graphNodes=vaultIndex.slice(0,150).map(function(note,i){
-    return{id:i,name:note.name.replace('.md',''),path:note.path,type:detectType(note.path,note.content),x:0,y:0,vx:0,vy:0,radius:4+Math.min(note.content.length/600,7)};
-  });
+  graphNodes=vaultIndex.slice(0,150).map(function(note,i){return{id:i,name:note.name.replace('.md',''),path:note.path,type:detectType(note.path,note.content),x:0,y:0,vx:0,vy:0,radius:4+Math.min(note.content.length/600,7)};});
   graphEdges=[];
-  var nameMap={};
-  graphNodes.forEach(function(n){nameMap[n.name.toLowerCase()]=n.id;});
-  graphNodes.forEach(function(n){
-    var note=vaultIndex[n.id];
-    var links=note.content.match(/\[\[([^\]|]+)/g)||[];
-    links.forEach(function(l){
-      var target=l.replace('[[','').toLowerCase();
-      if(nameMap[target]!==undefined&&nameMap[target]!==n.id)graphEdges.push({a:n.id,b:nameMap[target]});
-    });
-  });
+  var nameMap={};graphNodes.forEach(function(n){nameMap[n.name.toLowerCase()]=n.id;});
+  graphNodes.forEach(function(n){var note=vaultIndex[n.id];var links=note.content.match(/\[\[([^\]|]+)/g)||[];links.forEach(function(l){var target=l.replace('[[','').toLowerCase();if(nameMap[target]!==undefined&&nameMap[target]!==n.id)graphEdges.push({a:n.id,b:nameMap[target]});});});
   document.getElementById('stat-notes').textContent=graphNodes.length;
   document.getElementById('stat-links').textContent=graphEdges.length;
   var W=window.innerWidth,H=window.innerHeight;
   graphNodes.forEach(function(n){n.x=W*0.15+Math.random()*(W*0.7);n.y=H*0.15+Math.random()*(H*0.7);});
-  simTick=0;
-  if(graphAnim)cancelAnimationFrame(graphAnim);
-  runGraphSim();
+  simTick=0;if(graphAnim)cancelAnimationFrame(graphAnim);runGraphSim();
 }
 
 function detectType(path,content){
@@ -568,87 +688,22 @@ function detectType(path,content){
   return'general';
 }
 
-var GRAPH_FPS=1000/30;
-var lastGraphFrame=0;
+var GRAPH_FPS=1000/30,lastGraphFrame=0;
 function runGraphSim(){
   graphAnim=requestAnimationFrame(function(now){
-    runGraphSim();
-    if(now-lastGraphFrame<GRAPH_FPS)return;
-    lastGraphFrame=now;
-    var canvas=document.getElementById('vault-graph-canvas');
-    var ctx=canvas.getContext('2d');
-    var W=canvas.width,H=canvas.height;
-
-    // Force layout — 300 ticks
+    runGraphSim();if(now-lastGraphFrame<GRAPH_FPS)return;lastGraphFrame=now;
+    var canvas=document.getElementById('vault-graph-canvas');var ctx=canvas.getContext('2d');var W=canvas.width,H=canvas.height;
     if(simTick<300){
       var k=Math.sqrt((W*H)/Math.max(graphNodes.length,1))*0.9;
-      for(var i=0;i<graphNodes.length;i++){
-        graphNodes[i].vx=0;graphNodes[i].vy=0;
-        for(var j=0;j<graphNodes.length;j++){
-          if(i===j)continue;
-          var dx=graphNodes[i].x-graphNodes[j].x;
-          var dy=graphNodes[i].y-graphNodes[j].y;
-          var dist=Math.sqrt(dx*dx+dy*dy)||1;
-          var f=(k*k)/dist;
-          graphNodes[i].vx+=dx/dist*f*0.008;
-          graphNodes[i].vy+=dy/dist*f*0.008;
-        }
-      }
-      graphEdges.forEach(function(e){
-        var a=graphNodes[e.a],b=graphNodes[e.b];if(!a||!b)return;
-        var dx=b.x-a.x,dy=b.y-a.y;
-        var dist=Math.sqrt(dx*dx+dy*dy)||1;
-        var f=(dist*dist)/k*0.008;
-        a.vx+=dx/dist*f;a.vy+=dy/dist*f;
-        b.vx-=dx/dist*f;b.vy-=dy/dist*f;
-      });
-      graphNodes.forEach(function(n){
-        n.x+=Math.max(-8,Math.min(8,n.vx));
-        n.y+=Math.max(-8,Math.min(8,n.vy));
-        n.x=Math.max(30,Math.min(W/graphTransform.scale-30,n.x));
-        n.y=Math.max(30,Math.min(H/graphTransform.scale-30,n.y));
-      });
+      for(var i=0;i<graphNodes.length;i++){graphNodes[i].vx=0;graphNodes[i].vy=0;for(var j=0;j<graphNodes.length;j++){if(i===j)continue;var dx=graphNodes[i].x-graphNodes[j].x;var dy=graphNodes[i].y-graphNodes[j].y;var dist=Math.sqrt(dx*dx+dy*dy)||1;var f=(k*k)/dist;graphNodes[i].vx+=dx/dist*f*0.008;graphNodes[i].vy+=dy/dist*f*0.008;}}
+      graphEdges.forEach(function(e){var a=graphNodes[e.a],b=graphNodes[e.b];if(!a||!b)return;var dx=b.x-a.x,dy=b.y-a.y;var dist=Math.sqrt(dx*dx+dy*dy)||1;var f=(dist*dist)/k*0.008;a.vx+=dx/dist*f;a.vy+=dy/dist*f;b.vx-=dx/dist*f;b.vy-=dy/dist*f;});
+      graphNodes.forEach(function(n){n.x+=Math.max(-8,Math.min(8,n.vx));n.y+=Math.max(-8,Math.min(8,n.vy));n.x=Math.max(30,Math.min(W/graphTransform.scale-30,n.x));n.y=Math.max(30,Math.min(H/graphTransform.scale-30,n.y));});
       simTick++;
     }
-
-    ctx.clearRect(0,0,W,H);
-    ctx.save();
-    ctx.translate(graphTransform.x,graphTransform.y);
-    ctx.scale(graphTransform.scale,graphTransform.scale);
-
-    // Edges — glow on connected-to-hovered
-    graphEdges.forEach(function(e){
-      var a=graphNodes[e.a],b=graphNodes[e.b];if(!a||!b)return;
-      var isHighlighted=hoveredNode&&(e.a===hoveredNode.id||e.b===hoveredNode.id);
-      ctx.beginPath();
-      ctx.strokeStyle=isHighlighted?'rgba(124,106,247,0.5)':'rgba(124,106,247,0.08)';
-      ctx.lineWidth=isHighlighted?1.5:0.5;
-      if(isHighlighted){ctx.shadowColor='rgba(124,106,247,0.4)';ctx.shadowBlur=4;}
-      else{ctx.shadowBlur=0;}
-      ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
-    });
+    ctx.clearRect(0,0,W,H);ctx.save();ctx.translate(graphTransform.x,graphTransform.y);ctx.scale(graphTransform.scale,graphTransform.scale);
+    graphEdges.forEach(function(e){var a=graphNodes[e.a],b=graphNodes[e.b];if(!a||!b)return;var isHL=hoveredNode&&(e.a===hoveredNode.id||e.b===hoveredNode.id);ctx.beginPath();ctx.strokeStyle=isHL?'rgba(124,106,247,0.5)':'rgba(124,106,247,0.08)';ctx.lineWidth=isHL?1.5:0.5;if(isHL){ctx.shadowColor='rgba(124,106,247,0.4)';ctx.shadowBlur=4;}else{ctx.shadowBlur=0;}ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();});
     ctx.shadowBlur=0;
-
-    // Nodes
-    graphNodes.forEach(function(n){
-      var color=typeColors[n.type]||'#7c6af7';
-      var isHovered=hoveredNode&&hoveredNode.id===n.id;
-      var isConnected=hoveredNode&&graphEdges.some(function(e){return(e.a===hoveredNode.id&&e.b===n.id)||(e.b===hoveredNode.id&&e.a===n.id);});
-      var r=isHovered?n.radius*2.2:isConnected?n.radius*1.4:n.radius;
-      if(isHovered){ctx.shadowColor=color;ctx.shadowBlur=12;}
-      else if(isConnected){ctx.shadowColor=color;ctx.shadowBlur=6;}
-      else{ctx.shadowBlur=0;}
-      ctx.beginPath();ctx.arc(n.x,n.y,r,0,Math.PI*2);
-      ctx.fillStyle=isHovered?color:isConnected?color+'cc':color+'55';
-      ctx.fill();
-      // Label when zoomed in enough or hovered
-      if(isHovered||(graphTransform.scale>1.8)){
-        ctx.shadowBlur=0;
-        ctx.font=(isHovered?'bold ':'')+'10px IBM Plex Mono, monospace';
-        ctx.fillStyle=isHovered?'rgba(232,230,240,1)':'rgba(232,230,240,0.5)';
-        ctx.fillText(n.name,n.x+r+3,n.y+3);
-      }
-    });
+    graphNodes.forEach(function(n){var color=typeColors[n.type]||'#7c6af7';var isHv=hoveredNode&&hoveredNode.id===n.id;var isCn=hoveredNode&&graphEdges.some(function(e){return(e.a===hoveredNode.id&&e.b===n.id)||(e.b===hoveredNode.id&&e.a===n.id);});var r=isHv?n.radius*2.2:isCn?n.radius*1.4:n.radius;if(isHv){ctx.shadowColor=color;ctx.shadowBlur=12;}else if(isCn){ctx.shadowColor=color;ctx.shadowBlur=6;}else{ctx.shadowBlur=0;}ctx.beginPath();ctx.arc(n.x,n.y,r,0,Math.PI*2);ctx.fillStyle=isHv?color:isCn?color+'cc':color+'55';ctx.fill();if(isHv||(graphTransform.scale>1.8)){ctx.shadowBlur=0;ctx.font=(isHv?'bold ':'')+'10px IBM Plex Mono, monospace';ctx.fillStyle=isHv?'rgba(232,230,240,1)':'rgba(232,230,240,0.5)';ctx.fillText(n.name,n.x+r+3,n.y+3);}});
     ctx.restore();
   });
 }
@@ -658,48 +713,15 @@ function runGraphSim(){
 // ═══════════════════════════════════════════════════════════
 var vaultHandle=null,vaultIndex=[],vaultConnected=false;
 var hasFS=('showDirectoryPicker' in window);
-
 function openDB(){return new Promise(function(res,rej){var r=indexedDB.open('baker-vault',1);r.onupgradeneeded=function(e){e.target.result.createObjectStore('handles',{keyPath:'id'});};r.onsuccess=function(e){res(e.target.result);};r.onerror=function(){rej(r.error);};});}
 async function storeHandle(h){try{var db=await openDB();db.transaction('handles','readwrite').objectStore('handles').put({id:'vault',handle:h});}catch(e){}}
 async function getStoredHandle(){try{var db=await openDB();return new Promise(function(res){var r=db.transaction('handles','readonly').objectStore('handles').get('vault');r.onsuccess=function(){res(r.result?r.result.handle:null);};r.onerror=function(){res(null);};});}catch(e){return null;}}
 async function clearHandle(){try{var db=await openDB();db.transaction('handles','readwrite').objectStore('handles').delete('vault');}catch(e){}}
-
-async function tryReconnectVault(){
-  var stored=await getStoredHandle();if(!stored)return;
-  setVaultBtn('scanning');
-  try{var perm=await stored.requestPermission({mode:'readwrite'});if(perm==='granted'){await doConnect(stored);}else{await clearHandle();setVaultBtn('off');}}
-  catch(e){await clearHandle();setVaultBtn('off');}
-}
-async function handleVaultBtn(){
-  if(!hasFS){alert('Requires Chrome on desktop.');return;}
-  if(vaultConnected){
-    vaultHandle=null;vaultIndex=[];vaultConnected=false;graphNodes=[];graphEdges=[];
-    setVaultBtn('off');
-    document.getElementById('graph-overlay').classList.remove('hidden');
-    document.getElementById('graph-stats').style.display='none';
-    if(graphAnim){cancelAnimationFrame(graphAnim);graphAnim=null;}
-    var ctx=document.getElementById('vault-graph-canvas').getContext('2d');
-    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
-  } else {
-    try{var handle=await window.showDirectoryPicker({mode:'readwrite'});await doConnect(handle);}
-    catch(e){if(e.name!=='AbortError')alert('Failed: '+e.message);}
-  }
-}
-async function doConnect(handle){
-  vaultHandle=handle;await storeHandle(handle);setVaultBtn('scanning');
-  vaultIndex=[];await scanDir(handle,'');
-  vaultConnected=true;setVaultBtn('on');
-  buildGraph();
-  setStatus('Vault connected — '+vaultIndex.length+' notes loaded');
-}
-function setVaultBtn(s){
-  var b=document.getElementById('vault-btn');
-  b.className='hbtn'+(s==='on'?' on':'');
-  b.textContent=s==='on'?'⬡ Vault on':s==='scanning'?'⟳ Scanning...':'⬡ Connect Vault';
-}
-async function scanDir(dir,path){
-  try{for await(var entry of dir.values()){if(entry.name.startsWith('.'))continue;if(entry.kind==='file'&&entry.name.endsWith('.md')){try{var f=await entry.getFile();var content=await f.text();vaultIndex.push({name:entry.name,path:path?path+'/'+entry.name:entry.name,content:content});}catch(e){}}else if(entry.kind==='directory'){await scanDir(entry,path?path+'/'+entry.name:entry.name);}}}catch(e){}
-}
+async function tryReconnectVault(){var stored=await getStoredHandle();if(!stored)return;setVaultBtn('scanning');try{var perm=await stored.requestPermission({mode:'readwrite'});if(perm==='granted'){await doConnect(stored);}else{await clearHandle();setVaultBtn('off');}}catch(e){await clearHandle();setVaultBtn('off');}}
+async function handleVaultBtn(){if(!hasFS){alert('Requires Chrome on desktop.');return;}if(vaultConnected){vaultHandle=null;vaultIndex=[];vaultConnected=false;graphNodes=[];graphEdges=[];setVaultBtn('off');document.getElementById('graph-overlay').classList.remove('hidden');document.getElementById('graph-stats').style.display='none';if(graphAnim){cancelAnimationFrame(graphAnim);graphAnim=null;}var ctx=document.getElementById('vault-graph-canvas').getContext('2d');ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);}else{try{var handle=await window.showDirectoryPicker({mode:'readwrite'});await doConnect(handle);}catch(e){if(e.name!=='AbortError')alert('Failed: '+e.message);}}}
+async function doConnect(handle){vaultHandle=handle;await storeHandle(handle);setVaultBtn('scanning');vaultIndex=[];await scanDir(handle,'');vaultConnected=true;setVaultBtn('on');buildGraph();setStatus('Vault connected — '+vaultIndex.length+' notes loaded');}
+function setVaultBtn(s){var b=document.getElementById('vault-btn');b.className='hbtn'+(s==='on'?' on':'');b.textContent=s==='on'?'⬡ Vault on':s==='scanning'?'⟳ Scanning...':'⬡ Connect Vault';}
+async function scanDir(dir,path){try{for await(var entry of dir.values()){if(entry.name.startsWith('.'))continue;if(entry.kind==='file'&&entry.name.endsWith('.md')){try{var f=await entry.getFile();var content=await f.text();vaultIndex.push({name:entry.name,path:path?path+'/'+entry.name:entry.name,content:content});}catch(e){}}else if(entry.kind==='directory'){await scanDir(entry,path?path+'/'+entry.name:entry.name);}}}catch(e){}}
 
 // ═══════════════════════════════════════════════════════════
 // VOICE
@@ -710,65 +732,292 @@ var wakeRec=null;
 var HOT_WORDS=['hey baker','baker','yo baker','ok baker'];
 var speakEndTime=0,ECHO_LOCKOUT_MS=1800;
 var cachedVoices=[];
-
 function loadVoices(){cachedVoices=speechSynthesis.getVoices();}
 
 function startWakeWord(){
-  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR)return;
-  stopWakeWord();
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;stopWakeWord();
   wakeRec=new SR();wakeRec.continuous=true;wakeRec.interimResults=false;wakeRec.lang='en-US';
-  wakeRec.onresult=function(e){
-    var txt=e.results[e.results.length-1][0].transcript.toLowerCase().trim();
-    if(HOT_WORDS.some(function(w){return txt.includes(w);})){stopWakeWord();activateListening();}
-  };
+  wakeRec.onresult=function(e){var txt=e.results[e.results.length-1][0].transcript.toLowerCase().trim();if(HOT_WORDS.some(function(w){return txt.includes(w);})){stopWakeWord();activateListening();}};
   wakeRec.onend=function(){if(!voiceActive&&!isSpeaking)try{wakeRec.start();}catch(e){}};
   try{wakeRec.start();document.getElementById('wake-status').textContent='👂 listening for wake word';}catch(e){}
 }
 function stopWakeWord(){if(wakeRec){wakeRec.stop();wakeRec=null;}document.getElementById('wake-status').textContent='';}
-
-function handleOrbClick(){
+// ── Orb click: single = voice  |  dblclick handled separately below ──
+function handleOrbClick(e){
+  if(orbMusicMode)return; // in music mode clicks do nothing (controls are in footer)
   if(isSpeaking){stopSpeaking();return;}
   if(voiceActive){stopVoice();}else{activateListening();}
 }
 
+// ═══════════════════════════════════════════════════════════
+// RECORD / MUSIC MODE
+// ═══════════════════════════════════════════════════════════
+var orbMusicMode=false;
+var recordAngle=0;          // current rotation in radians
+var recordImg=null;         // cached Image object for album art
+var recordArtUrl='';        // last loaded art URL
+var recordRafId=null;
+var recordLastTime=0;
+var recordSpinning=true;    // mirrors is_playing
+
+function toggleMusicMode(){
+  if(!SP.isConnected()){
+    // Not connected — just do normal voice click
+    if(isSpeaking){stopSpeaking();return;}
+    if(voiceActive){stopVoice();}else{activateListening();}
+    return;
+  }
+  orbMusicMode=!orbMusicMode;
+  _applyMusicMode();
+}
+
+function _applyMusicMode(){
+  var orbCanvas=document.getElementById('orb-canvas');
+  var recCanvas=document.getElementById('record-canvas');
+  var footNormal=document.getElementById('orb-foot-normal');
+  var footMusic=document.getElementById('orb-foot-music');
+  var panel=document.getElementById('orb-panel');
+  var icon=document.getElementById('orb-mode-icon');
+  var lbl=document.getElementById('orb-panel-label');
+
+  if(orbMusicMode){
+    orbCanvas.style.display='none';
+    recCanvas.style.display='block';
+    footNormal.style.display='none';
+    footMusic.style.display='block';
+    panel.classList.add('music-mode');
+    icon.textContent='♫';
+    lbl.textContent='Now Playing';
+    _syncRecordFromState();
+    _startRecordLoop();
+  } else {
+    orbCanvas.style.display='block';
+    recCanvas.style.display='none';
+    footNormal.style.display='block';
+    footMusic.style.display='none';
+    panel.classList.remove('music-mode');
+    icon.textContent='◈';
+    lbl.textContent='BAKER';
+    _stopRecordLoop();
+  }
+}
+
+function _syncRecordFromState(){
+  var state=SP.getCurrentTrack&&SP.getCurrentTrack();
+  if(!state||!state.item)return;
+  var it=state.item;
+  // Track/artist labels
+  var tn=document.getElementById('orb-track-name');
+  var an=document.getElementById('orb-artist-name');
+  if(tn)tn.textContent=it.name||'';
+  if(an)an.textContent=(it.artists&&it.artists.map(function(a){return a.name;}).join(', '))||'';
+  // Play/pause button
+  var pp=document.getElementById('orb-music-pp');
+  if(pp)pp.textContent=state.is_playing?'⏸':'▶';
+  recordSpinning=!!state.is_playing;
+  // Art
+  var artUrl=(it.album&&it.album.images&&(it.album.images[1]||it.album.images[0]))
+    ?((it.album.images[1]||it.album.images[0]).url):'';
+  if(artUrl&&artUrl!==recordArtUrl){
+    recordArtUrl=artUrl;
+    recordImg=new Image();
+    recordImg.crossOrigin='anonymous';
+    recordImg.src=artUrl;
+  }
+}
+
+// Called by SP module after every poll — keeps record in sync
+function orbMusicSyncState(state){
+  if(!orbMusicMode)return;
+  if(!state||!state.item)return;
+  var it=state.item;
+  var tn=document.getElementById('orb-track-name');
+  var an=document.getElementById('orb-artist-name');
+  if(tn)tn.textContent=it.name||'';
+  if(an)an.textContent=(it.artists&&it.artists.map(function(a){return a.name;}).join(', '))||'';
+  var pp=document.getElementById('orb-music-pp');
+  if(pp)pp.textContent=state.is_playing?'⏸':'▶';
+  recordSpinning=!!state.is_playing;
+  var artUrl=(it.album&&it.album.images&&(it.album.images[1]||it.album.images[0]))
+    ?((it.album.images[1]||it.album.images[0]).url):'';
+  if(artUrl&&artUrl!==recordArtUrl){
+    recordArtUrl=artUrl;
+    recordImg=new Image();
+    recordImg.crossOrigin='anonymous';
+    recordImg.src=artUrl;
+  }
+}
+
+function orbMusicTogglePlay(){
+  var state=SP.getCurrentTrack&&SP.getCurrentTrack();
+  if(state&&state.is_playing){SP.pause();}else{SP.resume();}
+  // Optimistic UI
+  recordSpinning=!recordSpinning;
+  var pp=document.getElementById('orb-music-pp');
+  if(pp)pp.textContent=recordSpinning?'⏸':'▶';
+}
+
+function _startRecordLoop(){
+  if(recordRafId)return;
+  recordLastTime=performance.now();
+  function frame(now){
+    if(!orbMusicMode){recordRafId=null;return;}
+    recordRafId=requestAnimationFrame(frame);
+    var dt=(now-recordLastTime)/1000;
+    recordLastTime=now;
+    if(recordSpinning)recordAngle+=dt*(Math.PI*2/3); // 1 full rev per 3s (~33rpm)
+    _drawRecord();
+  }
+  recordRafId=requestAnimationFrame(frame);
+}
+
+function _stopRecordLoop(){
+  if(recordRafId){cancelAnimationFrame(recordRafId);recordRafId=null;}
+}
+
+function _drawRecord(){
+  var canvas=document.getElementById('record-canvas');
+  if(!canvas)return;
+  var W=canvas.offsetWidth,H=canvas.offsetHeight;
+  if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H;}
+  if(!W||!H)return;
+  var ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  var cx=W/2, cy=H/2;
+  var maxR=Math.min(W,H)/2-8;
+  var artR=maxR*0.56;       // album art circle radius
+  var vinylR=maxR;           // outer vinyl edge
+  var labelR=artR*1.08;     // thin label ring just outside art
+  var holeR=maxR*0.06;      // centre hole
+
+  // ── Drop shadow ──────────────────────────────────────────
+  ctx.save();
+  ctx.shadowColor='rgba(0,0,0,0.7)';
+  ctx.shadowBlur=24;
+  ctx.shadowOffsetX=4;
+  ctx.shadowOffsetY=6;
+  ctx.beginPath();ctx.arc(cx,cy,vinylR,0,Math.PI*2);
+  ctx.fillStyle='#111';ctx.fill();
+  ctx.restore();
+
+  // ── Vinyl disc (dark) ────────────────────────────────────
+  ctx.save();
+  ctx.beginPath();ctx.arc(cx,cy,vinylR,0,Math.PI*2);ctx.clip();
+
+  // Base vinyl colour
+  ctx.beginPath();ctx.arc(cx,cy,vinylR,0,Math.PI*2);
+  ctx.fillStyle='#0e0e0f';ctx.fill();
+
+  // Grooves — concentric rings
+  for(var gr=artR*1.12;gr<vinylR-2;gr+=5){
+    ctx.beginPath();ctx.arc(cx,cy,gr,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=1;ctx.stroke();
+  }
+
+  // Groove shimmer (rotating highlight arc)
+  var shimGrd=ctx.createConicalGradient?null:null;
+  ctx.save();
+  ctx.translate(cx,cy);ctx.rotate(recordAngle*0.7);ctx.translate(-cx,-cy);
+  for(var ri=0;ri<3;ri++){
+    var gStart=(artR*1.15)+(ri*12);
+    var gEnd=Math.min(gStart+8,vinylR-2);
+    ctx.beginPath();ctx.arc(cx,cy,gStart,Math.PI*0.9,Math.PI*1.4);
+    ctx.strokeStyle='rgba(255,255,255,0.07)';ctx.lineWidth=gEnd-gStart;ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.restore(); // end vinyl clip
+
+  // ── Album art (rotates with record) ──────────────────────
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.rotate(recordAngle);
+  // Clip to art circle
+  ctx.beginPath();ctx.arc(0,0,artR,0,Math.PI*2);ctx.clip();
+  if(recordImg&&recordImg.complete&&recordImg.naturalWidth>0){
+    var s=artR*2;
+    ctx.drawImage(recordImg,-artR,-artR,s,s);
+    // Slight darkening overlay for vinyl vibe
+    ctx.beginPath();ctx.arc(0,0,artR,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,0,0,0.18)';ctx.fill();
+  } else {
+    // Placeholder when no art
+    var grd=ctx.createRadialGradient(0,0,0,0,0,artR);
+    grd.addColorStop(0,'#2a1f5e');grd.addColorStop(1,'#0f0f10');
+    ctx.beginPath();ctx.arc(0,0,artR,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
+    // Musical note
+    ctx.font='bold '+(artR*0.45)+'px IBM Plex Mono, monospace';
+    ctx.fillStyle='rgba(124,106,247,0.6)';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('♫',0,0);
+  }
+  ctx.restore();
+
+  // ── Label ring ────────────────────────────────────────────
+  ctx.save();
+  ctx.beginPath();ctx.arc(cx,cy,labelR,0,Math.PI*2);
+  ctx.strokeStyle='rgba(124,106,247,0.25)';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.restore();
+
+  // ── Vinyl reflection arc (top-left) ──────────────────────
+  ctx.save();
+  var refGrd=ctx.createLinearGradient(cx-vinylR,cy-vinylR,cx+vinylR*0.3,cy+vinylR*0.3);
+  refGrd.addColorStop(0,'rgba(255,255,255,0.04)');
+  refGrd.addColorStop(0.5,'rgba(255,255,255,0.01)');
+  refGrd.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.beginPath();ctx.arc(cx,cy,vinylR-1,0,Math.PI*2);
+  ctx.fillStyle=refGrd;ctx.fill();
+  ctx.restore();
+
+  // ── Centre hole ───────────────────────────────────────────
+  ctx.save();
+  ctx.beginPath();ctx.arc(cx,cy,holeR,0,Math.PI*2);
+  ctx.fillStyle='#0a0a0b';ctx.fill();
+  ctx.beginPath();ctx.arc(cx,cy,holeR,0,Math.PI*2);
+  ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=0.8;ctx.stroke();
+  ctx.restore();
+
+  // ── Needle arm ────────────────────────────────────────────
+  if(recordSpinning){
+    ctx.save();
+    var armPivotX=cx+vinylR*0.55;
+    var armPivotY=cy-vinylR*1.05;
+    var armAngle=0.38; // radians from vertical, pointing into the record
+    var armLen=vinylR*0.88;
+    var tipX=armPivotX+Math.sin(armAngle)*armLen;
+    var tipY=armPivotY+Math.cos(armAngle)*armLen;
+    // Arm body
+    ctx.beginPath();ctx.moveTo(armPivotX,armPivotY);ctx.lineTo(tipX,tipY);
+    ctx.strokeStyle='rgba(200,200,220,0.55)';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.stroke();
+    // Pivot dot
+    ctx.beginPath();ctx.arc(armPivotX,armPivotY,4,0,Math.PI*2);
+    ctx.fillStyle='rgba(200,200,220,0.7)';ctx.fill();
+    // Stylus tip
+    ctx.beginPath();ctx.arc(tipX,tipY,2.5,0,Math.PI*2);
+    ctx.fillStyle='rgba(124,106,247,0.9)';ctx.fill();
+    ctx.restore();
+  }
+}
 function activateListening(){
-  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){setStatus('Voice requires Chrome');return;}
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){setStatus('Voice requires Chrome');return;}
   if(window.orbInitAudio)window.orbInitAudio();
-  var msSince=Date.now()-speakEndTime;
-  if(msSince<ECHO_LOCKOUT_MS){setTimeout(activateListening,ECHO_LOCKOUT_MS-msSince+50);return;}
+  var msSince=Date.now()-speakEndTime;if(msSince<ECHO_LOCKOUT_MS){setTimeout(activateListening,ECHO_LOCKOUT_MS-msSince+50);return;}
   voiceFinal='';document.getElementById('orb-live').textContent='';
   voiceRec=new SR();voiceRec.continuous=true;voiceRec.interimResults=true;voiceRec.lang='en-US';
   voiceRec.onstart=function(){voiceActive=true;setOrbState('listening');setStatus('Listening...');};
-  voiceRec.onresult=function(e){
-    var interim='';
-    for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)voiceFinal+=e.results[i][0].transcript+' ';else interim+=e.results[i][0].transcript;}
-    document.getElementById('orb-live').textContent=voiceFinal+interim;
-    if(silenceTimer)clearTimeout(silenceTimer);
-    silenceTimer=setTimeout(function(){if(voiceActive)stopVoice();},3000);
-  };
+  voiceRec.onresult=function(e){var interim='';for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)voiceFinal+=e.results[i][0].transcript+' ';else interim+=e.results[i][0].transcript;}document.getElementById('orb-live').textContent=voiceFinal+interim;if(silenceTimer)clearTimeout(silenceTimer);silenceTimer=setTimeout(function(){if(voiceActive)stopVoice();},3000);};
   voiceRec.onend=function(){if(voiceActive){try{voiceRec.start();}catch(e){}}};
   voiceRec.onerror=function(e){if(e.error==='not-allowed'){setStatus('Microphone denied');stopVoice();}};
   try{voiceRec.start();}catch(e){setStatus('Could not start mic');}
 }
-
 function stopVoice(){
-  voiceActive=false;
-  if(silenceTimer){clearTimeout(silenceTimer);silenceTimer=null;}
+  voiceActive=false;if(silenceTimer){clearTimeout(silenceTimer);silenceTimer=null;}
   if(voiceRec){voiceRec.stop();voiceRec=null;}
-  var txt=voiceFinal.trim();voiceFinal='';
-  document.getElementById('orb-live').textContent='';
-  setOrbState('thinking');
+  var txt=voiceFinal.trim();voiceFinal='';document.getElementById('orb-live').textContent='';setOrbState('thinking');
   if(txt){setStatus('Processing: '+txt);processCommand(txt);}
   else{setOrbState('idle');setStatus('Say "Baker" to begin');startWakeWord();}
 }
-
-function stopSpeaking(){
-  speechSynthesis.cancel();isSpeaking=false;speakEndTime=Date.now();
-  setOrbState('idle');setStatus('Say "Baker" to begin');
-  setTimeout(startWakeWord,ECHO_LOCKOUT_MS);
-}
+function stopSpeaking(){speechSynthesis.cancel();isSpeaking=false;speakEndTime=Date.now();setOrbState('idle');setStatus('Say "Baker" to begin');setTimeout(startWakeWord,ECHO_LOCKOUT_MS);}
 
 // ═══════════════════════════════════════════════════════════
 // COMMAND PROCESSING
@@ -778,79 +1027,65 @@ async function processCommand(txt){
   if(!key){speakResponse('No API key set, sir. Please open Settings.');return;}
   var lower=txt.toLowerCase();
 
-  // Open settings
+  // Settings
   if(lower.includes('open settings')||lower==='settings'){openSettings();speakResponse('Opening settings, sir.');return;}
 
-  // Open tools / index
-  if(lower.includes('open tools')||lower.includes('open index')||lower.includes('show tools')){
-    showWidget('url','⊞ Tools','index.html','⊞');speakResponse('Opening tools, sir.');return;
-  }
+  // Tools / index
+  if(lower.includes('open tools')||lower.includes('open index')||lower.includes('show tools')){showWidget('url','⊞ Tools','index.html','⊞');speakResponse('Opening tools, sir.');return;}
 
-  // Open map
+  // Map — open, fly to, directions, locate, clear
   if(lower.includes('open map')||lower.includes('show map')){
-    showWidget('url','🗺 Map','map.html','🗺');speakResponse('Opening map, sir.');return;
+    showWidget('url','🗺 Map','map.html','🗺');
+    speakResponse('Opening map, sir.');return;
+  }
+  var flyMatch=lower.match(/(?:fly to|go to on map|zoom to|navigate to map|show me)\s+(.+)/);
+  if(flyMatch){
+    var mapQuery=flyMatch[1].trim();
+    showWidget('url','🗺 Map','map.html','🗺');
+    // Wait for iframe to load then send command
+    setTimeout(function(){mapCmd({cmd:'flyTo',query:mapQuery});},1800);
+    speakResponse('Flying to '+mapQuery+', sir.');return;
+  }
+  var dirMatch=lower.match(/(?:directions to|route to|how do i get to|take me to)\s+(.+)/);
+  if(dirMatch){
+    var dirQuery=dirMatch[1].trim();
+    showWidget('url','🗺 Map','map.html','🗺');
+    setTimeout(function(){mapCmd({cmd:'directionsTo',query:dirQuery});},1800);
+    speakResponse('Routing to '+dirQuery+', sir.');return;
+  }
+  if(lower.includes('my location')||lower.includes('where am i')||lower.includes('locate me')){
+    showWidget('url','🗺 Map','map.html','🗺');
+    setTimeout(function(){mapCmd({cmd:'locate'});},1800);
+    speakResponse('Locating you, sir.');return;
+  }
+  if(lower.includes('clear route')||lower.includes('clear map')){
+    mapCmd({cmd:'clearRoute'});
+    speakResponse('Route cleared, sir.');return;
   }
 
-  // Fly to location
-  if(lower.match(/^(?:fly to|show me|take me to|zoom to|go to)\s+/i)){
-    var place=txt.replace(/^(?:fly to|show me|take me to|zoom to|go to)\s+/i,'').trim();
-    showWidget('url','🗺 '+place,'map.html?fly='+encodeURIComponent(place),'🗺');
-    speakResponse('Flying to '+place+', sir.');return;
-  }
+  // Conversation
+  if(lower.includes('open conversation')||lower.includes('open chat')){window.location.href='conversation.html';return;}
 
-  // Directions
-  if(lower.match(/^(?:directions to|give me directions to|how do i get to|navigate to)\s+/i)){
-    var dest=txt.replace(/^(?:directions to|give me directions to|how do i get to|navigate to)\s+/i,'').trim();
-    showWidget('url','🗺 Directions to '+dest,'map.html?directions='+encodeURIComponent(dest),'🗺');
-    speakResponse('Drawing directions to '+dest+', sir.');return;
-  }
+  // Open music / spotify panel
+  if(lower.includes('open music')||lower.includes('open spotify')||lower.includes('show music')||lower.includes('show spotify')){SP.showPanel();speakResponse('Opening Spotify, sir.');return;}
 
-  // Open conversation
-  if(lower.includes('open conversation')||lower.includes('open chat')){
-    window.location.href='conversation.html';return;
-  }
-
-  // Spotify — now playing
-  if(lower.includes('now playing')||lower.includes("what's playing")||lower.includes('whats playing')||lower.includes('show spotify')){
-    await showNowPlaying();return;
-  }
-  if(lower.includes('skip')||lower.includes('next song')||lower.includes('next track')){
-    await spotifyAPI('me/player/next','POST');speakResponse('Skipping, sir.');return;
-  }
-  if(lower.includes('previous')||lower.includes('go back')||lower.includes('last song')){
-    await spotifyAPI('me/player/previous','POST');speakResponse('Going back, sir.');return;
-  }
-  if(lower.includes('pause music')||lower.includes('pause spotify')||lower.includes('stop music')){
-    await spotifyAPI('me/player/pause','PUT');speakResponse('Paused, sir.');return;
-  }
-  if(lower.includes('resume music')||lower.includes('play music')||lower.includes('resume spotify')){
-    await spotifyAPI('me/player/play','PUT');speakResponse('Resuming, sir.');return;
-  }
+  // Spotify voice commands — delegate to SP module
+  var spResult=await SP.handleVoice(txt);
+  if(spResult!==null){speakResponse(spResult);return;}
 
   // Open URL
-  if(lower.match(/^(?:open|go to|navigate to|show)\s+https?:\/\//)){
-    var urlMatch=txt.match(/https?:\/\/\S+/);
-    if(urlMatch){showWidget('url','🔗 '+urlMatch[0],urlMatch[0],'🔗');speakResponse('Opening page, sir.');return;}
-  }
+  if(lower.match(/^(?:open|go to|navigate to|show)\s+https?:\/\//)){var urlMatch=txt.match(/https?:\/\/\S+/);if(urlMatch){showWidget('url','🔗 '+urlMatch[0],urlMatch[0],'🔗');speakResponse('Opening page, sir.');return;}}
 
   // Datasheet
-  if(lower.includes('datasheet')||lower.includes('find datasheet')){
-    var query=txt.replace(/find datasheet|datasheet for|datasheet/gi,'').trim();
-    await findAndShowDatasheet(query,key);return;
-  }
+  if(lower.includes('datasheet')||lower.includes('find datasheet')){var query=txt.replace(/find datasheet|datasheet for|datasheet/gi,'').trim();await findAndShowDatasheet(query,key);return;}
 
   // Text note
-  if(lower.includes('show note')||lower.includes('text note')||lower.includes('display')){
-    var noteText=txt.replace(/show note|text note|display/gi,'').trim();
-    showWidget('text','📝 Note',noteText,'📝');speakResponse('Displaying note, sir.');return;
-  }
+  if(lower.includes('show note')||lower.includes('text note')||lower.includes('display')){var noteText=txt.replace(/show note|text note|display/gi,'').trim();showWidget('text','📝 Note',noteText,'📝');speakResponse('Displaying note, sir.');return;}
 
-  // Close widget
-  if(lower.includes('close')||lower.includes('back to graph')){
-    closePanel('widget-panel');speakResponse('Closing, sir.');return;
-  }
+  // Close
+  if(lower.includes('close')||lower.includes('back to graph')){closePanel('widget-panel');SP.hidePanel();speakResponse('Closing, sir.');return;}
 
-  // General — Claude
+  // General → Claude
   await sendToBAKER(txt,key);
 }
 
@@ -858,124 +1093,33 @@ async function processCommand(txt){
 // WIDGET SYSTEM
 // ═══════════════════════════════════════════════════════════
 function showWidget(type,title,data,icon){
-  var panel=document.getElementById('widget-panel');
-  var body=document.getElementById('widget-body');
-  document.getElementById('widget-title').textContent=title||type;
-  document.getElementById('widget-icon').textContent=icon||'⬡';
+  var panel=document.getElementById('widget-panel');var body=document.getElementById('widget-body');
+  document.getElementById('widget-title').textContent=title||type;document.getElementById('widget-icon').textContent=icon||'⬡';
   body.innerHTML='';
-
-  if(type==='url'||type==='pdf'){
-    var iframe=document.createElement('iframe');
-    iframe.id='widget-frame';
-    iframe.style.cssText='width:100%;height:100%;border:none;background:var(--surface2);border-radius:0 0 10px 10px';
-    iframe.src=data||'';
-    body.appendChild(iframe);
-  } else if(type==='text'){
-    var div=document.createElement('div');
-    div.style.cssText='padding:16px;overflow-y:auto;height:100%;font-family:var(--mono);font-size:12px;line-height:1.8;color:var(--text);white-space:pre-wrap;word-break:break-word';
-    div.textContent=data||'';
-    body.appendChild(div);
-  } else if(type==='spotify'){
-    body.innerHTML='<div class="sp-card" id="spotify-widget-content"></div>';
-  }
-
+  if(type==='url'||type==='pdf'){var iframe=document.createElement('iframe');iframe.id='widget-frame';iframe.style.cssText='width:100%;height:100%;border:none;background:var(--surface2);border-radius:0 0 10px 10px';iframe.src=data||'';body.appendChild(iframe);}
+  else if(type==='text'){var div=document.createElement('div');div.style.cssText='padding:16px;overflow-y:auto;height:100%;font-family:var(--mono);font-size:12px;line-height:1.8;color:var(--text);white-space:pre-wrap;word-break:break-word';div.textContent=data||'';body.appendChild(div);}
   openPanel('widget-panel');
+  if(!panel.style.left||panel.style.left===''){panel.style.left=Math.max(0,(window.innerWidth-480)/2)+'px';panel.style.top='64px';panel.style.width='480px';panel.style.height='360px';}
+}
 
-  // Smart default position — top center
-  if(!panel.style.left||panel.style.left===''){
-    panel.style.left=Math.max(0,(window.innerWidth-480)/2)+'px';
-    panel.style.top='64px';
-    panel.style.width='480px';
-    panel.style.height='360px';
+// ═══════════════════════════════════════════════════════════
+// MAP COMMAND — send to iframe via postMessage
+// ═══════════════════════════════════════════════════════════
+function mapCmd(data){
+  var frame=document.getElementById('widget-frame');
+  if(frame&&frame.contentWindow){
+    frame.contentWindow.postMessage(data,'*');
   }
 }
-
-// ═══════════════════════════════════════════════════════════
-// SPOTIFY
-// ═══════════════════════════════════════════════════════════
-async function spotifyAPI(endpoint,method,body){
-  var token=localStorage.getItem('baker_spotify_token');
-  var expiry=parseInt(localStorage.getItem('baker_spotify_expiry')||'0');
-  if(!token||Date.now()>expiry){speakResponse('Spotify is not connected, sir. Connect it from the conversation page.');return null;}
-  try{
-    var preferredDevice=localStorage.getItem('baker_spotify_device')||null;
-    // For playback commands, append device_id if we have a preferred one
-    var url='https://api.spotify.com/v1/'+endpoint;
-    if(preferredDevice&&method&&method!=='GET'&&(endpoint.includes('player/play')||endpoint.includes('player/pause')||endpoint.includes('player/next')||endpoint.includes('player/previous'))){
-      url+=url.includes('?')?'&device_id='+preferredDevice:'?device_id='+preferredDevice;
-    }
-    var opts={method:method||'GET',headers:{Authorization:'Bearer '+token}};
-    if(body){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body);}
-    var r=await fetch(url,opts);
-    if(r.status===401){speakResponse('Spotify session expired, sir.');return null;}
-    if(r.status===204||r.status===202)return{ok:true};
-    if(r.ok)return await r.json();
-    return null;
-  }catch(e){return null;}
-}
-
-async function showNowPlaying(){
-  setStatus('Checking Spotify...');
-  var d=await spotifyAPI('me/player/currently-playing');
-  if(!d||!d.item){speakResponse('Nothing is playing on Spotify right now, sir.');setOrbState('idle');startWakeWord();return;}
-  var track=d.item.name;
-  var artist=d.item.artists.map(function(a){return a.name;}).join(', ');
-  var playing=d.is_playing;
-
-  // Build HTML directly into widget-body before showing panel
-  var body=document.getElementById('widget-body');
-  var panel=document.getElementById('widget-panel');
-  document.getElementById('widget-title').textContent='♫ Now Playing';
-  document.getElementById('widget-icon').textContent='♫';
-  body.innerHTML=
-    '<div class="sp-card">'+
-    '<div class="sp-track">♫ '+track+'</div>'+
-    '<div class="sp-artist">'+artist+'</div>'+
-    '<div class="sp-artist" style="margin-top:4px;font-size:10px">'+d.item.album.name+' · '+(playing?'▶ Playing':'⏸ Paused')+'</div>'+
-    '<div class="sp-controls">'+
-      '<button class="sp-btn" onclick="hudSpotify(\'previous\')">⏮</button>'+
-      '<button class="sp-btn" onclick="hudSpotify(\'toggle\')">'+(playing?'⏸':'▶')+'</button>'+
-      '<button class="sp-btn" onclick="hudSpotify(\'next\')">⏭</button>'+
-    '</div></div>';
-  openPanel('widget-panel');
-  if(!panel.style.left||panel.style.left===''){
-    panel.style.left=Math.max(0,(window.innerWidth-360)/2)+'px';
-    panel.style.top='64px';panel.style.width='360px';panel.style.height='auto';
-  }
-  speakResponse((playing?'Playing ':'Paused on ')+track+' by '+artist+'.');
-}
-
-async function hudSpotify(action){
-  if(action==='next')await spotifyAPI('me/player/next','POST');
-  else if(action==='previous')await spotifyAPI('me/player/previous','POST');
-  else if(action==='toggle'){var s=await spotifyAPI('me/player');if(s&&s.is_playing)await spotifyAPI('me/player/pause','PUT');else await spotifyAPI('me/player/play','PUT');}
-  setTimeout(showNowPlaying,800);
-}
-
-// ═══════════════════════════════════════════════════════════
-// DATASHEET + BAKER API
-// ═══════════════════════════════════════════════════════════
 async function findAndShowDatasheet(query,key){
   setStatus('Searching datasheet: '+query);
-  try{
-    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:200,system:'Return ONLY a direct URL to an official manufacturer datasheet PDF for the component named. No explanation. Just the URL.',messages:[{role:'user',content:'Datasheet PDF URL for: '+query}]})});
-    var data=await resp.json();
-    var url=data.content.map(function(b){return b.text||'';}).join('').trim();
-    if(url.startsWith('http')){showWidget('pdf','📄 '+query,url,'📄');speakResponse('Datasheet found, sir.');}
-    else{speakResponse('Could not locate a direct datasheet for '+query+', sir.');setOrbState('idle');startWakeWord();}
-  }catch(e){speakResponse('Datasheet search failed, sir.');setOrbState('idle');startWakeWord();}
+  try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:200,system:'Return ONLY a direct URL to an official manufacturer datasheet PDF for the component named. No explanation. Just the URL.',messages:[{role:'user',content:'Datasheet PDF URL for: '+query}]})});var data=await resp.json();var url=data.content.map(function(b){return b.text||'';}).join('').trim();if(url.startsWith('http')){showWidget('pdf','📄 '+query,url,'📄');speakResponse('Datasheet found, sir.');}else{speakResponse('Could not locate a direct datasheet for '+query+', sir.');setOrbState('idle');startWakeWord();}}catch(e){speakResponse('Datasheet search failed, sir.');setOrbState('idle');startWakeWord();}
 }
-
 async function sendToBAKER(txt,key){
   var webOn=localStorage.getItem('baker_web_search')==='true';
   var body={model:'claude-sonnet-4-6',max_tokens:300,system:'You are BAKER, an AI assistant modelled after JARVIS from Iron Man. You are running on a HUD. Keep responses to 1-3 spoken sentences — they will be read aloud. No markdown. Be precise and sharp. Address as "sir" when natural.',messages:[{role:'user',content:txt}]};
   if(webOn)body.tools=[{type:'web_search_20250305',name:'web_search',max_uses:2}];
-  try{
-    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});
-    var data=await resp.json();
-    var response=data.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text||'';}).join('').trim();
-    speakResponse(response);
-  }catch(e){speakResponse('I encountered a fault, sir.');setOrbState('idle');startWakeWord();}
+  try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});var data=await resp.json();var response=data.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text||'';}).join('').trim();speakResponse(response);}catch(e){speakResponse('I encountered a fault, sir.');setOrbState('idle');startWakeWord();}
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -990,201 +1134,413 @@ function speakResponse(txt){
   var preferred=['Daniel','Google UK English Male','Microsoft George','Microsoft David','Alex'];
   var chosen=null;preferred.forEach(function(p){if(!chosen)chosen=voices.find(function(v){return v.name.indexOf(p)!==-1;});});
   if(!chosen)chosen=voices.find(function(v){return v.lang&&v.lang.indexOf('en')===0;});
-  if(chosen)utt.voice=chosen;
-  utt.rate=speechRate;utt.pitch=0.85;utt.volume=1;
-  utt.onend=function(){
-    isSpeaking=false;speakEndTime=Date.now();
-    setOrbState('idle');setStatus('Say "Baker" to begin');
-    document.getElementById('orb-status-txt').textContent='Say "Baker" to begin';
-    document.getElementById('orb-status-txt').className='orb-status-txt';
-    setTimeout(startWakeWord,ECHO_LOCKOUT_MS);
-  };
+  if(chosen)utt.voice=chosen;utt.rate=speechRate;utt.pitch=0.85;utt.volume=1;
+  utt.onend=function(){isSpeaking=false;speakEndTime=Date.now();setOrbState('idle');setStatus('Say "Baker" to begin');document.getElementById('orb-status-txt').textContent='Say "Baker" to begin';document.getElementById('orb-status-txt').className='orb-status-txt';setTimeout(startWakeWord,ECHO_LOCKOUT_MS);};
   utt.onerror=function(){isSpeaking=false;setOrbState('idle');startWakeWord();};
   speechSynthesis.speak(utt);
 }
 
-// ═══════════════════════════════════════════════════════════
-// STATUS
-// ═══════════════════════════════════════════════════════════
 function setStatus(txt){document.getElementById('sb-txt').textContent=txt;}
 
 // ═══════════════════════════════════════════════════════════
 // SETTINGS
 // ═══════════════════════════════════════════════════════════
 function openSettings(){
-  document.getElementById('key-input').value=localStorage.getItem('baker_api_key')||'';
-  document.getElementById('spotify-id-input').value=localStorage.getItem('baker_spotify_id')||'';
-  var sr=parseFloat(localStorage.getItem('baker_speech_rate'))||0.92;
-  document.getElementById('speech-rate-slider').value=Math.round(sr*100);
-  document.getElementById('speech-rate-display').textContent=Math.round(sr*100);
-  var webOn=localStorage.getItem('baker_web_search')==='true';
-  document.getElementById('search-toggle').checked=webOn;
-  document.getElementById('search-lbl').textContent=webOn?'ON':'OFF';
-  loadEffort();
-  document.getElementById('overlay').classList.add('open');
+  var overlay=document.getElementById('overlay');overlay.classList.add('open');
+  var k=localStorage.getItem('baker_api_key');if(k)document.getElementById('key-input').value=k;
+  var ws=localStorage.getItem('baker_web_search')==='true';
+  document.getElementById('search-toggle').checked=ws;
+  document.getElementById('search-lbl').textContent=ws?'ON':'OFF';
+  var effort=localStorage.getItem('baker_effort')||'standard';
+  setEffort(effort,true);
+  var rate=parseFloat(localStorage.getItem('baker_speech_rate')||'0.92');
+  var pct=Math.round(rate*100);document.getElementById('speech-rate-slider').value=pct;document.getElementById('speech-rate-display').textContent=pct;
+  // Spotify settings
+  var id=localStorage.getItem('baker_spotify_id');
+  if(id){var inp=document.getElementById('sp-set-id-inp');if(inp)inp.value=id;}
+  SP.updateSettingsUI();
 }
 function closeSettings(){document.getElementById('overlay').classList.remove('open');}
 function closeIfOutside(e){if(e.target===document.getElementById('overlay'))closeSettings();}
 function toggleShow(){var i=document.getElementById('key-input');i.type=i.type==='password'?'text':'password';}
-function saveKey(){
-  var k=document.getElementById('key-input').value.trim();
-  if(!k){alert('Paste your API key first.');return;}
-  localStorage.setItem('baker_api_key',k);
-  var sid=document.getElementById('spotify-id-input').value.trim();
-  if(sid)localStorage.setItem('baker_spotify_id',sid);
-  var sr=parseInt(document.getElementById('speech-rate-slider').value)/100;
-  localStorage.setItem('baker_speech_rate',sr.toString());
-  speechRate=sr;
-  closeSettings();
-}
-function clearKey(){if(!confirm('Remove API key?'))return;localStorage.removeItem('baker_api_key');document.getElementById('key-input').value='';closeSettings();}
-function setEffort(e){localStorage.setItem('baker_effort',e);document.querySelectorAll('[id^="effort-"]').forEach(function(b){b.classList.remove('active');});var el=document.getElementById('effort-'+e);if(el)el.classList.add('active');}
-function loadEffort(){setEffort(localStorage.getItem('baker_effort')||'standard');}
-function updateSearchToggle(){
-  var on=document.getElementById('search-toggle').checked;
-  localStorage.setItem('baker_web_search',on.toString());
-  document.getElementById('search-lbl').textContent=on?'ON':'OFF';
-  updateWebSearchBtn();
-}
+function saveKey(){var v=document.getElementById('key-input').value.trim();if(v)localStorage.setItem('baker_api_key',v);closeSettings();}
+function clearKey(){localStorage.removeItem('baker_api_key');document.getElementById('key-input').value='';closeSettings();}
+function toggleWebSearch(){var b=document.getElementById('web-search-btn');var on=localStorage.getItem('baker_web_search')==='true';localStorage.setItem('baker_web_search',!on);b.className='hbtn'+(!on?' on':'');b.textContent=(!on?'🌐 Web ✓':'🌐 Web');}
+function updateSearchToggle(){var on=document.getElementById('search-toggle').checked;localStorage.setItem('baker_web_search',on);document.getElementById('search-lbl').textContent=on?'ON':'OFF';var b=document.getElementById('web-search-btn');b.className='hbtn'+(on?' on':'');b.textContent=(on?'🌐 Web ✓':'🌐 Web');}
+function setEffort(e,noSave){if(!noSave)localStorage.setItem('baker_effort',e);['deep','standard','quick','minimal'].forEach(function(x){document.getElementById('effort-'+x).classList.toggle('active',x===e);});}
+document.getElementById('speech-rate-slider').addEventListener('input',function(){var v=parseInt(this.value);document.getElementById('speech-rate-display').textContent=v;speechRate=v/100;localStorage.setItem('baker_speech_rate',speechRate);});
 
-// ── Spotify PKCE auth (independent of conversation.html) ──
-async function generateCodeVerifier(){var a=new Uint8Array(32);window.crypto.getRandomValues(a);return btoa(String.fromCharCode.apply(null,a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');}
-async function generateCodeChallenge(v){var d=new TextEncoder().encode(v);var h=await window.crypto.subtle.digest('SHA-256',d);return btoa(String.fromCharCode.apply(null,new Uint8Array(h))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');}
+// ═══════════════════════════════════════════════════════════
+// ══  SPOTIFY MODULE (SP)  ══════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+var SP=(function(){
+  var LS={TOKEN:'baker_spotify_token',REFRESH:'baker_spotify_refresh',EXPIRY:'baker_spotify_expiry',ID:'baker_spotify_id',DEVICE:'baker_spotify_device',CV:'baker_spotify_cv'};
+  var SCOPES='user-read-playback-state user-modify-playback-state user-read-currently-playing playlist-read-private playlist-read-collaborative user-library-read user-read-recently-played streaming';
+  var currentState=null,pollTimer=null,devices=[];
 
-async function connectSpotifyFromHUD(){
-  var clientId=document.getElementById('spotify-id-input').value.trim()||localStorage.getItem('baker_spotify_id')||'';
-  if(!clientId){alert('Enter your Spotify Client ID first.');return;}
-  localStorage.setItem('baker_spotify_id',clientId);
-  var verifier=await generateCodeVerifier();
-  var challenge=await generateCodeChallenge(verifier);
-  localStorage.setItem('spotify_verifier',verifier);
-  var redirect=encodeURIComponent('https://big-burr.github.io/BAKER/hud.html');
-  var scopes=encodeURIComponent('user-read-currently-playing user-read-playback-state user-modify-playback-state streaming user-read-private playlist-read-private playlist-modify-public playlist-modify-private');
-  window.location.href='https://accounts.spotify.com/authorize?client_id='+clientId+'&response_type=code&redirect_uri='+redirect+'&scope='+scopes+'&code_challenge_method=S256&code_challenge='+challenge;
-}
+  // ── Auth ──────────────────────────────────────────────────
+  function getRedirectUri(){return window.location.origin+window.location.pathname;}
+  async function sha256(s){var e=new TextEncoder().encode(s);return crypto.subtle.digest('SHA-256',e);}
+  function b64url(b){return btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');}
+  function genVerifier(){var a=new Uint8Array(64);crypto.getRandomValues(a);return b64url(a);}
+  async function genChallenge(v){return b64url(await sha256(v));}
 
-async function checkSpotifyCallback(){
-  var params=new URLSearchParams(window.location.search);
-  var code=params.get('code');
-  if(!code)return;
-  window.history.replaceState(null,'',window.location.pathname);
-  var verifier=localStorage.getItem('spotify_verifier');
-  if(!verifier)return;
-  var clientId=localStorage.getItem('baker_spotify_id')||'';
-  if(!clientId)return;
-  try{
-    var resp=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:clientId,grant_type:'authorization_code',code:code,redirect_uri:'https://big-burr.github.io/BAKER/hud.html',code_verifier:verifier})});
-    var data=await resp.json();
-    if(data.access_token){
-      localStorage.setItem('baker_spotify_token',data.access_token);
-      if(data.refresh_token)localStorage.setItem('baker_spotify_refresh',data.refresh_token);
-      localStorage.setItem('baker_spotify_expiry',Date.now()+(data.expires_in*1000));
-      localStorage.removeItem('spotify_verifier');
-      var statusEl=document.getElementById('spotify-auth-status');
-      if(statusEl){statusEl.textContent='✓ Spotify connected successfully!';statusEl.style.color='var(--green)';}
-      setStatus('Spotify connected, sir.');
-    }
-  }catch(e){console.error('Spotify auth failed:',e);}
-}
-
-async function loadSpotifyDevices(){
-  var token=localStorage.getItem('baker_spotify_token');
-  var expiry=parseInt(localStorage.getItem('baker_spotify_expiry')||'0');
-  var sel=document.getElementById('spotify-device-select');
-  var note=document.getElementById('device-saved-note');
-  if(!token||Date.now()>expiry){
-    sel.innerHTML='<option>Connect Spotify first using the Connect button</option>';
-    return;
+  async function connect(){
+    var id=localStorage.getItem(LS.ID);
+    if(!id){alert('Paste your Spotify Client ID in Settings first.');return;}
+    var v=genVerifier(),c=await genChallenge(v);
+    localStorage.setItem(LS.CV,v);
+    var p=new URLSearchParams({client_id:id,response_type:'code',redirect_uri:getRedirectUri(),code_challenge_method:'S256',code_challenge:c,scope:SCOPES});
+    window.location.href='https://accounts.spotify.com/authorize?'+p;
   }
-  sel.innerHTML='<option>Loading...</option>';
-  try{
-    var r=await fetch('https://api.spotify.com/v1/me/player/devices',{headers:{Authorization:'Bearer '+token}});
-    if(r.status===401){sel.innerHTML='<option>Token expired — reconnect Spotify</option>';return;}
-    var d=await r.json();
-    if(!d.devices||!d.devices.length){
-      sel.innerHTML='<option>No devices found — open Spotify first</option>';
-      note.textContent='Make sure Spotify is open and playing on your phone or computer.';
-      return;
+
+  async function exchangeCode(code){
+    var id=localStorage.getItem(LS.ID),v=localStorage.getItem(LS.CV);
+    var r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'authorization_code',code,redirect_uri:getRedirectUri(),client_id:id,code_verifier:v})});
+    if(!r.ok)throw new Error('Token exchange failed');
+    saveTokens(await r.json());localStorage.removeItem(LS.CV);
+    window.history.replaceState({},''  ,window.location.pathname);
+  }
+
+  async function refreshToken(){
+    var id=localStorage.getItem(LS.ID),ref=localStorage.getItem(LS.REFRESH);
+    if(!ref||!id)return false;
+    try{var r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'refresh_token',refresh_token:ref,client_id:id})});if(!r.ok)return false;saveTokens(await r.json());return true;}catch{return false;}
+  }
+
+  function saveTokens(d){localStorage.setItem(LS.TOKEN,d.access_token);if(d.refresh_token)localStorage.setItem(LS.REFRESH,d.refresh_token);localStorage.setItem(LS.EXPIRY,Date.now()+d.expires_in*1000);}
+
+  async function getToken(){
+    var exp=parseInt(localStorage.getItem(LS.EXPIRY)||'0');
+    if(Date.now()>exp-60000){var ok=await refreshToken();if(!ok)return null;}
+    return localStorage.getItem(LS.TOKEN);
+  }
+
+  function isConnected(){return !!(localStorage.getItem(LS.TOKEN)&&localStorage.getItem(LS.REFRESH));}
+
+  function disconnect(){
+    [LS.TOKEN,LS.REFRESH,LS.EXPIRY,LS.CV].forEach(k=>localStorage.removeItem(k));
+    currentState=null;stopPolling();render();updateSettingsUI();updateNavBtn();
+  }
+
+  // ── API ───────────────────────────────────────────────────
+  async function api(path,opts={}){
+    var token=await getToken();if(!token)return null;
+    var r=await fetch('https://api.spotify.com/v1'+path,{...opts,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',...(opts.headers||{})}});
+    if(r.status===401){disconnect();return null;}
+    if(r.status===204||r.status===202)return{};
+    if(!r.ok)return null;
+    try{return await r.json();}catch{return{};}
+  }
+
+  // ── Controls ──────────────────────────────────────────────
+  function devParam(){var d=localStorage.getItem(LS.DEVICE);return d?'?device_id='+d:'';}
+  async function play(uri,devId){var d=devId||localStorage.getItem(LS.DEVICE);var body=uri?(uri.includes(':track:')?{uris:[uri]}:{context_uri:uri}):{};await api('/me/player/play'+(d?'?device_id='+d:''),{method:'PUT',body:JSON.stringify(body)});setTimeout(poll,600);}
+  async function pause(){await api('/me/player/pause'+devParam(),{method:'PUT'});setTimeout(poll,400);}
+  async function resume(){await api('/me/player/play'+devParam(),{method:'PUT'});setTimeout(poll,400);}
+  async function next(){await api('/me/player/next'+devParam(),{method:'POST'});setTimeout(poll,900);}
+  async function prev(){await api('/me/player/previous'+devParam(),{method:'POST'});setTimeout(poll,900);}
+  async function seek(ms){await api('/me/player/seek?position_ms='+Math.round(ms)+devParam().replace('?','&'),{method:'PUT'});}
+  async function setVol(pct){await api('/me/player/volume?volume_percent='+Math.round(pct)+devParam().replace('?','&'),{method:'PUT'});}
+  async function transferTo(devId){localStorage.setItem(LS.DEVICE,devId);await api('/me/player',{method:'PUT',body:JSON.stringify({device_ids:[devId],play:false})});setTimeout(poll,1200);renderDeviceList();}
+
+  // ── Fetch ─────────────────────────────────────────────────
+  async function poll(){
+    if(!isConnected())return;
+    var s=await api('/me/player?additional_types=track,episode');
+    if(!s)return;currentState=s;renderNP();updateNavBtn();
+    if(typeof orbMusicSyncState==='function')orbMusicSyncState(s);
+  }
+  function startPolling(){if(pollTimer)return;poll();pollTimer=setInterval(poll,5000);}
+  function stopPolling(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
+  async function fetchDevices(){var d=await api('/me/player/devices');devices=d?.devices||[];return devices;}
+  async function search(q,types='track,album,playlist',limit=7){return api('/search?q='+encodeURIComponent(q)+'&type='+types+'&limit='+limit);}
+  async function fetchPlaylists(){return api('/me/playlists?limit=30');}
+  async function fetchLiked(){return api('/me/tracks?limit=30');}
+  async function fetchRecent(){return api('/me/player/recently-played?limit=20');}
+
+  // ── Voice ─────────────────────────────────────────────────
+  async function handleVoice(cmd){
+    var c=cmd.toLowerCase().trim();
+    if(c.includes('pause')||c.includes('stop music')){await pause();return'Paused, sir.';}
+    if(c.includes('resume')||c.includes('play music')){await resume();return'Resuming, sir.';}
+    if(c.includes('skip')||c.includes('next song')||c.includes('next track')){await next();return'Skipping, sir.';}
+    if(c.includes('previous')||c.includes('go back')||c.includes('last song')){await prev();return'Going back, sir.';}
+    if(c.includes("what's playing")||c.includes('now playing')||c.includes('whats playing')){
+      if(!currentState||!currentState.item)await poll();
+      var t=currentState?.item;if(!t)return'Nothing playing right now, sir.';
+      var name=t.name,artist=t.artists?.[0]?.name||'';return artist?name+' by '+artist+'.':name+'.';
     }
-    var saved=localStorage.getItem('baker_spotify_device')||'';
-    sel.innerHTML='<option value="">Auto (active device)</option>';
-    d.devices.forEach(function(dev){
-      var opt=document.createElement('option');
-      opt.value=dev.id;
-      opt.textContent=dev.name+' ('+dev.type+')'+(dev.is_active?' ▶ active':'');
-      opt.selected=dev.id===saved;
-      sel.appendChild(opt);
+    var pm=c.match(/^play\s+(.+)$/);
+    if(pm){var r=await search(pm[1],'track',1);var tr=r?.tracks?.items?.[0];if(tr){await play(tr.uri);showPanel();return'Playing '+tr.name+' by '+tr.artists[0].name+'.';}return'Could not find that track, sir.';}
+    return null;
+  }
+
+  // ── Panel ─────────────────────────────────────────────────
+  function showPanel(){
+    var p=document.getElementById('spotify-panel');
+    p.classList.add('sp-vis');
+    // Normalise position now that it's visible so drag/resize work immediately
+    if(p._wbNormalise)p._wbNormalise();
+    render();
+  }
+  function hidePanel(){document.getElementById('spotify-panel').classList.remove('sp-vis');}
+  function togglePanel(){
+    var p=document.getElementById('spotify-panel');
+    p.classList.toggle('sp-vis');
+    if(p.classList.contains('sp-vis')){
+      if(p._wbNormalise)p._wbNormalise();
+      render();
+    }
+  }
+
+  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function fmtMs(ms){var s=Math.floor(ms/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+
+  // ── Render router ─────────────────────────────────────────
+  function render(){
+    var body=document.getElementById('spp-body');if(!body)return;
+    if(!isConnected()){renderNotConnected(body);return;}
+    if(!body.querySelector('.spp-tabs')){buildTabs(body);}
+    renderNP();
+  }
+
+  function buildTabs(body){
+    body.innerHTML=`
+      <div class="spp-tabs">
+        <button class="spp-tab act" data-t="np">▶ Now</button>
+        <button class="spp-tab" data-t="search">⌕ Search</button>
+        <button class="spp-tab" data-t="lib">♫ Library</button>
+        <button class="spp-tab" data-t="dev">⊕ Devices</button>
+      </div>
+      <div class="spp-view act" id="spp-v-np"></div>
+      <div class="spp-view" id="spp-v-search"></div>
+      <div class="spp-view" id="spp-v-lib"></div>
+      <div class="spp-view" id="spp-v-dev"></div>
+    `;
+    body.querySelectorAll('.spp-tab').forEach(tab=>{
+      tab.addEventListener('click',()=>switchTab(tab.dataset.t));
     });
-    sel.onchange=function(){
-      var chosen=this.value||null;
-      if(chosen){
-        localStorage.setItem('baker_spotify_device',chosen);
-        var label=this.options[this.selectedIndex].textContent;
-        note.textContent='✓ Saved: '+label;
-        note.style.color='var(--green)';
-      } else {
-        localStorage.removeItem('baker_spotify_device');
-        note.textContent='Using active device automatically.';
-        note.style.color='';
-      }
-    };
-    // Show currently saved
-    if(saved){
-      var match=d.devices.find(function(d){return d.id===saved;});
-      if(match){note.textContent='✓ Using: '+match.name;note.style.color='var(--green)';}
-    }
-  }catch(e){sel.innerHTML='<option>Error loading devices</option>';}
-}
-function toggleWebSearch(){
-  var on=localStorage.getItem('baker_web_search')==='true';
-  var next=!on;
-  localStorage.setItem('baker_web_search',next.toString());
-  updateWebSearchBtn();
-}
-function updateWebSearchBtn(){
-  var on=localStorage.getItem('baker_web_search')==='true';
-  var btn=document.getElementById('web-search-btn');
-  btn.textContent=on?'🌐 Web on':'🌐 Web';
-  btn.className='hbtn'+(on?' on':'');
-}
-
-// ═══════════════════════════════════════════════════════════
-// BOOT
-// ═══════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded',function(){
-  var sr=parseFloat(localStorage.getItem('baker_speech_rate'));if(!isNaN(sr))speechRate=sr;
-  loadVoices();
-  if(speechSynthesis.onvoiceschanged!==undefined)speechSynthesis.onvoiceschanged=loadVoices;
-
-  // Make panels draggable
-  makeDraggable('orb-panel','orb-panel-hdr');
-  makeDraggable('note-panel','note-panel-hdr');
-  makeDraggable('widget-panel','widget-panel-hdr');
-
-  // Init graph canvas
-  initGraphCanvas();
-
-  // Voice
-  if(hasFS)tryReconnectVault();
-  else{document.getElementById('vault-btn').textContent='⬡ Vault (Chrome only)';document.getElementById('vault-btn').disabled=true;}
-
-  startWakeWord();
-  updateWebSearchBtn();
-  loadEffort();
-  checkSpotifyCallback();
-
-  // Show connected status if already authed
-  var token=localStorage.getItem('baker_spotify_token');
-  var expiry=parseInt(localStorage.getItem('baker_spotify_expiry')||'0');
-  if(token&&Date.now()<expiry){
-    var statusEl=document.getElementById('spotify-auth-status');
-    if(statusEl){statusEl.textContent='✓ Spotify connected';statusEl.style.color='var(--green)';}
+    buildSearchView();buildLibView();buildDevView();
   }
 
-  // Slider
-  var slider=document.getElementById('speech-rate-slider');
-  if(slider)slider.addEventListener('input',function(){document.getElementById('speech-rate-display').textContent=this.value;});
-});
+  function switchTab(name){
+    document.querySelectorAll('.spp-tab').forEach(t=>t.classList.toggle('act',t.dataset.t===name));
+    document.querySelectorAll('.spp-view').forEach(v=>v.classList.toggle('act',v.id==='spp-v-'+name));
+    if(name==='dev')renderDeviceList();
+    if(name==='lib')loadLib('pl');
+  }
+
+  // ── Now Playing ───────────────────────────────────────────
+  function renderNP(){
+    var view=document.getElementById('spp-v-np');if(!view)return;
+    var s=currentState;
+    if(!s||!s.item){view.innerHTML='<div class="spp-idle">♫<br>Nothing playing.<br><small style="font-size:10px;opacity:.6">Open Spotify on a device, then search or pick from Library.</small></div>';return;}
+    var it=s.item,playing=s.is_playing,prog=s.progress_ms||0,dur=it.duration_ms||1;
+    var pct=Math.min(100,(prog/dur)*100);
+    var art=it.album?.images?.[1]?.url||it.album?.images?.[0]?.url||'';
+    var artist=it.artists?.map(a=>a.name).join(', ')||'';
+    var vol=s.device?.volume_percent??50;
+    view.innerHTML=`
+      <div class="spp-np">
+        <div class="spp-trow">
+          ${art?`<img class="spp-art" src="${esc(art)}" alt="">`:'<div class="spp-art-ph">♫</div>'}
+          <div class="spp-meta">
+            <div class="spp-tn" title="${esc(it.name)}">${esc(it.name)}</div>
+            <div class="spp-an">${esc(artist)}</div>
+            <div class="spp-aln">${esc(it.album?.name||'')}</div>
+          </div>
+        </div>
+        <div class="spp-prog-wrap">
+          <span class="spp-t">${fmtMs(prog)}</span>
+          <div class="spp-prog" id="spp-prog">
+            <div class="spp-fill" id="spp-fill" style="width:${pct}%"></div>
+          </div>
+          <span class="spp-t r">${fmtMs(dur)}</span>
+        </div>
+        <div class="spp-ctrls">
+          <button class="spp-btn" id="spp-prev">⏮</button>
+          <button class="spp-btn spp-main" id="spp-pp">${playing?'⏸':'▶'}</button>
+          <button class="spp-btn" id="spp-next">⏭</button>
+        </div>
+        <div class="spp-vol">
+          <span class="spp-vi">🔈</span>
+          <input type="range" class="spp-slider" id="spp-vol" min="0" max="100" value="${vol}">
+          <span class="spp-vi">🔊</span>
+        </div>
+      </div>`;
+    document.getElementById('spp-pp').addEventListener('click',()=>{playing?pause():resume();});
+    document.getElementById('spp-prev').addEventListener('click',prev);
+    document.getElementById('spp-next').addEventListener('click',next);
+    document.getElementById('spp-prog').addEventListener('click',e=>{seek((e.offsetX/e.currentTarget.offsetWidth)*dur);});
+    var vt;document.getElementById('spp-vol').addEventListener('input',e=>{clearTimeout(vt);vt=setTimeout(()=>setVol(+e.target.value),300);});
+  }
+
+  // ── Search ────────────────────────────────────────────────
+  function buildSearchView(){
+    var v=document.getElementById('spp-v-search');if(!v)return;
+    v.innerHTML=`<div class="spp-sw"><div class="spp-srow"><input class="spp-si" id="spp-si" placeholder="Search tracks, albums, playlists…" type="text"><button class="spp-sg" id="spp-sg">⌕</button></div><div class="spp-res" id="spp-res"></div></div>`;
+    document.getElementById('spp-sg').addEventListener('click',doSearch);
+    document.getElementById('spp-si').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
+  }
+
+  async function doSearch(){
+    var q=document.getElementById('spp-si')?.value?.trim();if(!q)return;
+    var res=document.getElementById('spp-res');res.innerHTML='<div style="padding:10px;font-size:11px;color:var(--muted)">Searching…</div>';
+    var d=await search(q,'track,album,playlist',6);
+    if(!d){res.innerHTML='<div style="padding:10px;font-size:11px;color:var(--red)">Search failed.</div>';return;}
+    var html='';
+    var tracks=d.tracks?.items||[];
+    if(tracks.length){html+='<div class="spp-rsec">Tracks</div>';tracks.forEach(t=>{var a=t.album?.images?.[2]?.url||t.album?.images?.[0]?.url||'';html+=`<div class="spp-ri" data-uri="${t.uri}">${a?`<img class="spp-rthumb" src="${a}">`:'<div class="spp-rthumb"></div>'}<div class="spp-rm"><div class="spp-rn">${esc(t.name)}</div><div class="spp-rs">${esc(t.artists?.map(a=>a.name).join(', ')||'')}</div></div></div>`;});}
+    var albums=d.albums?.items||[];
+    if(albums.length){html+='<div class="spp-rsec">Albums</div>';albums.slice(0,3).forEach(a=>{var img=a.images?.[2]?.url||a.images?.[0]?.url||'';html+=`<div class="spp-ri" data-uri="${a.uri}">${img?`<img class="spp-rthumb" src="${img}">`:'<div class="spp-rthumb"></div>'}<div class="spp-rm"><div class="spp-rn">${esc(a.name)}</div><div class="spp-rs">${esc(a.artists?.map(x=>x.name).join(', ')||'')}</div></div></div>`;});}
+    var playlists=d.playlists?.items||[];
+    if(playlists.length){html+='<div class="spp-rsec">Playlists</div>';playlists.slice(0,3).forEach(p=>{var img=p.images?.[0]?.url||'';html+=`<div class="spp-ri" data-uri="${p.uri}">${img?`<img class="spp-rthumb" src="${img}">`:'<div class="spp-rthumb"></div>'}<div class="spp-rm"><div class="spp-rn">${esc(p.name)}</div><div class="spp-rs">${esc(p.description||'')}</div></div></div>`;});}
+    if(!html){res.innerHTML='<div style="padding:10px;font-size:11px;color:var(--muted)">No results.</div>';return;}
+    res.innerHTML=html;
+    res.querySelectorAll('.spp-ri').forEach(item=>{item.addEventListener('click',()=>{play(item.dataset.uri);switchTab('np');});});
+  }
+
+  // ── Library ───────────────────────────────────────────────
+  function buildLibView(){
+    var v=document.getElementById('spp-v-lib');if(!v)return;
+    v.innerHTML=`<div class="spp-lw"><div class="spp-ltabs"><button class="spp-ltab lact" data-lb="pl">Playlists</button><button class="spp-ltab" data-lb="liked">Liked</button><button class="spp-ltab" data-lb="recent">Recent</button></div><div class="spp-li" id="spp-li"></div></div>`;
+    v.querySelectorAll('.spp-ltab').forEach(t=>{t.addEventListener('click',()=>{v.querySelectorAll('.spp-ltab').forEach(x=>x.classList.remove('lact'));t.classList.add('lact');loadLib(t.dataset.lb);});});
+  }
+
+  async function loadLib(type){
+    var c=document.getElementById('spp-li');if(!c)return;
+    c.innerHTML='<div style="padding:10px;font-size:11px;color:var(--muted)">Loading…</div>';
+    var items=[];
+    if(type==='pl'){var d=await fetchPlaylists();items=(d?.items||[]).map(p=>({uri:p.uri,name:p.name,sub:(p.tracks?.total||'?')+' tracks',art:p.images?.[0]?.url||''}));}
+    else if(type==='liked'){var d=await fetchLiked();items=(d?.items||[]).map(i=>({uri:i.track.uri,name:i.track.name,sub:i.track.artists?.map(a=>a.name).join(', ')||'',art:i.track.album?.images?.[2]?.url||''}));}
+    else{var d=await fetchRecent();items=(d?.items||[]).map(i=>({uri:i.track.uri,name:i.track.name,sub:i.track.artists?.map(a=>a.name).join(', ')||'',art:i.track.album?.images?.[2]?.url||''}));}
+    if(!items.length){c.innerHTML='<div style="padding:10px;font-size:11px;color:var(--muted)">Nothing here yet.</div>';return;}
+    c.innerHTML=items.map(i=>`<div class="spp-ri" data-uri="${i.uri}">${i.art?`<img class="spp-rthumb" src="${i.art}">`:'<div class="spp-rthumb"></div>'}<div class="spp-rm"><div class="spp-rn">${esc(i.name)}</div><div class="spp-rs">${esc(i.sub)}</div></div></div>`).join('');
+    c.querySelectorAll('.spp-ri').forEach(item=>{item.addEventListener('click',()=>{play(item.dataset.uri);switchTab('np');});});
+  }
+
+  // ── Devices ───────────────────────────────────────────────
+  function buildDevView(){
+    var v=document.getElementById('spp-v-dev');if(!v)return;
+    v.innerHTML=`<div class="spp-dw"><div class="spp-dhdr"><span class="spp-dlbl">Available Devices</span><button class="spp-dref" id="spp-dref" title="Refresh">↺</button></div><div id="spp-dlist"></div></div>`;
+    document.getElementById('spp-dref').addEventListener('click',renderDeviceList);
+    renderDeviceList();
+  }
+
+  async function renderDeviceList(){
+    var list=document.getElementById('spp-dlist');if(!list)return;
+    list.innerHTML='<div style="padding:7px 0;font-size:11px;color:var(--muted)">Refreshing…</div>';
+    var devs=await fetchDevices();
+    if(!devs.length){list.innerHTML='<div style="padding:7px 0;font-size:11px;color:var(--muted)">No devices found.<br><span style="opacity:.6;font-size:10px">Open Spotify on a device first.</span></div>';return;}
+    var activeId=localStorage.getItem(LS.DEVICE);
+    list.innerHTML=devs.map(d=>{
+      var isAct=d.id===activeId||d.is_active;
+      var ico=d.type==='Smartphone'?'📱':d.type==='Computer'?'💻':'🔊';
+      return`<div class="spp-di${isAct?' spp-dact':''}" data-id="${d.id}"><span class="spp-dico">${ico}</span><div class="spp-dinfo"><div class="spp-dname">${esc(d.name)}</div><div class="spp-dtype">${esc(d.type)}</div></div>${isAct?'<div class="spp-ddot"></div>':''}</div>`;
+    }).join('');
+    list.querySelectorAll('.spp-di').forEach(item=>{item.addEventListener('click',()=>{transferTo(item.dataset.id);list.querySelectorAll('.spp-di').forEach(x=>{x.classList.remove('spp-dact');x.querySelector('.spp-ddot')?.remove();});item.classList.add('spp-dact');item.insertAdjacentHTML('beforeend','<div class="spp-ddot"></div>');});});
+  }
+
+  // ── Not connected ─────────────────────────────────────────
+  function renderNotConnected(body){
+    var hasId=!!localStorage.getItem(LS.ID);
+    body.innerHTML=`<div class="spp-nc"><svg width="36" height="36" viewBox="0 0 24 24" fill="#1db954" opacity="0.5"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg><div class="spp-nct">Connect Spotify</div><div class="spp-ncs">${!hasId?'Open Settings (⚙) and paste your<br>Spotify Client ID first.':'Tap below to authorize BAKER.'}</div><button class="spp-ncbtn" id="spp-conn-btn" ${!hasId?'disabled':''}>Connect with Spotify</button></div>`;
+    if(hasId)document.getElementById('spp-conn-btn').addEventListener('click',connect);
+  }
+
+  // ── Settings UI ───────────────────────────────────────────
+  function saveClientId(){
+    var v=document.getElementById('sp-set-id-inp')?.value?.trim();
+    if(v){localStorage.setItem(LS.ID,v);updateSettingsUI();}
+  }
+
+  function updateSettingsUI(){
+    var statusEl=document.getElementById('sp-set-status');
+    var authRow=document.getElementById('sp-set-auth-row');
+    if(!statusEl||!authRow)return;
+    if(isConnected()){
+      statusEl.className='sp-set-status ok';statusEl.textContent='✓ Connected to Spotify';
+      authRow.innerHTML='<button class="sp-disc" id="sp-disc-btn">Disconnect Spotify</button>';
+      document.getElementById('sp-disc-btn').addEventListener('click',disconnect);
+    } else {
+      var hasId=!!localStorage.getItem(LS.ID);
+      statusEl.className='sp-set-status';statusEl.textContent=hasId?'Not connected — tap Connect to authorize':'Enter Client ID above';
+      authRow.innerHTML=hasId?'<button class="sp-set-gbtn" id="sp-conn-settings-btn" style="width:100%;padding:8px">Connect Spotify</button>':'';
+      if(hasId)document.getElementById('sp-conn-settings-btn').addEventListener('click',connect);
+    }
+  }
+
+  // ── Nav button ────────────────────────────────────────────
+  function updateNavBtn(){
+    var btn=document.getElementById('sp-nav-btn');var lbl=document.getElementById('sp-nav-lbl');if(!btn||!lbl)return;
+    if(currentState?.is_playing&&currentState.item){
+      btn.classList.add('sp-playing');
+      var n=currentState.item.name;lbl.textContent=n.length>16?n.slice(0,14)+'…':n;
+    } else {
+      btn.classList.remove('sp-playing');lbl.textContent='Music';
+    }
+  }
+
+  // ── Init ──────────────────────────────────────────────────
+  async function init(){
+    var params=new URLSearchParams(window.location.search);
+    if(params.has('code')){
+      try{await exchangeCode(params.get('code'));}catch(e){console.error('[SP] Auth failed',e);}
+    }
+    if(isConnected())startPolling();
+    var idInp=document.getElementById('sp-set-id-inp');
+    if(idInp){var saved=localStorage.getItem(LS.ID);if(saved)idInp.value=saved;}
+    updateSettingsUI();updateNavBtn();
+  }
+
+  return{init,connect,disconnect,play,pause,resume,next,prev,seek,setVol,transferTo,search,showPanel,hidePanel,togglePanel,handleVoice,isConnected,saveClientId,updateSettingsUI,updateNavBtn,getCurrentTrack:()=>currentState};
+})();
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+makeDraggable('orb-panel','orb-panel-hdr');
+makeDraggable('note-panel','note-panel-hdr');
+makeDraggable('widget-panel','widget-panel-hdr');
+// Spotify panel — drag via spp-hdr
+makeWindowBehavior(
+  document.getElementById('spotify-panel'),
+  document.getElementById('spotify-panel').querySelector('.spp-hdr'),
+  {minW:280, minH:120}
+);
+
+// Wire orb & record canvas clicks
+(function(){
+  var oc=document.getElementById('orb-canvas');
+  var rc=document.getElementById('record-canvas');
+  oc.addEventListener('click',handleOrbClick);
+  rc.addEventListener('click',handleOrbClick);
+  // Double-click to toggle music mode — use native dblclick, no timer needed
+  oc.addEventListener('dblclick',function(e){e.stopPropagation();toggleMusicMode();});
+  rc.addEventListener('dblclick',function(e){e.stopPropagation();toggleMusicMode();});
+})();
+initGraphCanvas();
+
+if(speechSynthesis.onvoiceschanged!==undefined)speechSynthesis.onvoiceschanged=loadVoices;
+loadVoices();
+
+var ws=localStorage.getItem('baker_web_search')==='true';
+var wsBtn=document.getElementById('web-search-btn');
+if(ws){wsBtn.className='hbtn on';wsBtn.textContent='🌐 Web ✓';}
+
+var savedEffort=localStorage.getItem('baker_effort')||'standard';
+setEffort(savedEffort,true);
+
+var savedRate=parseFloat(localStorage.getItem('baker_speech_rate')||'0.92');
+speechRate=savedRate;
+var pct=Math.round(savedRate*100);
+document.getElementById('speech-rate-slider').value=pct;
+document.getElementById('speech-rate-display').textContent=pct;
+
+SP.init();
+tryReconnectVault();
+startWakeWord();
 </script>
 </body>
 </html>
