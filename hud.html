@@ -1025,67 +1025,63 @@ function stopSpeaking(){speechSynthesis.cancel();isSpeaking=false;speakEndTime=D
 async function processCommand(txt){
   var key=localStorage.getItem('baker_api_key');
   if(!key){speakResponse('No API key set, sir. Please open Settings.');return;}
-  var lower=txt.toLowerCase();
+  var lower=txt.toLowerCase().trim();
 
-  // Settings
+  // ── Settings ──────────────────────────────────────────────
   if(lower.includes('open settings')||lower==='settings'){openSettings();speakResponse('Opening settings, sir.');return;}
 
-  // Tools / index
+  // ── Navigation ────────────────────────────────────────────
   if(lower.includes('open tools')||lower.includes('open index')||lower.includes('show tools')){showWidget('url','⊞ Tools','index.html','⊞');speakResponse('Opening tools, sir.');return;}
+  if(lower.includes('open conversation')||lower.includes('open chat')){window.location.href='conversation.html';return;}
 
-  // Map — open, fly to, directions, locate, clear
-  if(lower.includes('open map')||lower.includes('show map')){
-    showWidget('url','🗺 Map','map.html','🗺');
-    speakResponse('Opening map, sir.');return;
+  // ── Spotify (checked BEFORE map so "play music" doesn't hit map) ──
+  if(lower.includes('open music')||lower.includes('open spotify')||lower.includes('show music')||lower.includes('show spotify')){SP.showPanel();speakResponse('Opening Spotify, sir.');return;}
+  var spResult=await SP.handleVoice(txt);
+  if(spResult!==null){speakResponse(spResult);return;}
+
+  // ── Map commands ──────────────────────────────────────────
+  // "open map" / "show map"
+  if(lower==='open map'||lower==='show map'||lower==='map'){
+    showWidget('url','🗺 Map','map.html','🗺');speakResponse('Opening map, sir.');return;
   }
-  var flyMatch=lower.match(/(?:fly to|go to on map|zoom to|navigate to map|show me)\s+(.+)/);
+  // "fly to X" / "zoom to X" (must start with these words)
+  var flyMatch=lower.match(/^(?:fly to|zoom to|navigate to)\s+(.+)/);
   if(flyMatch){
     var mapQuery=flyMatch[1].trim();
     showWidget('url','🗺 Map','map.html','🗺');
-    // Wait for iframe to load then send command
     setTimeout(function(){mapCmd({cmd:'flyTo',query:mapQuery});},1800);
     speakResponse('Flying to '+mapQuery+', sir.');return;
   }
-  var dirMatch=lower.match(/(?:directions to|route to|how do i get to|take me to)\s+(.+)/);
+  // "directions to X" / "route to X" / "take me to X"
+  var dirMatch=lower.match(/^(?:directions to|route to|take me to|how do i get to)\s+(.+)/);
   if(dirMatch){
     var dirQuery=dirMatch[1].trim();
     showWidget('url','🗺 Map','map.html','🗺');
     setTimeout(function(){mapCmd({cmd:'directionsTo',query:dirQuery});},1800);
     speakResponse('Routing to '+dirQuery+', sir.');return;
   }
-  if(lower.includes('my location')||lower.includes('where am i')||lower.includes('locate me')){
+  // "my location" / "where am i" / "locate me"
+  if(lower==='my location'||lower==='where am i'||lower==='locate me'||lower==='find my location'){
     showWidget('url','🗺 Map','map.html','🗺');
     setTimeout(function(){mapCmd({cmd:'locate'});},1800);
     speakResponse('Locating you, sir.');return;
   }
-  if(lower.includes('clear route')||lower.includes('clear map')){
-    mapCmd({cmd:'clearRoute'});
-    speakResponse('Route cleared, sir.');return;
-  }
+  // "clear route" / "clear map"
+  if(lower==='clear route'||lower==='clear map'){mapCmd({cmd:'clearRoute'});speakResponse('Route cleared, sir.');return;}
 
-  // Conversation
-  if(lower.includes('open conversation')||lower.includes('open chat')){window.location.href='conversation.html';return;}
-
-  // Open music / spotify panel
-  if(lower.includes('open music')||lower.includes('open spotify')||lower.includes('show music')||lower.includes('show spotify')){SP.showPanel();speakResponse('Opening Spotify, sir.');return;}
-
-  // Spotify voice commands — delegate to SP module
-  var spResult=await SP.handleVoice(txt);
-  if(spResult!==null){speakResponse(spResult);return;}
-
-  // Open URL
+  // ── Open URL ──────────────────────────────────────────────
   if(lower.match(/^(?:open|go to|navigate to|show)\s+https?:\/\//)){var urlMatch=txt.match(/https?:\/\/\S+/);if(urlMatch){showWidget('url','🔗 '+urlMatch[0],urlMatch[0],'🔗');speakResponse('Opening page, sir.');return;}}
 
-  // Datasheet
+  // ── Datasheet ─────────────────────────────────────────────
   if(lower.includes('datasheet')||lower.includes('find datasheet')){var query=txt.replace(/find datasheet|datasheet for|datasheet/gi,'').trim();await findAndShowDatasheet(query,key);return;}
 
-  // Text note
-  if(lower.includes('show note')||lower.includes('text note')||lower.includes('display')){var noteText=txt.replace(/show note|text note|display/gi,'').trim();showWidget('text','📝 Note',noteText,'📝');speakResponse('Displaying note, sir.');return;}
+  // ── Text note ─────────────────────────────────────────────
+  if(lower.startsWith('show note')||lower.startsWith('text note')){var noteText=txt.replace(/^show note|^text note/i,'').trim();showWidget('text','📝 Note',noteText,'📝');speakResponse('Displaying note, sir.');return;}
 
-  // Close
-  if(lower.includes('close')||lower.includes('back to graph')){closePanel('widget-panel');SP.hidePanel();speakResponse('Closing, sir.');return;}
+  // ── Close ─────────────────────────────────────────────────
+  if(lower==='close'||lower==='back to graph'||lower==='close panel'){closePanel('widget-panel');SP.hidePanel();speakResponse('Closing, sir.');return;}
 
-  // General → Claude
+  // ── General → Claude ──────────────────────────────────────
   await sendToBAKER(txt,key);
 }
 
