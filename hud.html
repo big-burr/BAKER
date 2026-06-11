@@ -20,6 +20,10 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--sans);width:1
 @keyframes fadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
 @keyframes listening-pulse{0%,100%{box-shadow:0 0 0 0 rgba(124,106,247,.5)}50%{box-shadow:0 0 28px 8px rgba(124,106,247,.2)}}
 @keyframes sp-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+/* ── Record mode ── */
+#orb-panel.music-mode .fp-hdr{border-bottom-color:rgba(29,185,84,.25)}
+#orb-panel.music-mode .fp-icon{color:#1db954}
+#orb-panel.music-mode{border-color:rgba(29,185,84,.3)}
 #graph-bg{position:fixed;inset:0;z-index:0;cursor:grab}
 #graph-bg:active{cursor:grabbing}
 #vault-graph-canvas{display:block;width:100%;height:100%}
@@ -279,18 +283,35 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 <!-- ORB PANEL -->
 <div class="fp" id="orb-panel">
   <div class="fp-hdr" id="orb-panel-hdr">
-    <span class="fp-icon">◈</span>
-    <span class="fp-title">BAKER</span>
+    <span class="fp-icon" id="orb-mode-icon">◈</span>
+    <span class="fp-title" id="orb-panel-label">BAKER</span>
     <div class="fp-btns">
       <button class="fp-btn" onclick="toggleMinimize('orb-panel')" title="Minimize">−</button>
     </div>
   </div>
-  <div class="fp-body" style="display:flex;flex-direction:column">
-    <canvas id="orb-canvas" onclick="handleOrbClick()" style="flex:1;display:block;cursor:pointer;min-height:160px"></canvas>
+  <div class="fp-body" style="display:flex;flex-direction:column;position:relative">
+    <!-- WebGL orb (normal mode) -->
+    <canvas id="orb-canvas" style="flex:1;display:block;cursor:pointer;min-height:160px;position:relative;z-index:1"></canvas>
+    <!-- Record canvas (music mode, overlays orb) -->
+    <canvas id="record-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;display:none;cursor:pointer;z-index:2"></canvas>
     <div class="orb-foot">
-      <div class="orb-status-txt" id="orb-status-txt">Say "Baker" to begin</div>
-      <div class="orb-live" id="orb-live"></div>
-      <div class="wake-indicator" id="wake-status">👂 listening for wake word</div>
+      <!-- Normal mode footer -->
+      <div id="orb-foot-normal">
+        <div class="orb-status-txt" id="orb-status-txt">Say "Baker" to begin</div>
+        <div class="orb-live" id="orb-live"></div>
+        <div class="wake-indicator" id="wake-status">👂 listening for wake word</div>
+      </div>
+      <!-- Music mode footer -->
+      <div id="orb-foot-music" style="display:none">
+        <div id="orb-track-name" style="font-family:var(--mono);font-size:10px;color:var(--text);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px;padding:0 4px"></div>
+        <div id="orb-artist-name" style="font-family:var(--mono);font-size:9px;color:var(--muted);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px;padding:0 4px"></div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px">
+          <button onclick="SP.prev()" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;width:26px;height:26px;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">⏮</button>
+          <button id="orb-music-pp" onclick="orbMusicTogglePlay()" style="background:var(--accent);border:none;border-radius:50%;color:#fff;cursor:pointer;width:30px;height:30px;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .15s">⏸</button>
+          <button onclick="SP.next()" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;width:26px;height:26px;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">⏭</button>
+        </div>
+        <div style="font-family:var(--mono);font-size:8px;color:var(--accent);text-align:center;margin-top:5px;opacity:.5;letter-spacing:.06em">double-click to exit</div>
+      </div>
     </div>
   </div>
 </div>
@@ -702,7 +723,271 @@ function startWakeWord(){
   try{wakeRec.start();document.getElementById('wake-status').textContent='👂 listening for wake word';}catch(e){}
 }
 function stopWakeWord(){if(wakeRec){wakeRec.stop();wakeRec=null;}document.getElementById('wake-status').textContent='';}
-function handleOrbClick(){if(isSpeaking){stopSpeaking();return;}if(voiceActive){stopVoice();}else{activateListening();}}
+// ── Orb click: single = voice, double = toggle music mode ──
+var _orbClickTimer=null;
+function handleOrbClick(){
+  if(_orbClickTimer){
+    clearTimeout(_orbClickTimer);_orbClickTimer=null;
+    toggleMusicMode();
+    return;
+  }
+  _orbClickTimer=setTimeout(function(){
+    _orbClickTimer=null;
+    if(orbMusicMode)return; // clicks in music mode do nothing extra
+    if(isSpeaking){stopSpeaking();return;}
+    if(voiceActive){stopVoice();}else{activateListening();}
+  },260);
+}
+
+// ═══════════════════════════════════════════════════════════
+// RECORD / MUSIC MODE
+// ═══════════════════════════════════════════════════════════
+var orbMusicMode=false;
+var recordAngle=0;          // current rotation in radians
+var recordImg=null;         // cached Image object for album art
+var recordArtUrl='';        // last loaded art URL
+var recordRafId=null;
+var recordLastTime=0;
+var recordSpinning=true;    // mirrors is_playing
+
+function toggleMusicMode(){
+  if(!SP.isConnected()){
+    // Not connected — just do normal voice click
+    if(isSpeaking){stopSpeaking();return;}
+    if(voiceActive){stopVoice();}else{activateListening();}
+    return;
+  }
+  orbMusicMode=!orbMusicMode;
+  _applyMusicMode();
+}
+
+function _applyMusicMode(){
+  var orbCanvas=document.getElementById('orb-canvas');
+  var recCanvas=document.getElementById('record-canvas');
+  var footNormal=document.getElementById('orb-foot-normal');
+  var footMusic=document.getElementById('orb-foot-music');
+  var panel=document.getElementById('orb-panel');
+  var icon=document.getElementById('orb-mode-icon');
+  var lbl=document.getElementById('orb-panel-label');
+
+  if(orbMusicMode){
+    orbCanvas.style.display='none';
+    recCanvas.style.display='block';
+    footNormal.style.display='none';
+    footMusic.style.display='block';
+    panel.classList.add('music-mode');
+    icon.textContent='♫';
+    lbl.textContent='Now Playing';
+    _syncRecordFromState();
+    _startRecordLoop();
+  } else {
+    orbCanvas.style.display='block';
+    recCanvas.style.display='none';
+    footNormal.style.display='block';
+    footMusic.style.display='none';
+    panel.classList.remove('music-mode');
+    icon.textContent='◈';
+    lbl.textContent='BAKER';
+    _stopRecordLoop();
+  }
+}
+
+function _syncRecordFromState(){
+  var state=SP.getCurrentTrack&&SP.getCurrentTrack();
+  if(!state||!state.item)return;
+  var it=state.item;
+  // Track/artist labels
+  var tn=document.getElementById('orb-track-name');
+  var an=document.getElementById('orb-artist-name');
+  if(tn)tn.textContent=it.name||'';
+  if(an)an.textContent=(it.artists&&it.artists.map(function(a){return a.name;}).join(', '))||'';
+  // Play/pause button
+  var pp=document.getElementById('orb-music-pp');
+  if(pp)pp.textContent=state.is_playing?'⏸':'▶';
+  recordSpinning=!!state.is_playing;
+  // Art
+  var artUrl=(it.album&&it.album.images&&(it.album.images[1]||it.album.images[0]))
+    ?((it.album.images[1]||it.album.images[0]).url):'';
+  if(artUrl&&artUrl!==recordArtUrl){
+    recordArtUrl=artUrl;
+    recordImg=new Image();
+    recordImg.crossOrigin='anonymous';
+    recordImg.src=artUrl;
+  }
+}
+
+// Called by SP module after every poll — keeps record in sync
+function orbMusicSyncState(state){
+  if(!orbMusicMode)return;
+  if(!state||!state.item)return;
+  var it=state.item;
+  var tn=document.getElementById('orb-track-name');
+  var an=document.getElementById('orb-artist-name');
+  if(tn)tn.textContent=it.name||'';
+  if(an)an.textContent=(it.artists&&it.artists.map(function(a){return a.name;}).join(', '))||'';
+  var pp=document.getElementById('orb-music-pp');
+  if(pp)pp.textContent=state.is_playing?'⏸':'▶';
+  recordSpinning=!!state.is_playing;
+  var artUrl=(it.album&&it.album.images&&(it.album.images[1]||it.album.images[0]))
+    ?((it.album.images[1]||it.album.images[0]).url):'';
+  if(artUrl&&artUrl!==recordArtUrl){
+    recordArtUrl=artUrl;
+    recordImg=new Image();
+    recordImg.crossOrigin='anonymous';
+    recordImg.src=artUrl;
+  }
+}
+
+function orbMusicTogglePlay(){
+  var state=SP.getCurrentTrack&&SP.getCurrentTrack();
+  if(state&&state.is_playing){SP.pause();}else{SP.resume();}
+  // Optimistic UI
+  recordSpinning=!recordSpinning;
+  var pp=document.getElementById('orb-music-pp');
+  if(pp)pp.textContent=recordSpinning?'⏸':'▶';
+}
+
+function _startRecordLoop(){
+  if(recordRafId)return;
+  recordLastTime=performance.now();
+  function frame(now){
+    if(!orbMusicMode){recordRafId=null;return;}
+    recordRafId=requestAnimationFrame(frame);
+    var dt=(now-recordLastTime)/1000;
+    recordLastTime=now;
+    if(recordSpinning)recordAngle+=dt*(Math.PI*2/3); // 1 full rev per 3s (~33rpm)
+    _drawRecord();
+  }
+  recordRafId=requestAnimationFrame(frame);
+}
+
+function _stopRecordLoop(){
+  if(recordRafId){cancelAnimationFrame(recordRafId);recordRafId=null;}
+}
+
+function _drawRecord(){
+  var canvas=document.getElementById('record-canvas');
+  if(!canvas)return;
+  var W=canvas.offsetWidth,H=canvas.offsetHeight;
+  if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H;}
+  if(!W||!H)return;
+  var ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  var cx=W/2, cy=H/2;
+  var maxR=Math.min(W,H)/2-8;
+  var artR=maxR*0.56;       // album art circle radius
+  var vinylR=maxR;           // outer vinyl edge
+  var labelR=artR*1.08;     // thin label ring just outside art
+  var holeR=maxR*0.06;      // centre hole
+
+  // ── Drop shadow ──────────────────────────────────────────
+  ctx.save();
+  ctx.shadowColor='rgba(0,0,0,0.7)';
+  ctx.shadowBlur=24;
+  ctx.shadowOffsetX=4;
+  ctx.shadowOffsetY=6;
+  ctx.beginPath();ctx.arc(cx,cy,vinylR,0,Math.PI*2);
+  ctx.fillStyle='#111';ctx.fill();
+  ctx.restore();
+
+  // ── Vinyl disc (dark) ────────────────────────────────────
+  ctx.save();
+  ctx.beginPath();ctx.arc(cx,cy,vinylR,0,Math.PI*2);ctx.clip();
+
+  // Base vinyl colour
+  ctx.beginPath();ctx.arc(cx,cy,vinylR,0,Math.PI*2);
+  ctx.fillStyle='#0e0e0f';ctx.fill();
+
+  // Grooves — concentric rings
+  for(var gr=artR*1.12;gr<vinylR-2;gr+=5){
+    ctx.beginPath();ctx.arc(cx,cy,gr,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=1;ctx.stroke();
+  }
+
+  // Groove shimmer (rotating highlight arc)
+  var shimGrd=ctx.createConicalGradient?null:null;
+  ctx.save();
+  ctx.translate(cx,cy);ctx.rotate(recordAngle*0.7);ctx.translate(-cx,-cy);
+  for(var ri=0;ri<3;ri++){
+    var gStart=(artR*1.15)+(ri*12);
+    var gEnd=Math.min(gStart+8,vinylR-2);
+    ctx.beginPath();ctx.arc(cx,cy,gStart,Math.PI*0.9,Math.PI*1.4);
+    ctx.strokeStyle='rgba(255,255,255,0.07)';ctx.lineWidth=gEnd-gStart;ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.restore(); // end vinyl clip
+
+  // ── Album art (rotates with record) ──────────────────────
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.rotate(recordAngle);
+  // Clip to art circle
+  ctx.beginPath();ctx.arc(0,0,artR,0,Math.PI*2);ctx.clip();
+  if(recordImg&&recordImg.complete&&recordImg.naturalWidth>0){
+    var s=artR*2;
+    ctx.drawImage(recordImg,-artR,-artR,s,s);
+    // Slight darkening overlay for vinyl vibe
+    ctx.beginPath();ctx.arc(0,0,artR,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,0,0,0.18)';ctx.fill();
+  } else {
+    // Placeholder when no art
+    var grd=ctx.createRadialGradient(0,0,0,0,0,artR);
+    grd.addColorStop(0,'#2a1f5e');grd.addColorStop(1,'#0f0f10');
+    ctx.beginPath();ctx.arc(0,0,artR,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
+    // Musical note
+    ctx.font='bold '+(artR*0.45)+'px IBM Plex Mono, monospace';
+    ctx.fillStyle='rgba(124,106,247,0.6)';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('♫',0,0);
+  }
+  ctx.restore();
+
+  // ── Label ring ────────────────────────────────────────────
+  ctx.save();
+  ctx.beginPath();ctx.arc(cx,cy,labelR,0,Math.PI*2);
+  ctx.strokeStyle='rgba(124,106,247,0.25)';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.restore();
+
+  // ── Vinyl reflection arc (top-left) ──────────────────────
+  ctx.save();
+  var refGrd=ctx.createLinearGradient(cx-vinylR,cy-vinylR,cx+vinylR*0.3,cy+vinylR*0.3);
+  refGrd.addColorStop(0,'rgba(255,255,255,0.04)');
+  refGrd.addColorStop(0.5,'rgba(255,255,255,0.01)');
+  refGrd.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.beginPath();ctx.arc(cx,cy,vinylR-1,0,Math.PI*2);
+  ctx.fillStyle=refGrd;ctx.fill();
+  ctx.restore();
+
+  // ── Centre hole ───────────────────────────────────────────
+  ctx.save();
+  ctx.beginPath();ctx.arc(cx,cy,holeR,0,Math.PI*2);
+  ctx.fillStyle='#0a0a0b';ctx.fill();
+  ctx.beginPath();ctx.arc(cx,cy,holeR,0,Math.PI*2);
+  ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=0.8;ctx.stroke();
+  ctx.restore();
+
+  // ── Needle arm ────────────────────────────────────────────
+  if(recordSpinning){
+    ctx.save();
+    var armPivotX=cx+vinylR*0.55;
+    var armPivotY=cy-vinylR*1.05;
+    var armAngle=0.38; // radians from vertical, pointing into the record
+    var armLen=vinylR*0.88;
+    var tipX=armPivotX+Math.sin(armAngle)*armLen;
+    var tipY=armPivotY+Math.cos(armAngle)*armLen;
+    // Arm body
+    ctx.beginPath();ctx.moveTo(armPivotX,armPivotY);ctx.lineTo(tipX,tipY);
+    ctx.strokeStyle='rgba(200,200,220,0.55)';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.stroke();
+    // Pivot dot
+    ctx.beginPath();ctx.arc(armPivotX,armPivotY,4,0,Math.PI*2);
+    ctx.fillStyle='rgba(200,200,220,0.7)';ctx.fill();
+    // Stylus tip
+    ctx.beginPath();ctx.arc(tipX,tipY,2.5,0,Math.PI*2);
+    ctx.fillStyle='rgba(124,106,247,0.9)';ctx.fill();
+    ctx.restore();
+  }
+}
 function activateListening(){
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){setStatus('Voice requires Chrome');return;}
   if(window.orbInitAudio)window.orbInitAudio();
@@ -921,6 +1206,7 @@ var SP=(function(){
     if(!isConnected())return;
     var s=await api('/me/player?additional_types=track,episode');
     if(!s)return;currentState=s;renderNP();updateNavBtn();
+    if(typeof orbMusicSyncState==='function')orbMusicSyncState(s);
   }
   function startPolling(){if(pollTimer)return;poll();pollTimer=setInterval(poll,5000);}
   function stopPolling(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
@@ -1152,7 +1438,7 @@ var SP=(function(){
     updateSettingsUI();updateNavBtn();
   }
 
-  return{init,connect,disconnect,play,pause,resume,next,prev,seek,setVol,transferTo,search,showPanel,hidePanel,togglePanel,handleVoice,isConnected,saveClientId,updateSettingsUI,updateNavBtn};
+  return{init,connect,disconnect,play,pause,resume,next,prev,seek,setVol,transferTo,search,showPanel,hidePanel,togglePanel,handleVoice,isConnected,saveClientId,updateSettingsUI,updateNavBtn,getCurrentTrack:()=>currentState};
 })();
 
 // ═══════════════════════════════════════════════════════════
@@ -1167,6 +1453,14 @@ makeWindowBehavior(
   document.getElementById('spotify-panel').querySelector('.spp-hdr'),
   {minW:280, minH:120}
 );
+
+// Wire orb & record canvas clicks
+(function(){
+  var oc=document.getElementById('orb-canvas');
+  var rc=document.getElementById('record-canvas');
+  oc.addEventListener('click',handleOrbClick);
+  rc.addEventListener('click',handleOrbClick);
+})();
 initGraphCanvas();
 
 if(speechSynthesis.onvoiceschanged!==undefined)speechSynthesis.onvoiceschanged=loadVoices;
