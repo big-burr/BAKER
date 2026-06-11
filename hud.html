@@ -292,6 +292,16 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
       <input type="text" id="spotify-id-input" placeholder="Your Spotify app client ID" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:9px 10px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none">
       <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px">Optional. Get from <a href="https://developer.spotify.com/dashboard" target="_blank" style="color:var(--accent)">developer.spotify.com</a></div>
     </div>
+    <div class="field">
+      <label>Spotify Playback Device</label>
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <select id="spotify-device-select" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:8px 10px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;cursor:pointer">
+          <option value="">— click Refresh to load devices —</option>
+        </select>
+        <button onclick="loadSpotifyDevices()" style="background:transparent;border:1px solid var(--border);border-radius:4px;padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">↺ Refresh</button>
+      </div>
+      <div id="device-saved-note" style="font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.6">Open Spotify on your phone or computer first, then click Refresh.</div>
+    </div>
     <div class="modal-note">Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key.</div>
     <div class="modal-actions">
       <button class="cancel-btn" onclick="closeSettings()">Cancel</button>
@@ -871,9 +881,15 @@ async function spotifyAPI(endpoint,method,body){
   var expiry=parseInt(localStorage.getItem('baker_spotify_expiry')||'0');
   if(!token||Date.now()>expiry){speakResponse('Spotify is not connected, sir. Connect it from the conversation page.');return null;}
   try{
+    var preferredDevice=localStorage.getItem('baker_spotify_device')||null;
+    // For playback commands, append device_id if we have a preferred one
+    var url='https://api.spotify.com/v1/'+endpoint;
+    if(preferredDevice&&method&&method!=='GET'&&(endpoint.includes('player/play')||endpoint.includes('player/pause')||endpoint.includes('player/next')||endpoint.includes('player/previous'))){
+      url+=url.includes('?')?'&device_id='+preferredDevice:'?device_id='+preferredDevice;
+    }
     var opts={method:method||'GET',headers:{Authorization:'Bearer '+token}};
     if(body){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body);}
-    var r=await fetch('https://api.spotify.com/v1/'+endpoint,opts);
+    var r=await fetch(url,opts);
     if(r.status===401){speakResponse('Spotify session expired, sir.');return null;}
     if(r.status===204||r.status===202)return{ok:true};
     if(r.ok)return await r.json();
@@ -1012,6 +1028,55 @@ function updateSearchToggle(){
   localStorage.setItem('baker_web_search',on.toString());
   document.getElementById('search-lbl').textContent=on?'ON':'OFF';
   updateWebSearchBtn();
+}
+
+async function loadSpotifyDevices(){
+  var token=localStorage.getItem('baker_spotify_token');
+  var expiry=parseInt(localStorage.getItem('baker_spotify_expiry')||'0');
+  var sel=document.getElementById('spotify-device-select');
+  var note=document.getElementById('device-saved-note');
+  if(!token||Date.now()>expiry){
+    sel.innerHTML='<option>Connect Spotify in conversation.html first</option>';
+    return;
+  }
+  sel.innerHTML='<option>Loading...</option>';
+  try{
+    var r=await fetch('https://api.spotify.com/v1/me/player/devices',{headers:{Authorization:'Bearer '+token}});
+    if(r.status===401){sel.innerHTML='<option>Token expired — reconnect Spotify</option>';return;}
+    var d=await r.json();
+    if(!d.devices||!d.devices.length){
+      sel.innerHTML='<option>No devices found — open Spotify first</option>';
+      note.textContent='Make sure Spotify is open and playing on your phone or computer.';
+      return;
+    }
+    var saved=localStorage.getItem('baker_spotify_device')||'';
+    sel.innerHTML='<option value="">Auto (active device)</option>';
+    d.devices.forEach(function(dev){
+      var opt=document.createElement('option');
+      opt.value=dev.id;
+      opt.textContent=dev.name+' ('+dev.type+')'+(dev.is_active?' ▶ active':'');
+      opt.selected=dev.id===saved;
+      sel.appendChild(opt);
+    });
+    sel.onchange=function(){
+      var chosen=this.value||null;
+      if(chosen){
+        localStorage.setItem('baker_spotify_device',chosen);
+        var label=this.options[this.selectedIndex].textContent;
+        note.textContent='✓ Saved: '+label;
+        note.style.color='var(--green)';
+      } else {
+        localStorage.removeItem('baker_spotify_device');
+        note.textContent='Using active device automatically.';
+        note.style.color='';
+      }
+    };
+    // Show currently saved
+    if(saved){
+      var match=d.devices.find(function(d){return d.id===saved;});
+      if(match){note.textContent='✓ Using: '+match.name;note.style.color='var(--green)';}
+    }
+  }catch(e){sel.innerHTML='<option>Error loading devices</option>';}
 }
 function toggleWebSearch(){
   var on=localStorage.getItem('baker_web_search')==='true';
