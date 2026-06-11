@@ -1,59 +1,42 @@
-// BAKER Service Worker — baker-v19
-const CACHE = 'baker-v19';
-
+const CACHE = 'baker-v16';
+const BASE = '/BAKER';
 const ASSETS = [
-  '/BAKER/',
-  '/BAKER/hud.html',
-  '/BAKER/index.html',
-  '/BAKER/conversation.html',
-  '/BAKER/analyze.html',
-  '/BAKER/inbox.html',
-  '/BAKER/lecture.html',
-  '/BAKER/weekly.html',
-  '/BAKER/notelinker.html',
-  '/BAKER/vaultgraph.html',
-  '/BAKER/vaultchat.html',
-  '/BAKER/baker-app.js',
-  '/BAKER/manifest.json',
-  '/BAKER/icon.svg',
+  BASE + '/',
+  BASE + '/index.html',
+  BASE + '/hud.html',
+  BASE + '/map.html',
+  BASE + '/lecture.html',
+  BASE + '/conversation.html',
+  BASE + '/analyze.html',
+  BASE + '/inbox.html',
+  BASE + '/weekly.html',
+  BASE + '/notelinker.html',
+  BASE + '/vaultgraph.html',
+  BASE + '/vaultchat.html',
+  BASE + '/baker-app.js',
+  BASE + '/icon.svg',
+  BASE + '/manifest.json'
 ];
-
 self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting())
-  );
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  self.skipWaiting();
 });
-
 self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
-  );
+  e.waitUntil(caches.keys().then(keys =>
+    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+  ));
+  self.clients.claim();
 });
-
 self.addEventListener('fetch', e => {
-  // Network-first for API calls — never cache Anthropic or Spotify
-  if (
-    e.request.url.includes('anthropic.com') ||
-    e.request.url.includes('spotify.com') ||
-    e.request.url.includes('googleapis.com/css')
-  ) {
-    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
-    return;
-  }
-
-  // Cache-first for everything else
+  if (e.request.url.includes('api.anthropic.com')) return;
+  if (e.request.url.includes('fonts.googleapis.com')) return;
+  if (e.request.url.includes('open-meteo.com')) return;
+  if (e.request.url.includes('api.spotify.com')) return;
+  if (e.request.url.includes('accounts.spotify.com')) return;
+  if (e.request.url.includes('nominatim.openstreetmap.org')) return;
+  if (e.request.url.includes('tile.openstreetmap.org')) return;
+  if (e.request.url.includes('cdnjs.cloudflare.com')) return;
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(response => {
-        if (response && response.status === 200 && response.type === 'basic') {
-          const clone = response.clone();
-          caches.open(CACHE).then(cache => cache.put(e.request, clone));
-        }
-        return response;
-      }).catch(() => cached);
-    })
+    caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match(BASE + '/hud.html')))
   );
 });
