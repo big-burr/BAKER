@@ -1049,7 +1049,7 @@ async function processCommand(txt){
   if(flyMatch){
     var mapQuery=flyMatch[1].trim();
     showWidget('url','🗺 Map','map.html','🗺');
-    setTimeout(function(){mapCmd({cmd:'flyTo',query:mapQuery});},1800);
+    mapCmd({cmd:'flyTo',query:mapQuery});
     speakResponse('Flying to '+mapQuery+', sir.');return;
   }
   // "directions to X" / "route to X" / "take me to X"
@@ -1057,13 +1057,13 @@ async function processCommand(txt){
   if(dirMatch){
     var dirQuery=dirMatch[1].trim();
     showWidget('url','🗺 Map','map.html','🗺');
-    setTimeout(function(){mapCmd({cmd:'directionsTo',query:dirQuery});},1800);
+    mapCmd({cmd:'directionsTo',query:dirQuery});
     speakResponse('Routing to '+dirQuery+', sir.');return;
   }
   // "my location" / "where am i" / "locate me"
   if(lower==='my location'||lower==='where am i'||lower==='locate me'||lower==='find my location'){
     showWidget('url','🗺 Map','map.html','🗺');
-    setTimeout(function(){mapCmd({cmd:'locate'});},1800);
+    mapCmd({cmd:'locate'});
     speakResponse('Locating you, sir.');return;
   }
   // "clear route" / "clear map"
@@ -1099,13 +1099,27 @@ function showWidget(type,title,data,icon){
 }
 
 // ═══════════════════════════════════════════════════════════
-// MAP COMMAND — send to iframe via postMessage
+// MAP COMMAND — send to iframe, retry until map signals ready
 // ═══════════════════════════════════════════════════════════
+var _mapPendingCmd=null;
+window.addEventListener('message',function(e){
+  if(e.data&&e.data.type==='mapReady'&&_mapPendingCmd){
+    var frame=document.getElementById('widget-frame');
+    if(frame&&frame.contentWindow){
+      frame.contentWindow.postMessage(_mapPendingCmd,'*');
+      _mapPendingCmd=null;
+    }
+  }
+});
 function mapCmd(data){
   var frame=document.getElementById('widget-frame');
-  if(frame&&frame.contentWindow){
-    frame.contentWindow.postMessage(data,'*');
-  }
+  if(!frame||!frame.contentWindow)return;
+  // Try immediately (map may already be ready)
+  frame.contentWindow.postMessage(data,'*');
+  // Also store as pending so if map fires mapReady after this, it sends again
+  _mapPendingCmd=data;
+  // Clear pending after 8 seconds regardless
+  setTimeout(function(){if(_mapPendingCmd===data)_mapPendingCmd=null;},8000);
 }
 async function findAndShowDatasheet(query,key){
   setStatus('Searching datasheet: '+query);
@@ -1268,7 +1282,29 @@ var SP=(function(){
       var name=t.name,artist=t.artists?.[0]?.name||'';return artist?name+' by '+artist+'.':name+'.';
     }
     var pm=c.match(/^play\s+(.+)$/);
-    if(pm){var r=await search(pm[1],'track',1);var tr=r?.tracks?.items?.[0];if(tr){await play(tr.uri);showPanel();return'Playing '+tr.name+' by '+tr.artists[0].name+'.';}return'Could not find that track, sir.';}
+    if(pm){
+      var raw=pm[1];
+      // Parse "song by artist" or "song from artist" patterns
+      var byMatch=raw.match(/^(.+?)\s+(?:by|from)\s+(.+)$/i);
+      var searchQ;
+      if(byMatch){
+        var songPart=byMatch[1].trim();
+        var artistPart=byMatch[2].trim();
+        searchQ='track:"'+songPart+'" artist:"'+artistPart+'"';
+      } else {
+        searchQ=raw;
+      }
+      var r=await search(searchQ,'track',5);
+      var items=r?.tracks?.items||[];
+      // If exact search returned nothing, fall back to plain search
+      if(!items.length&&byMatch){
+        r=await search(raw,'track',5);
+        items=r?.tracks?.items||[];
+      }
+      var tr=items[0];
+      if(tr){await play(tr.uri);showPanel();return'Playing '+tr.name+' by '+tr.artists[0].name+'.';}
+      return'Could not find that track, sir.';
+    }
     return null;
   }
 
