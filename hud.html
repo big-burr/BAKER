@@ -44,7 +44,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
 .fp-hdr{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);cursor:move;flex-shrink:0;user-select:none;border-radius:10px 10px 0 0}
 .fp-hdr:hover{background:rgba(124,106,247,.04)}
 /* ── RESIZE HANDLES ── */
-.rh{position:absolute;z-index:10;user-select:none}
+.rh{position:absolute;z-index:10;user-select:none;pointer-events:all}
 .rh-n{top:-4px;left:8px;right:8px;height:8px;cursor:n-resize}
 .rh-s{bottom:-4px;left:8px;right:8px;height:8px;cursor:s-resize}
 .rh-e{right:-4px;top:8px;bottom:8px;width:8px;cursor:e-resize}
@@ -54,6 +54,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
 .rh-sw{bottom:-4px;left:-4px;width:12px;height:12px;cursor:sw-resize}
 .rh-se{bottom:-4px;right:-4px;width:12px;height:12px;cursor:se-resize}
 .rh-se::after{content:'';position:absolute;bottom:4px;right:4px;width:6px;height:6px;border-right:2px solid var(--border);border-bottom:2px solid var(--border);border-radius:0 0 2px 0;opacity:.6}
+/* Spotify panel inner content must not eat pointer events at the panel edge */
+#spotify-panel>div:not(.rh){overflow:hidden;border-radius:14px}
 .fp-icon{font-size:12px;flex-shrink:0}
 .fp-title{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;flex:1}
 .fp-btns{display:flex;gap:4px;flex-shrink:0}
@@ -131,7 +133,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
 #spotify-panel{position:fixed;bottom:40px;right:24px;width:340px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:280px;min-height:120px}
 #spotify-panel.sp-vis{display:flex}
 #spotify-panel>div:not(.rh){overflow:hidden;border-radius:14px}
-#spp-body{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+#spp-body{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;border-radius:0 0 14px 14px}
 .spp-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--border);cursor:move;user-select:none;border-radius:14px 14px 0 0;flex-shrink:0}
 .spp-left{display:flex;align-items:center;gap:7px}
 .spp-logo{fill:#1db954}
@@ -493,18 +495,29 @@ function makeWindowBehavior(panelEl, hdrEl, opts) {
   opts = opts || {};
   var MIN_W = opts.minW || 180;
   var MIN_H = opts.minH || 80;
-  var NAV_H = 44; // keep below nav bar
+  var NAV_H = 44;
+  var _normalised = false;
 
-  // Normalise position to top/left so bottom/right CSS doesn't fight us
+  // Convert bottom/right/% positioning to explicit top/left/width/height px
+  // Safe to call anytime — if panel is hidden it's a no-op
   function normalise() {
+    if (panelEl.offsetParent === null && panelEl.style.display === 'none') return;
     var r = panelEl.getBoundingClientRect();
+    if (!r.width || !r.height) return;
     panelEl.style.left   = r.left + 'px';
     panelEl.style.top    = r.top  + 'px';
     panelEl.style.bottom = 'auto';
     panelEl.style.right  = 'auto';
     panelEl.style.width  = r.width  + 'px';
     panelEl.style.height = r.height + 'px';
+    _normalised = true;
   }
+
+  // For visible panels normalise immediately; hidden ones get normalised on first drag/resize
+  if (panelEl.style.display !== 'none') normalise();
+
+  // Expose normalise so openPanel / showPanel can call it after making visible
+  panelEl._wbNormalise = normalise;
 
   // Inject resize handles
   ['nw','n','ne','e','se','s','sw','w'].forEach(function(dir){
@@ -520,7 +533,7 @@ function makeWindowBehavior(panelEl, hdrEl, opts) {
     if (e.button !== 0) return;
     if (e.target.closest('.fp-btns,.spp-close,.spp-tabs,.spp-tab')) return;
     e.preventDefault();
-    normalise();
+    normalise(); // always re-normalise before drag starts
     dragging = true;
     var r = panelEl.getBoundingClientRect();
     dox = e.clientX - r.left;
@@ -610,7 +623,13 @@ function makeDraggable(panelId, hdrId) {
 }
 function toggleMinimize(id){document.getElementById(id).classList.toggle('minimized');}
 function closePanel(id){document.getElementById(id).style.display='none';}
-function openPanel(id){var p=document.getElementById(id);p.style.display='flex';p.classList.remove('minimized');}
+function openPanel(id){
+  var p=document.getElementById(id);
+  p.style.display='flex';
+  p.classList.remove('minimized');
+  // Trigger normalise on the window behaviour instance if first show
+  if(p._wbNormalise)p._wbNormalise();
+}
 
 // ═══════════════════════════════════════════════════════════
 // VAULT GRAPH
@@ -723,20 +742,11 @@ function startWakeWord(){
   try{wakeRec.start();document.getElementById('wake-status').textContent='👂 listening for wake word';}catch(e){}
 }
 function stopWakeWord(){if(wakeRec){wakeRec.stop();wakeRec=null;}document.getElementById('wake-status').textContent='';}
-// ── Orb click: single = voice, double = toggle music mode ──
-var _orbClickTimer=null;
-function handleOrbClick(){
-  if(_orbClickTimer){
-    clearTimeout(_orbClickTimer);_orbClickTimer=null;
-    toggleMusicMode();
-    return;
-  }
-  _orbClickTimer=setTimeout(function(){
-    _orbClickTimer=null;
-    if(orbMusicMode)return; // clicks in music mode do nothing extra
-    if(isSpeaking){stopSpeaking();return;}
-    if(voiceActive){stopVoice();}else{activateListening();}
-  },260);
+// ── Orb click: single = voice  |  dblclick handled separately below ──
+function handleOrbClick(e){
+  if(orbMusicMode)return; // in music mode clicks do nothing (controls are in footer)
+  if(isSpeaking){stopSpeaking();return;}
+  if(voiceActive){stopVoice();}else{activateListening();}
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1234,9 +1244,22 @@ var SP=(function(){
   }
 
   // ── Panel ─────────────────────────────────────────────────
-  function showPanel(){document.getElementById('spotify-panel').classList.add('sp-vis');render();}
+  function showPanel(){
+    var p=document.getElementById('spotify-panel');
+    p.classList.add('sp-vis');
+    // Normalise position now that it's visible so drag/resize work immediately
+    if(p._wbNormalise)p._wbNormalise();
+    render();
+  }
   function hidePanel(){document.getElementById('spotify-panel').classList.remove('sp-vis');}
-  function togglePanel(){var p=document.getElementById('spotify-panel');p.classList.toggle('sp-vis');if(p.classList.contains('sp-vis'))render();}
+  function togglePanel(){
+    var p=document.getElementById('spotify-panel');
+    p.classList.toggle('sp-vis');
+    if(p.classList.contains('sp-vis')){
+      if(p._wbNormalise)p._wbNormalise();
+      render();
+    }
+  }
 
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function fmtMs(ms){var s=Math.floor(ms/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
@@ -1460,6 +1483,9 @@ makeWindowBehavior(
   var rc=document.getElementById('record-canvas');
   oc.addEventListener('click',handleOrbClick);
   rc.addEventListener('click',handleOrbClick);
+  // Double-click to toggle music mode — use native dblclick, no timer needed
+  oc.addEventListener('dblclick',function(e){e.stopPropagation();toggleMusicMode();});
+  rc.addEventListener('dblclick',function(e){e.stopPropagation();toggleMusicMode();});
 })();
 initGraphCanvas();
 
