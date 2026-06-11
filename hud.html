@@ -36,16 +36,27 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
 .hbtn:hover{border-color:var(--accent);color:var(--text);background:rgba(124,106,247,.08)}
 .hbtn.on{color:var(--accent);border-color:var(--accent-dim);background:rgba(124,106,247,.1)}
 .hbtn.sp-playing{color:#1db954;border-color:rgba(29,185,84,.4);background:rgba(29,185,84,.06);animation:blink 2s ease-in-out infinite}
-.fp{position:fixed;z-index:30;border:1px solid var(--border);border-radius:10px;background:rgba(26,26,29,.92);backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.5);display:flex;flex-direction:column;animation:fadeIn .2s ease both;min-width:200px;min-height:80px}
+.fp{position:fixed;z-index:30;border:1px solid var(--border);border-radius:10px;background:rgba(26,26,29,.92);backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.5);display:flex;flex-direction:column;animation:fadeIn .2s ease both;min-width:180px;min-height:80px;overflow:visible}
 .fp-hdr{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);cursor:move;flex-shrink:0;user-select:none;border-radius:10px 10px 0 0}
 .fp-hdr:hover{background:rgba(124,106,247,.04)}
+/* ── RESIZE HANDLES ── */
+.rh{position:absolute;z-index:10;user-select:none}
+.rh-n{top:-4px;left:8px;right:8px;height:8px;cursor:n-resize}
+.rh-s{bottom:-4px;left:8px;right:8px;height:8px;cursor:s-resize}
+.rh-e{right:-4px;top:8px;bottom:8px;width:8px;cursor:e-resize}
+.rh-w{left:-4px;top:8px;bottom:8px;width:8px;cursor:w-resize}
+.rh-nw{top:-4px;left:-4px;width:12px;height:12px;cursor:nw-resize}
+.rh-ne{top:-4px;right:-4px;width:12px;height:12px;cursor:ne-resize}
+.rh-sw{bottom:-4px;left:-4px;width:12px;height:12px;cursor:sw-resize}
+.rh-se{bottom:-4px;right:-4px;width:12px;height:12px;cursor:se-resize}
+.rh-se::after{content:'';position:absolute;bottom:4px;right:4px;width:6px;height:6px;border-right:2px solid var(--border);border-bottom:2px solid var(--border);border-radius:0 0 2px 0;opacity:.6}
 .fp-icon{font-size:12px;flex-shrink:0}
 .fp-title{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;flex:1}
 .fp-btns{display:flex;gap:4px;flex-shrink:0}
 .fp-btn{background:none;border:1px solid var(--border);border-radius:3px;width:18px;height:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:9px;color:var(--muted);transition:all .15s;flex-shrink:0}
 .fp-btn:hover{border-color:var(--accent);color:var(--text)}
 .fp-btn.close:hover{border-color:var(--red);color:var(--red)}
-.fp-body{flex:1;overflow:hidden;border-radius:0 0 10px 10px}
+.fp-body{flex:1;overflow:hidden;border-radius:0 0 10px 10px;min-height:0}
 .fp.minimized .fp-body{display:none}
 .fp.minimized{min-height:0}
 #orb-panel{width:220px;height:280px;bottom:60px;left:24px;z-index:40}
@@ -113,9 +124,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
 .toggle input:checked~.toggle-thumb{left:23px;background:var(--accent)}
 .toggle-lbl{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.06em;text-align:right;min-width:24px}
 /* ─── SPOTIFY FULL PANEL ─────────────────────────────── */
-#spotify-panel{position:fixed;bottom:40px;right:24px;width:340px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px)}
+#spotify-panel{position:fixed;bottom:40px;right:24px;width:340px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:280px;min-height:120px}
 #spotify-panel.sp-vis{display:flex}
-.spp-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--border)}
+#spotify-panel>div:not(.rh){overflow:hidden;border-radius:14px}
+#spp-body{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.spp-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--border);cursor:move;user-select:none;border-radius:14px 14px 0 0;flex-shrink:0}
 .spp-left{display:flex;align-items:center;gap:7px}
 .spp-logo{fill:#1db954}
 .spp-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
@@ -454,17 +467,125 @@ function setOrbState(s){
 // ═══════════════════════════════════════════════════════════
 // DRAGGABLE PANELS
 // ═══════════════════════════════════════════════════════════
-function makeDraggable(panelId,hdrId){
-  var panel=document.getElementById(panelId);
-  var hdr=document.getElementById(hdrId);
-  var dragging=false,ox=0,oy=0;
-  hdr.addEventListener('mousedown',function(e){
-    if(e.target.closest('.fp-btns'))return;
-    dragging=true;var rect=panel.getBoundingClientRect();ox=e.clientX-rect.left;oy=e.clientY-rect.top;panel.style.transition='none';
-    document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);
+// ── Universal window behavior: drag via header + 8-direction resize ──
+function makeWindowBehavior(panelEl, hdrEl, opts) {
+  opts = opts || {};
+  var MIN_W = opts.minW || 180;
+  var MIN_H = opts.minH || 80;
+  var NAV_H = 44; // keep below nav bar
+
+  // Normalise position to top/left so bottom/right CSS doesn't fight us
+  function normalise() {
+    var r = panelEl.getBoundingClientRect();
+    panelEl.style.left   = r.left + 'px';
+    panelEl.style.top    = r.top  + 'px';
+    panelEl.style.bottom = 'auto';
+    panelEl.style.right  = 'auto';
+    panelEl.style.width  = r.width  + 'px';
+    panelEl.style.height = r.height + 'px';
+  }
+
+  // Inject resize handles
+  ['nw','n','ne','e','se','s','sw','w'].forEach(function(dir){
+    var h = document.createElement('div');
+    h.className = 'rh rh-' + dir;
+    h.dataset.dir = dir;
+    panelEl.appendChild(h);
   });
-  function onMove(e){if(!dragging)return;var x=e.clientX-ox,y=e.clientY-oy;x=Math.max(0,Math.min(window.innerWidth-panel.offsetWidth,x));y=Math.max(44,Math.min(window.innerHeight-panel.offsetHeight-30,y));panel.style.left=x+'px';panel.style.top=y+'px';panel.style.bottom='auto';panel.style.right='auto';}
-  function onUp(){dragging=false;panel.style.transition='';document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);}
+
+  // ── DRAG ──────────────────────────────────────────────────
+  var dragging = false, dox = 0, doy = 0;
+  hdrEl.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    if (e.target.closest('.fp-btns,.spp-close,.spp-tabs,.spp-tab')) return;
+    e.preventDefault();
+    normalise();
+    dragging = true;
+    var r = panelEl.getBoundingClientRect();
+    dox = e.clientX - r.left;
+    doy = e.clientY - r.top;
+    panelEl.style.transition = 'none';
+    bringToFront(panelEl);
+    document.addEventListener('mousemove', onDragMove);
+    document.addEventListener('mouseup',   onDragUp);
+  });
+  function onDragMove(e) {
+    if (!dragging) return;
+    var x = e.clientX - dox;
+    var y = e.clientY - doy;
+    x = Math.max(0, Math.min(window.innerWidth  - panelEl.offsetWidth,  x));
+    y = Math.max(NAV_H, Math.min(window.innerHeight - panelEl.offsetHeight - 30, y));
+    panelEl.style.left = x + 'px';
+    panelEl.style.top  = y + 'px';
+  }
+  function onDragUp() {
+    dragging = false;
+    panelEl.style.transition = '';
+    document.removeEventListener('mousemove', onDragMove);
+    document.removeEventListener('mouseup',   onDragUp);
+  }
+
+  // ── RESIZE ────────────────────────────────────────────────
+  var resizing = false, rdir = '', rsx = 0, rsy = 0, rx = 0, ry = 0, rw = 0, rh = 0;
+  panelEl.addEventListener('mousedown', function(e) {
+    var handle = e.target.closest('.rh');
+    if (!handle) return;
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    normalise();
+    resizing = true;
+    rdir = handle.dataset.dir;
+    rsx = e.clientX; rsy = e.clientY;
+    var r = panelEl.getBoundingClientRect();
+    rx = r.left; ry = r.top; rw = r.width; rh = r.height;
+    panelEl.style.transition = 'none';
+    bringToFront(panelEl);
+    document.addEventListener('mousemove', onResizeMove);
+    document.addEventListener('mouseup',   onResizeUp);
+  });
+  function onResizeMove(e) {
+    if (!resizing) return;
+    var dx = e.clientX - rsx;
+    var dy = e.clientY - rsy;
+    var nx = rx, ny = ry, nw = rw, nh = rh;
+    // horizontal
+    if (rdir.includes('e')) nw = Math.max(MIN_W, rw + dx);
+    if (rdir.includes('w')) { nw = Math.max(MIN_W, rw - dx); nx = rx + rw - nw; }
+    // vertical
+    if (rdir.includes('s')) nh = Math.max(MIN_H, rh + dy);
+    if (rdir.includes('n')) { nh = Math.max(MIN_H, rh - dy); ny = ry + rh - nh; }
+    // clamp to viewport
+    nx = Math.max(0, Math.min(window.innerWidth  - MIN_W, nx));
+    ny = Math.max(NAV_H, Math.min(window.innerHeight - MIN_H - 30, ny));
+    panelEl.style.left   = nx + 'px';
+    panelEl.style.top    = ny + 'px';
+    panelEl.style.width  = nw + 'px';
+    panelEl.style.height = nh + 'px';
+  }
+  function onResizeUp() {
+    resizing = false;
+    panelEl.style.transition = '';
+    document.removeEventListener('mousemove', onResizeMove);
+    document.removeEventListener('mouseup',   onResizeUp);
+  }
+
+  // click on panel brings it to front
+  panelEl.addEventListener('mousedown', function(e) {
+    if (!e.target.closest('.rh')) bringToFront(panelEl);
+  });
+}
+
+var _zTop = 30;
+function bringToFront(el) {
+  el.style.zIndex = ++_zTop;
+}
+
+// Legacy shim — kept so any existing calls still work
+function makeDraggable(panelId, hdrId) {
+  var p = document.getElementById(panelId);
+  var h = document.getElementById(hdrId);
+  if (p && h) makeWindowBehavior(p, h);
 }
 function toggleMinimize(id){document.getElementById(id).classList.toggle('minimized');}
 function closePanel(id){document.getElementById(id).style.display='none';}
@@ -1040,6 +1161,12 @@ var SP=(function(){
 makeDraggable('orb-panel','orb-panel-hdr');
 makeDraggable('note-panel','note-panel-hdr');
 makeDraggable('widget-panel','widget-panel-hdr');
+// Spotify panel — drag via spp-hdr
+makeWindowBehavior(
+  document.getElementById('spotify-panel'),
+  document.getElementById('spotify-panel').querySelector('.spp-hdr'),
+  {minW:280, minH:120}
+);
 initGraphCanvas();
 
 if(speechSynthesis.onvoiceschanged!==undefined)speechSynthesis.onvoiceschanged=loadVoices;
