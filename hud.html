@@ -2116,7 +2116,78 @@ var CAL=(function(){
     return tasks.find(t=>t.text.toLowerCase().includes(query)||query.includes(t.text.toLowerCase()));
   }
 
-  // ── Date helpers ──────────────────────────────────────────
+// ── Date helpers ──────────────────────────────────────────
+  var WEEKDAY_NAMES=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  var MONTH_NAMES_FULL=['january','february','march','april','may','june','july','august','september','october','november','december'];
+
+  // Parses "today", "tomorrow", weekday names ("friday", "next tuesday"),
+  // and explicit dates ("june 20th", "6/20", "6/20/2026") out of free text.
+  // Returns {due:'YYYY-MM-DD', matched:'<the substring that was matched>'} or null.
+  function parseDateFromText(text){
+    var lower=text.toLowerCase();
+
+    // "today" / "tomorrow"
+    var m=lower.match(/\btoday\b/);
+    if(m)return{due:todayStr(),matched:m[0]};
+    m=lower.match(/\btomorrow\b/);
+    if(m)return{due:tomorrowStr(),matched:m[0]};
+
+    // Weekday names, optionally preceded by "next"
+    var wdPattern=new RegExp('\\b(next\\s+)?('+WEEKDAY_NAMES.join('|')+')\\b');
+    m=lower.match(wdPattern);
+    if(m){
+      var targetDow=WEEKDAY_NAMES.indexOf(m[2]);
+      var isNext=!!m[1];
+      var d=new Date();
+      var curDow=d.getDay();
+      var diff=(targetDow-curDow+7)%7;
+      if(diff===0)diff=isNext?7:7; // if it's the same day, treat as next week's occurrence
+      if(isNext&&diff<7)diff+=7; // "next friday" pushes to the week after if today isn't past it
+      // Simpler: if isNext, always add a full week beyond the natural next occurrence
+      if(isNext){
+        var naturalDiff=(targetDow-curDow+7)%7;
+        if(naturalDiff===0)naturalDiff=7;
+        diff=naturalDiff+7;
+      }else{
+        diff=(targetDow-curDow+7)%7;
+        if(diff===0)diff=7; // assume they mean the upcoming one, not today
+      }
+      d.setDate(d.getDate()+diff);
+      return{due:dateToStr(d),matched:m[0]};
+    }
+
+    // Explicit "Month Day" or "Month Day, Year" e.g. "june 20th" / "june 20 2026"
+    var monPattern=new RegExp('\\b('+MONTH_NAMES_FULL.join('|')+')\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s*(\\d{4}))?\\b');
+    m=lower.match(monPattern);
+    if(m){
+      var monIdx=MONTH_NAMES_FULL.indexOf(m[1]);
+      var day=parseInt(m[2],10);
+      var year=m[3]?parseInt(m[3],10):new Date().getFullYear();
+      var d2=new Date(year,monIdx,day);
+      // If the date already passed this year and no year was specified, assume next year
+      if(!m[3]&&d2<new Date(new Date().toDateString()))d2.setFullYear(year+1);
+      return{due:dateToStr(d2),matched:m[0]};
+    }
+
+    // Numeric "M/D" or "M/D/YYYY"
+    var numPattern=/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/;
+    m=lower.match(numPattern);
+    if(m){
+      var mo=parseInt(m[1],10)-1;
+      var da=parseInt(m[2],10);
+      var yr=m[3]?(m[3].length===2?2000+parseInt(m[3],10):parseInt(m[3],10)):new Date().getFullYear();
+      var d3=new Date(yr,mo,da);
+      if(!m[3]&&d3<new Date(new Date().toDateString()))d3.setFullYear(yr+1);
+      return{due:dateToStr(d3),matched:m[0]};
+    }
+
+    return null;
+  }
+
+  function dateToStr(d){
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+
   function todayStr(){
     var d=new Date();
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
