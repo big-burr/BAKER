@@ -1246,7 +1246,7 @@ function activateListening(){
   voiceFinal='';document.getElementById('orb-live').textContent='';
   voiceRec=new SR();voiceRec.continuous=true;voiceRec.interimResults=true;voiceRec.lang='en-US';
   voiceRec.onstart=function(){voiceActive=true;setOrbState('listening');setStatus('Listening...');};
-  voiceRec.onresult=function(e){var interim='';for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)voiceFinal+=e.results[i][0].transcript+' ';else interim+=e.results[i][0].transcript;}document.getElementById('orb-live').textContent=voiceFinal+interim;if(silenceTimer)clearTimeout(silenceTimer);silenceTimer=setTimeout(function(){if(voiceActive)stopVoice();},3000);};
+voiceRec.onresult=function(e){var interim='';for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)voiceFinal+=e.results[i][0].transcript+' ';else interim+=e.results[i][0].transcript;}var live=voiceFinal+interim;var liveEl=document.getElementById('orb-live');liveEl.textContent=live;var lastWord=live.trim().toLowerCase().split(/\s+/).pop().replace(/[.,!?]*/g,'');liveEl.style.opacity=(MID_SENTENCE_WORDS.indexOf(lastWord)!==-1)?'0.5':'1';if(silenceTimer)clearTimeout(silenceTimer);silenceTimer=setTimeout(function(){if(voiceActive)stopVoice();},getSilenceWindow(live));};
   voiceRec.onend=function(){if(voiceActive){try{voiceRec.start();}catch(e){}}};
   voiceRec.onerror=function(e){if(e.error==='not-allowed'){setStatus('Microphone denied');stopVoice();}};
   try{voiceRec.start();}catch(e){setStatus('Could not start mic');}
