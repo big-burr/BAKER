@@ -132,7 +132,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
 .toggle-thumb{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--muted);top:3px;left:3px;transition:all .25s}
 .toggle input:checked~.toggle-thumb{left:23px;background:var(--accent)}
 .toggle-lbl{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.06em;text-align:right;min-width:24px}
-/* ─── SPOTIFY FULL PANEL ─────────────────────────────── */
+/* ─── CONFIRM POPUP ──────────────────────────────────── */ #confirm-popup{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:300;background:rgba(26,26,29,.97);border:1px solid var(--accent-dim);border-radius:10px;padding:14px 18px;backdrop-filter:blur(20px);box-shadow:0 12px 32px rgba(0,0,0,.6);display:none;flex-direction:column;gap:10px;max-width:320px;text-align:center} #confirm-popup.vis{display:flex} #confirm-popup-text{font-family:var(--sans);font-size:13px;color:var(--text);line-height:1.5} #confirm-popup-btns{display:flex;gap:8px} #confirm-popup-btns button{flex:1;padding:7px;border-radius:6px;font-family:var(--mono);font-size:11px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s} #confirm-popup-btns button:hover{border-color:var(--accent);color:var(--text)} #confirm-popup-btns button.primary{background:var(--accent);border-color:var(--accent);color:#fff} #confirm-popup-btns button.primary:hover{background:#9585ff} /* ─── SPOTIFY FULL PANEL ─────────────────────────────── */
 #spotify-panel{position:fixed;bottom:40px;right:24px;width:340px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:280px;min-height:120px}
 #spotify-panel.sp-vis{display:flex}
 #spotify-panel>div:not(.rh){overflow:hidden;border-radius:14px}
@@ -587,7 +587,7 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 </div>
 
 
-<!-- STATUS BAR -->
+<!-- CONFIRM POPUP --> <div class="fp" id="confirm-popup" style="border-radius:10px">   <div id="confirm-popup-text"></div>   <div id="confirm-popup-btns">     <button id="confirm-no">No thanks</button>     <button class="primary" id="confirm-yes">Yes, save it</button>   </div> </div>  <!-- STATUS BAR -->
 <div id="status-bar">
   <span class="sb-pill standby" id="sb-mode">standby</span>
   <span class="sb-txt" id="sb-txt">HUD ready — connect vault or say "Baker" to begin</span>
