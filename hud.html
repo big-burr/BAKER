@@ -1289,17 +1289,31 @@ function startConversationMode(){
 }
 function endConversationMode(farewell){
   conversationMode=false;
+  var historySnapshot=conversationHistory.slice(); // keep a copy for the save prompt
   conversationHistory=[]; // wipe — no persistence, no lingering token cost
   document.getElementById('orb-panel').classList.remove('conversation-mode');
   if(voiceActive)stopVoice();
-  if(farewell){
-    speakResponse(farewell); // onend will route back to wake-word since conversationMode is now false
+
+  function finishExit(){
+    if(farewell){
+      speakResponse(farewell);
+    }else{
+      speechSynthesis.cancel();isSpeaking=false;
+      setOrbState('idle');setStatus('Say "Baker" to begin');
+      document.getElementById('orb-status-txt').textContent='Say "Baker" to begin';
+      document.getElementById('orb-status-txt').className='orb-status-txt';
+      startWakeWord();
+    }
+  }
+
+  // Offer to save a summary if there was a real exchange (more than just a greeting)
+  if(historySnapshot.length>=2&&typeof vaultConnected!=='undefined'&&vaultConnected){
+    showConfirmPopup('Save a summary of this conversation to today\'s log?',function(){
+      conversationHistory=historySnapshot;
+      saveConversationSummary().then(function(){conversationHistory=[];finishExit();});
+    },finishExit);
   }else{
-    speechSynthesis.cancel();isSpeaking=false;
-    setOrbState('idle');setStatus('Say "Baker" to begin');
-    document.getElementById('orb-status-txt').textContent='Say "Baker" to begin';
-    document.getElementById('orb-status-txt').className='orb-status-txt';
-    startWakeWord();
+    finishExit();
   }
 }
 
