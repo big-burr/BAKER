@@ -1331,10 +1331,12 @@ function showConfirmPopup(text,onYes,onNo){
 
 // ── Append a 1-line AI summary of the conversation to today's daily log ──
 async function saveConversationSummary(){
+  console.log('[BAKER] saveConversationSummary called. history length:', conversationHistory.length);
   var key=localStorage.getItem('baker_api_key');
-  if(!key||!conversationHistory.length)return false;
-  if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected)return false;
+  if(!key||!conversationHistory.length){console.log('[BAKER] bail: no key or empty history');return false;}
+  if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected){console.log('[BAKER] bail: vault not connected. vaultHandle:',typeof vaultHandle,'vaultConnected:',vaultConnected);return false;}
   try{
+    console.log('[BAKER] proceeding to generate summary...');
     var transcript=conversationHistory.map(function(m){return(m.role==='user'?'User':'BAKER')+': '+m.content;}).join('\n');
     var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:80,system:'Summarize this conversation in ONE short sentence (under 15 words) suitable as a bullet point in a daily log. No preamble, just the sentence.',messages:[{role:'user',content:transcript}]})});
     var data=await resp.json();
@@ -1367,10 +1369,10 @@ async function saveConversationSummary(){
       if(idx>=0)vaultIndex[idx].content=newContent;
       else vaultIndex.push({name:fname,path:'00-Capture/'+fname,content:newContent});
     }
+console.log('[BAKER] write successful');
     return true;
-  }catch(e){return false;}
+  }catch(e){console.error('[BAKER] saveConversationSummary error:',e);return false;}
 }
-
 // Phrases that end conversation mode
 var CONVO_EXIT_PHRASES=/\b(bye baker|goodbye baker|bye[,]? baker|that'?s all|that'?ll be all|end conversation|stop talking|we'?re done|i'?m done|talk later)\b/;
 // Phrase to save the current conversation transcript to today's Daily Log (no extra API call)
