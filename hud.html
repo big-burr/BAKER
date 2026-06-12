@@ -1303,6 +1303,60 @@ function endConversationMode(farewell){
   }
 }
 
+// ── Confirm popup helper ──────────────────────────────────
+function showConfirmPopup(text,onYes,onNo){
+  var popup=document.getElementById('confirm-popup');
+  document.getElementById('confirm-popup-text').textContent=text;
+  popup.classList.add('vis');
+  var yesBtn=document.getElementById('confirm-yes');
+  var noBtn=document.getElementById('confirm-no');
+  function cleanup(){popup.classList.remove('vis');yesBtn.onclick=null;noBtn.onclick=null;}
+  yesBtn.onclick=function(){cleanup();if(onYes)onYes();};
+  noBtn.onclick=function(){cleanup();if(onNo)onNo();};
+}
+
+// ── Append a 1-line AI summary of the conversation to today's daily log ──
+async function saveConversationSummary(){
+  var key=localStorage.getItem('baker_api_key');
+  if(!key||!conversationHistory.length)return false;
+  if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected)return false;
+  try{
+    var transcript=conversationHistory.map(function(m){return(m.role==='user'?'User':'BAKER')+': '+m.content;}).join('\n');
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:80,system:'Summarize this conversation in ONE short sentence (under 15 words) suitable as a bullet point in a daily log. No preamble, just the sentence.',messages:[{role:'user',content:transcript}]})});
+    var data=await resp.json();
+    if(data.error)return false;
+    var summary=data.content.map(function(b){return b.text||'';}).join('').trim();
+    if(!summary)return false;
+
+    var now=new Date();
+    var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+    var timeStr=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+    var dir=await vaultHandle.getDirectoryHandle('00-Capture',{create:true});
+    var fname=dateStr+'.md';
+    var fileHandle=await dir.getFileHandle(fname,{create:true});
+    var file=await fileHandle.getFile();
+    var existing=await file.text();
+
+    var bullet='- '+timeStr+' — '+summary+'\n';
+    var newContent;
+    if(existing.trim().length){
+      newContent=existing.trim()+'\n'+bullet;
+    }else{
+      newContent='# Daily Log — '+dateStr+'\n\n'+bullet;
+    }
+
+    var writable=await fileHandle.createWritable();
+    await writable.write(newContent);
+    await writable.close();
+    if(typeof vaultIndex!=='undefined'){
+      var idx=vaultIndex.findIndex(function(n){return n.path==='00-Capture/'+fname;});
+      if(idx>=0)vaultIndex[idx].content=newContent;
+      else vaultIndex.push({name:fname,path:'00-Capture/'+fname,content:newContent});
+    }
+    return true;
+  }catch(e){return false;}
+}
+
 // Phrases that end conversation mode
 var CONVO_EXIT_PHRASES=/\b(bye baker|goodbye baker|bye[,]? baker|that'?s all|that'?ll be all|end conversation|stop talking|we'?re done|i'?m done|talk later)\b/;
 // Phrase to save the current conversation transcript to today's Daily Log (no extra API call)
