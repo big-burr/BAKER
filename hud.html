@@ -308,7 +308,7 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .mcal-day.today .mcal-daynum{color:var(--accent);font-weight:600}
 .mcal-day.other-month .mcal-daynum{color:#484650}
 .mcal-daycount{font-family:var(--mono);font-size:8px;color:var(--muted);margin-top:auto}
-
+.mcal-logicon{position:absolute;top:3px;right:4px;font-size:9px;opacity:.7;line-height:1}
 /* Day-detail overlay (slides over the grid) */
 #mcal-detail{position:absolute;inset:0;background:rgba(22,22,25,.99);display:none;flex-direction:column;z-index:5;border-radius:0 0 14px 14px}
 #mcal-detail.vis{display:flex}
@@ -2549,17 +2549,31 @@ var MCAL=(function(){
     selectedDate=null;
     buildGrid(); // refresh counts/dots in case tasks changed
   }
-  function renderDetailList(){
+ function renderDetailList(){
     var list=document.getElementById('mcal-detail-list');
     if(!list||!selectedDate)return;
     var tasks=CAL.getTasks().filter(t=>t.due===selectedDate);
+
+    // Daily log summary, if present
+    var logContent=getDailyLogContent(selectedDate);
+    var logHtml='';
+    if(logContent){
+      var bullets=getDailyLogBullets(logContent);
+      if(bullets.length){
+        logHtml='<div style="padding:8px 6px;margin-bottom:6px;border-bottom:1px solid var(--border)">'+
+          '<div style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:5px">📝 Daily log</div>'+
+          bullets.map(function(b){return '<div style="font-size:11px;color:var(--text);line-height:1.6;margin-bottom:2px">· '+esc(b)+'</div>';}).join('')+
+          '</div>';
+      }
+    }
+
     if(!tasks.length){
-      list.innerHTML='<div class="mcal-detail-empty">Nothing scheduled for this day.<br>Add a task above.</div>';
+      list.innerHTML=logHtml+'<div class="mcal-detail-empty">Nothing scheduled for this day.<br>Add a task above.</div>';
       return;
     }
-    // Sort: pending first, then done
+   // Sort: pending first, then done
     tasks.sort((a,b)=>(a.done?1:0)-(b.done?1:0));
-    var html='';
+    var html=logHtml;
     tasks.forEach(function(t){
       html+='<div class="cal-item'+(t.done?' done':'')+'" data-id="'+t.id+'">'+
         '<button class="cal-check'+(t.done?' done':'')+'" data-action="toggle" data-id="'+t.id+'">'+
