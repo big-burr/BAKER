@@ -2243,19 +2243,37 @@ var CAL=(function(){
   async function handleVoice(cmd){
     var c=cmd.toLowerCase().trim();
 
-    // "add task X" / "add a task to X" / "remind me to X"
-    var addM=c.match(/(?:add (?:a )?task(?: to)?|remind me to|add to my tasks?|new task)\s*[:]?\s*(.+)/);
-    if(addM){
+   // "add task X" / "add a task to X" / "remind me to X" / "schedule X for Y" / "add X to calendar for Y"
+    var addM=c.match(/(?:add (?:a )?task(?: to)?|remind me to|add to my tasks?|new task|schedule(?: a)?|add)\s*[:]?\s*(.+?)(?:\s+(?:to|on)\s+(?:the\s+)?(?:calendar|tasks?|to.?do)\s*)?(?:\s+for\s+(.+))?$/);
+    if(addM&&/(?:add (?:a )?task|remind me to|add to my tasks?|new task|schedule|add .+ to (?:the )?calendar)/.test(c)){
       var text=addM[1].trim();
+      var dateText=(addM[2]||'').trim();
       var due='';
-      // Detect "today"/"tomorrow" in the text
-      if(/\btoday\b/.test(text)){due=todayStr();text=text.replace(/\btoday\b/g,'').trim();}
-      else if(/\btomorrow\b/.test(text)){due=tomorrowStr();text=text.replace(/\btomorrow\b/g,'').trim();}
-      text=text.replace(/\s+/g,' ').replace(/^(to|for)\s+/,'').trim();
+
+      // Try "for <date>" portion first, then fall back to scanning the whole text
+      var combined=dateText||text;
+      var parsed=parseDateFromText(combined);
+      if(parsed){
+        due=parsed.due;
+        // Remove the matched date phrase from whichever string it came from
+        if(dateText){dateText=dateText.replace(parsed.matched,'').trim();}
+        else{text=text.replace(parsed.matched,'').trim();}
+      }
+
+      // If we still have leftover dateText that wasn't a date, fold it back into the task text
+      if(dateText)text=(text+' '+dateText).trim();
+
+      text=text.replace(/\s+/g,' ').replace(/^(to|for)\s+/,'').replace(/\s+(to|for)$/,'').trim();
       if(!text)return'What should I add, sir?';
       addTask(text,due);
       showPanel();
-      return'Added "'+text+'" to your tasks'+(due?(due===todayStr()?', due today':', due tomorrow'):'')+', sir.';
+      var dueLabel='';
+      if(due){
+        if(due===todayStr())dueLabel=', due today';
+        else if(due===tomorrowStr())dueLabel=', due tomorrow';
+        else dueLabel=', due '+fmtDue(due);
+      }
+      return'Added "'+text+'" to your tasks'+dueLabel+', sir.';
     }
 
     // "complete task X" / "mark X done" / "finish X" / "check off X"
