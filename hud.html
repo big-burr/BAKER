@@ -273,6 +273,58 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .cal-footer{padding:6px 12px;border-top:1px solid var(--border);font-family:var(--mono);font-size:9px;color:#484650;text-align:center;flex-shrink:0;letter-spacing:.04em}
 .cal-footer.synced{color:#4ade80}
 
+/* ─── MONTH CALENDAR PANEL ───────────────────────────── */
+#month-panel{position:fixed;top:120px;right:60px;width:380px;height:420px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:320px;min-height:360px}
+#month-panel.mcal-vis{display:flex}
+#month-panel>div:not(.rh){overflow:hidden;border-radius:14px}
+.mcal-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--border);cursor:move;user-select:none;border-radius:14px 14px 0 0;flex-shrink:0}
+.mcal-left{display:flex;align-items:center;gap:7px}
+.mcal-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+.mcal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0 2px;line-height:1;transition:color .15s}
+.mcal-close:hover{color:var(--text)}
+#mcal-body{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;border-radius:0 0 14px 14px;position:relative}
+
+.mcal-nav{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;flex-shrink:0}
+.mcal-monthlbl{font-family:var(--mono);font-size:13px;color:var(--text);letter-spacing:.04em}
+.mcal-navbtn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;width:26px;height:26px;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.mcal-navbtn:hover{border-color:var(--accent);color:var(--text)}
+.mcal-navgroup{display:flex;gap:5px;align-items:center}
+.mcal-today-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;font-family:var(--mono);font-size:9px;padding:0 8px;height:26px;transition:all .15s}
+.mcal-today-btn:hover{border-color:var(--accent);color:var(--text)}
+
+.mcal-grid{flex:1;display:flex;flex-direction:column;padding:0 10px 10px;min-height:0}
+.mcal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px}
+.mcal-dow span{font-family:var(--mono);font-size:9px;color:#484650;text-align:center;letter-spacing:.06em;padding:2px 0}
+.mcal-days{flex:1;display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(6,1fr);gap:3px;min-height:0}
+.mcal-day{border:1px solid var(--border);border-radius:6px;background:var(--surface2);cursor:pointer;transition:all .15s;display:flex;flex-direction:column;padding:4px 5px;min-height:0;overflow:hidden;position:relative}
+.mcal-day:hover{border-color:var(--accent);background:rgba(124,106,247,.06)}
+.mcal-day.other-month{opacity:.3}
+.mcal-day.today{border-color:var(--accent);background:rgba(124,106,247,.1)}
+.mcal-day.has-tasks::after{content:'';position:absolute;bottom:4px;right:4px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+.mcal-day.has-overdue::after{background:#f87171}
+.mcal-daynum{font-family:var(--mono);font-size:11px;color:var(--text)}
+.mcal-day.today .mcal-daynum{color:var(--accent);font-weight:600}
+.mcal-day.other-month .mcal-daynum{color:#484650}
+.mcal-daycount{font-family:var(--mono);font-size:8px;color:var(--muted);margin-top:auto}
+
+/* Day-detail overlay (slides over the grid) */
+#mcal-detail{position:absolute;inset:0;background:rgba(22,22,25,.99);display:none;flex-direction:column;z-index:5;border-radius:0 0 14px 14px}
+#mcal-detail.vis{display:flex}
+.mcal-detail-hdr{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.mcal-back{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;width:26px;height:26px;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.mcal-back:hover{border-color:var(--accent);color:var(--text)}
+.mcal-detail-date{font-family:var(--mono);font-size:12px;color:var(--text);flex:1}
+.mcal-detail-add{display:flex;gap:6px;padding:10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.mcal-detail-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:12px;padding:7px 10px;outline:none;transition:border-color .2s;min-width:0}
+.mcal-detail-input:focus{border-color:var(--accent)}
+.mcal-detail-input::placeholder{color:#484650}
+.mcal-detail-addbtn{background:var(--accent);border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:16px;padding:0 12px;transition:background .15s;flex-shrink:0}
+.mcal-detail-addbtn:hover{background:#9585ff}
+.mcal-detail-list{flex:1;overflow-y:auto;padding:6px 8px 10px}
+.mcal-detail-list::-webkit-scrollbar{width:3px}
+.mcal-detail-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.mcal-detail-empty{padding:32px 16px;text-align:center;color:var(--muted);font-size:12px;line-height:1.6}
+
 /* Scrollbars */
 .spp-res::-webkit-scrollbar,.spp-li::-webkit-scrollbar{width:3px}
 .spp-res::-webkit-scrollbar-thumb,.spp-li::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
@@ -324,6 +376,9 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
     </button>
     <button class="hbtn" id="cal-nav-btn" onclick="CAL.togglePanel()" title="Tasks">
       📅 <span id="cal-nav-lbl">Tasks</span>
+    </button>
+    <button class="hbtn" id="month-nav-btn" onclick="MCAL.togglePanel()" title="Calendar">
+      🗓 Calendar
     </button>
     <button class="hbtn" onclick="openSettings()">⚙ Settings</button>
   </div>
@@ -424,6 +479,47 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
     <div class="cal-footer" id="cal-footer">Local only — connect vault to sync</div>
   </div>
 </div>
+
+<!-- MONTH CALENDAR PANEL -->
+<div id="month-panel">
+  <div class="mcal-hdr">
+    <div class="mcal-left">
+      <span style="font-size:14px">🗓</span>
+      <span class="mcal-title">Calendar</span>
+    </div>
+    <button class="mcal-close" onclick="MCAL.hidePanel()">×</button>
+  </div>
+  <div id="mcal-body">
+    <div class="mcal-nav">
+      <button class="mcal-navbtn" id="mcal-prev">‹</button>
+      <div class="mcal-navgroup">
+        <span class="mcal-monthlbl" id="mcal-monthlbl"></span>
+        <button class="mcal-today-btn" id="mcal-today">Today</button>
+      </div>
+      <button class="mcal-navbtn" id="mcal-next">›</button>
+    </div>
+    <div class="mcal-grid">
+      <div class="mcal-dow">
+        <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+      </div>
+      <div class="mcal-days" id="mcal-days"></div>
+    </div>
+
+    <!-- Day detail overlay -->
+    <div id="mcal-detail">
+      <div class="mcal-detail-hdr">
+        <button class="mcal-back" id="mcal-back">‹</button>
+        <span class="mcal-detail-date" id="mcal-detail-date"></span>
+      </div>
+      <div class="mcal-detail-add">
+        <input class="mcal-detail-input" id="mcal-detail-input" type="text" placeholder="Add a task for this day…">
+        <button class="mcal-detail-addbtn" id="mcal-detail-addbtn">+</button>
+      </div>
+      <div class="mcal-detail-list" id="mcal-detail-list"></div>
+    </div>
+  </div>
+</div>
+
 
 
 <!-- STATUS BAR -->
@@ -1110,6 +1206,8 @@ async function processCommand(txt){
   // ── Tasks / Calendar ──────────────────────────────────────
   var calResult=await CAL.handleVoice(txt);
   if(calResult!==null){speakResponse(calResult);return;}
+  var mcalResult=MCAL.handleVoice(txt);
+  if(mcalResult!==null){speakResponse(mcalResult);return;}
 
   // ── Map commands ──────────────────────────────────────────
   if(lower.includes('open map')||lower.includes('show map')||(lower==='map')){
@@ -1756,6 +1854,7 @@ var CAL=(function(){
     if(!tasks.length){
       list.innerHTML='<div class="cal-empty">No tasks yet.<br>Add one above, or say<br>"add task [name]" to Baker.</div>';
       updateNavBadge();
+      _syncMonthGrid();
       return;
     }
 
@@ -1814,6 +1913,12 @@ var CAL=(function(){
     });
 
     updateNavBadge();
+    _syncMonthGrid();
+  }
+
+  // Refresh month grid if it's open (cross-module sync, defined after MCAL loads)
+  function _syncMonthGrid(){
+    if(typeof MCAL!=='undefined'&&MCAL._refreshIfVisible)MCAL._refreshIfVisible();
   }
 
   function updateNavBadge(){
@@ -1943,7 +2048,220 @@ var CAL=(function(){
     if(footer){footer.textContent='✓ Synced to vault';footer.className='cal-footer synced';}
   }
 
-  return{init,showPanel,hidePanel,togglePanel,handleVoice,addTask,onVaultConnected};
+  return{init,showPanel,hidePanel,togglePanel,handleVoice,addTask,onVaultConnected,
+    getTasks:()=>tasks,
+    refreshAll:render,
+    deleteTask,toggleTask,
+    notifyChange:scheduleSave};
+})();
+
+// ═══════════════════════════════════════════════════════════
+// ══  MONTH CALENDAR MODULE (MCAL)  ══════════════════════════
+// ═══════════════════════════════════════════════════════════
+var MCAL=(function(){
+  var viewYear,viewMonth; // 0-indexed month
+  var selectedDate=null;  // YYYY-MM-DD when detail view open
+  var MONTH_NAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function pad(n){return String(n).padStart(2,'0');}
+  function dateStr(y,m,d){return y+'-'+pad(m+1)+'-'+pad(d);}
+  function todayStr(){var d=new Date();return dateStr(d.getFullYear(),d.getMonth(),d.getDate());}
+
+  // ── Build grid for current viewYear/viewMonth ────────────
+  function buildGrid(){
+    var grid=document.getElementById('mcal-days');
+    if(!grid)return;
+    document.getElementById('mcal-monthlbl').textContent=MONTH_NAMES[viewMonth]+' '+viewYear;
+
+    var tasks=CAL.getTasks();
+    var today=todayStr();
+
+    // Count tasks per date
+    var counts={}, overdueDates={};
+    tasks.forEach(function(t){
+      if(!t.due)return;
+      counts[t.due]=(counts[t.due]||0)+(t.done?0:1);
+      if(!t.done&&t.due<today)overdueDates[t.due]=true;
+    });
+
+    var firstDow=new Date(viewYear,viewMonth,1).getDay(); // 0=Sun
+    var daysInMonth=new Date(viewYear,viewMonth+1,0).getDate();
+    var daysInPrevMonth=new Date(viewYear,viewMonth,0).getDate();
+
+    var cells=[];
+    // Leading days from previous month
+    for(var i=firstDow-1;i>=0;i--){
+      var d=daysInPrevMonth-i;
+      var pm=viewMonth-1,py=viewYear;
+      if(pm<0){pm=11;py--;}
+      cells.push({y:py,m:pm,d:d,other:true});
+    }
+    // Current month
+    for(var d2=1;d2<=daysInMonth;d2++){
+      cells.push({y:viewYear,m:viewMonth,d:d2,other:false});
+    }
+    // Trailing days to fill 6 rows (42 cells)
+    var nm=viewMonth+1,ny=viewYear;
+    if(nm>11){nm=0;ny++;}
+    var nd=1;
+    while(cells.length<42){
+      cells.push({y:ny,m:nm,d:nd,other:true});nd++;
+    }
+
+    var html='';
+    cells.forEach(function(c){
+      var ds=dateStr(c.y,c.m,c.d);
+      var isToday=ds===today;
+      var cnt=counts[ds]||0;
+      var cls='mcal-day';
+      if(c.other)cls+=' other-month';
+      if(isToday)cls+=' today';
+      if(cnt>0)cls+=overdueDates[ds]?' has-overdue':' has-tasks';
+      html+='<div class="'+cls+'" data-date="'+ds+'">'+
+        '<div class="mcal-daynum">'+c.d+'</div>'+
+        (cnt>0?'<div class="mcal-daycount">'+cnt+' task'+(cnt>1?'s':'')+'</div>':'')+
+        '</div>';
+    });
+    grid.innerHTML=html;
+
+    grid.querySelectorAll('.mcal-day').forEach(function(cell){
+      cell.addEventListener('click',function(){openDay(cell.dataset.date);});
+    });
+  }
+
+  // ── Day detail ────────────────────────────────────────────
+  function openDay(ds){
+    selectedDate=ds;
+    var detail=document.getElementById('mcal-detail');
+    var parts=ds.split('-');
+    var dObj=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
+    var dayNames=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    var label=dayNames[dObj.getDay()]+', '+MONTH_NAMES[dObj.getMonth()]+' '+dObj.getDate()+', '+dObj.getFullYear();
+    if(ds===todayStr())label='Today — '+label;
+    document.getElementById('mcal-detail-date').textContent=label;
+    renderDetailList();
+    detail.classList.add('vis');
+    var input=document.getElementById('mcal-detail-input');
+    if(input){input.value='';setTimeout(()=>input.focus(),50);}
+  }
+  function closeDay(){
+    document.getElementById('mcal-detail').classList.remove('vis');
+    selectedDate=null;
+    buildGrid(); // refresh counts/dots in case tasks changed
+  }
+  function renderDetailList(){
+    var list=document.getElementById('mcal-detail-list');
+    if(!list||!selectedDate)return;
+    var tasks=CAL.getTasks().filter(t=>t.due===selectedDate);
+    if(!tasks.length){
+      list.innerHTML='<div class="mcal-detail-empty">Nothing scheduled for this day.<br>Add a task above.</div>';
+      return;
+    }
+    // Sort: pending first, then done
+    tasks.sort((a,b)=>(a.done?1:0)-(b.done?1:0));
+    var html='';
+    tasks.forEach(function(t){
+      html+='<div class="cal-item'+(t.done?' done':'')+'" data-id="'+t.id+'">'+
+        '<button class="cal-check'+(t.done?' done':'')+'" data-action="toggle" data-id="'+t.id+'">'+
+        '<svg viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l3.5 3.5L13 4"/></svg>'+
+        '</button>'+
+        '<div class="cal-item-body"><div class="cal-item-text">'+esc(t.text)+'</div></div>'+
+        '<button class="cal-del" data-action="delete" data-id="'+t.id+'">✕</button>'+
+        '</div>';
+    });
+    list.innerHTML=html;
+    list.querySelectorAll('[data-action="toggle"]').forEach(btn=>{
+      btn.addEventListener('click',function(){
+        CAL.toggleTask(btn.dataset.id);
+        renderDetailList();
+        CAL.refreshAll();
+      });
+    });
+    list.querySelectorAll('[data-action="delete"]').forEach(btn=>{
+      btn.addEventListener('click',function(){
+        CAL.deleteTask(btn.dataset.id);
+        renderDetailList();
+        CAL.refreshAll();
+        buildGrid();
+      });
+    });
+  }
+  function addToSelectedDay(){
+    var input=document.getElementById('mcal-detail-input');
+    var text=input.value.trim();
+    if(!text||!selectedDate)return;
+    CAL.addTask(text,selectedDate);
+    input.value='';
+    renderDetailList();
+    buildGrid();
+  }
+
+  // ── Navigation ────────────────────────────────────────────
+  function prevMonth(){viewMonth--;if(viewMonth<0){viewMonth=11;viewYear--;}buildGrid();}
+  function nextMonth(){viewMonth++;if(viewMonth>11){viewMonth=0;viewYear++;}buildGrid();}
+  function goToday(){var d=new Date();viewYear=d.getFullYear();viewMonth=d.getMonth();buildGrid();}
+
+  // ── Panel show/hide ───────────────────────────────────────
+  function showPanel(){
+    var p=document.getElementById('month-panel');
+    p.classList.add('mcal-vis');
+    if(p._wbNormalise)p._wbNormalise();
+    buildGrid();
+  }
+  function hidePanel(){
+    document.getElementById('month-panel').classList.remove('mcal-vis');
+    document.getElementById('mcal-detail').classList.remove('vis');
+    selectedDate=null;
+  }
+  function togglePanel(){
+    var p=document.getElementById('month-panel');
+    p.classList.toggle('mcal-vis');
+    if(p.classList.contains('mcal-vis')){
+      if(p._wbNormalise)p._wbNormalise();
+      buildGrid();
+    }else{
+      document.getElementById('mcal-detail').classList.remove('vis');
+      selectedDate=null;
+    }
+  }
+
+  // ── Voice ─────────────────────────────────────────────────
+  // Returns spoken response or null if not a calendar-view command
+  function handleVoice(cmd){
+    var c=cmd.toLowerCase().trim();
+    if(/\bopen (calendar|month)\b|\bshow (calendar|month)\b|\bcalendar view\b/.test(c)){
+      showPanel();return'Here\'s your calendar, sir.';
+    }
+    if(/\bnext month\b/.test(c)&&document.getElementById('month-panel').classList.contains('mcal-vis')){
+      nextMonth();return'Showing '+MONTH_NAMES[viewMonth]+', sir.';
+    }
+    if(/\b(previous|last) month\b/.test(c)&&document.getElementById('month-panel').classList.contains('mcal-vis')){
+      prevMonth();return'Showing '+MONTH_NAMES[viewMonth]+', sir.';
+    }
+    return null;
+  }
+
+  // ── Init ──────────────────────────────────────────────────
+  function init(){
+    var d=new Date();viewYear=d.getFullYear();viewMonth=d.getMonth();
+    document.getElementById('mcal-prev').addEventListener('click',prevMonth);
+    document.getElementById('mcal-next').addEventListener('click',nextMonth);
+    document.getElementById('mcal-today').addEventListener('click',goToday);
+    document.getElementById('mcal-back').addEventListener('click',closeDay);
+    document.getElementById('mcal-detail-addbtn').addEventListener('click',addToSelectedDay);
+    document.getElementById('mcal-detail-input').addEventListener('keydown',function(e){if(e.key==='Enter')addToSelectedDay();});
+    buildGrid();
+  }
+
+  function _refreshIfVisible(){
+    var p=document.getElementById('month-panel');
+    if(!p||!p.classList.contains('mcal-vis'))return;
+    buildGrid();
+    if(selectedDate)renderDetailList();
+  }
+
+  return{init,showPanel,hidePanel,togglePanel,handleVoice,_refreshIfVisible};
 })();
 
 // ═══════════════════════════════════════════════════════════
@@ -1965,6 +2283,13 @@ makeWindowBehavior(
   {minW:280, minH:200}
 );
 CAL.init();
+// Month Calendar panel — drag via mcal-hdr
+makeWindowBehavior(
+  document.getElementById('month-panel'),
+  document.getElementById('month-panel').querySelector('.mcal-hdr'),
+  {minW:320, minH:360}
+);
+MCAL.init();
 
 // Wire orb & record canvas clicks
 (function(){
