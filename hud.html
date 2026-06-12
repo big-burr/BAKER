@@ -2449,6 +2449,20 @@ var MCAL=(function(){
   function dateStr(y,m,d){return y+'-'+pad(m+1)+'-'+pad(d);}
   function todayStr(){var d=new Date();return dateStr(d.getFullYear(),d.getMonth(),d.getDate());}
 
+  // ── Daily log lookup ──────────────────────────────────────
+  // Returns the raw markdown content of 00-Capture/YYYY-MM-DD.md if it exists, else null
+  function getDailyLogContent(ds){
+    if(typeof vaultIndex==='undefined'||!vaultIndex.length)return null;
+    var fname=ds+'.md';
+    var note=vaultIndex.find(function(n){return n.path==='00-Capture/'+fname||n.name===fname&&n.path.indexOf('00-Capture')===0;});
+    return note?note.content:null;
+  }
+  // Extracts bullet lines from a daily log for display
+  function getDailyLogBullets(content){
+    if(!content)return[];
+    return content.split('\n').filter(function(l){return /^\s*-\s+/.test(l);}).map(function(l){return l.replace(/^\s*-\s+/,'').trim();});
+  }
+
   // ── Build grid for current viewYear/viewMonth ────────────
   function buildGrid(){
     var grid=document.getElementById('mcal-days');
