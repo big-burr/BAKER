@@ -2509,13 +2509,17 @@ var MCAL=(function(){
       var ds=dateStr(c.y,c.m,c.d);
       var isToday=ds===today;
       var cnt=counts[ds]||0;
+      var hasLog=!!getDailyLogContent(ds);
       var cls='mcal-day';
       if(c.other)cls+=' other-month';
       if(isToday)cls+=' today';
       if(cnt>0)cls+=overdueDates[ds]?' has-overdue':' has-tasks';
+      var badges='';
+      if(cnt>0)badges+='<div class="mcal-daycount">'+cnt+' task'+(cnt>1?'s':'')+'</div>';
+      if(hasLog)badges+='<div class="mcal-logicon" title="Daily log available">📝</div>';
       html+='<div class="'+cls+'" data-date="'+ds+'">'+
         '<div class="mcal-daynum">'+c.d+'</div>'+
-        (cnt>0?'<div class="mcal-daycount">'+cnt+' task'+(cnt>1?'s':'')+'</div>':'')+
+        badges+
         '</div>';
     });
     grid.innerHTML=html;
