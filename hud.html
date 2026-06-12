@@ -230,6 +230,49 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .sp-set-gbtn:hover{background:rgba(29,185,84,.1)}
 .sp-disc{background:transparent;border:1px solid rgba(248,113,113,.35);border-radius:4px;padding:7px 12px;font-family:var(--mono);font-size:11px;color:var(--red);cursor:pointer;transition:all .15s;width:100%;margin-top:4px}
 .sp-disc:hover{background:rgba(248,113,113,.08)}
+/* ─── CALENDAR / TASKS PANEL ─────────────────────────── */
+#calendar-panel{position:fixed;top:64px;right:380px;width:340px;height:440px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:280px;min-height:200px}
+#calendar-panel.cal-vis{display:flex}
+#calendar-panel>div:not(.rh){overflow:hidden;border-radius:14px}
+.cal-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--border);cursor:move;user-select:none;border-radius:14px 14px 0 0;flex-shrink:0}
+.cal-left{display:flex;align-items:center;gap:7px}
+.cal-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+.cal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0 2px;line-height:1;transition:color .15s}
+.cal-close:hover{color:var(--text)}
+#cal-body{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;border-radius:0 0 14px 14px}
+.cal-add-row{display:flex;gap:6px;padding:10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.cal-add-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:12px;padding:7px 10px;outline:none;transition:border-color .2s;min-width:0}
+.cal-add-input:focus{border-color:var(--accent)}
+.cal-add-input::placeholder{color:#484650}
+.cal-add-date{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--mono);font-size:11px;padding:7px 8px;outline:none;transition:border-color .2s;flex-shrink:0;width:108px;color-scheme:dark}
+.cal-add-date:focus{border-color:var(--accent)}
+.cal-add-btn{background:var(--accent);border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:16px;padding:0 12px;transition:background .15s;flex-shrink:0}
+.cal-add-btn:hover{background:#9585ff}
+.cal-list{flex:1;overflow-y:auto;padding:6px 8px 10px}
+.cal-list::-webkit-scrollbar{width:3px}
+.cal-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.cal-group-label{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#484650;padding:8px 6px 4px}
+.cal-group-label.overdue{color:#f87171}
+.cal-group-label.today{color:var(--accent)}
+.cal-item{display:flex;align-items:flex-start;gap:9px;padding:6px 6px;border-radius:8px;transition:background .15s}
+.cal-item:hover{background:var(--surface2)}
+.cal-item:hover .cal-del{opacity:1}
+.cal-check{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border);background:transparent;cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0}
+.cal-check:hover{border-color:var(--accent)}
+.cal-check.done{background:var(--accent);border-color:var(--accent)}
+.cal-check svg{width:10px;height:10px;opacity:0;transition:opacity .1s}
+.cal-check.done svg{opacity:1}
+.cal-item-body{flex:1;min-width:0}
+.cal-item-text{font-size:12px;color:var(--text);line-height:1.4;word-break:break-word}
+.cal-item.done .cal-item-text{color:var(--muted);text-decoration:line-through}
+.cal-item-date{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px}
+.cal-item-date.overdue{color:#f87171}
+.cal-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 4px;opacity:0;transition:all .15s;flex-shrink:0;border-radius:4px}
+.cal-del:hover{color:#f87171;background:rgba(248,113,113,.1)}
+.cal-empty{padding:32px 16px;text-align:center;color:var(--muted);font-size:12px;line-height:1.6}
+.cal-footer{padding:6px 12px;border-top:1px solid var(--border);font-family:var(--mono);font-size:9px;color:#484650;text-align:center;flex-shrink:0;letter-spacing:.04em}
+.cal-footer.synced{color:#4ade80}
+
 /* Scrollbars */
 .spp-res::-webkit-scrollbar,.spp-li::-webkit-scrollbar{width:3px}
 .spp-res::-webkit-scrollbar-thumb,.spp-li::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
@@ -278,6 +321,9 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
     <button class="hbtn" id="sp-nav-btn" onclick="SP.togglePanel()" title="Spotify">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
       <span id="sp-nav-lbl">Music</span>
+    </button>
+    <button class="hbtn" id="cal-nav-btn" onclick="CAL.togglePanel()" title="Tasks">
+      📅 <span id="cal-nav-lbl">Tasks</span>
     </button>
     <button class="hbtn" onclick="openSettings()">⚙ Settings</button>
   </div>
@@ -358,6 +404,27 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
   </div>
   <div id="spp-body"><!-- filled by SP.render() --></div>
 </div>
+
+<!-- CALENDAR / TASKS PANEL -->
+<div id="calendar-panel">
+  <div class="cal-hdr">
+    <div class="cal-left">
+      <span style="font-size:14px">📅</span>
+      <span class="cal-title">Tasks</span>
+    </div>
+    <button class="cal-close" onclick="CAL.hidePanel()">×</button>
+  </div>
+  <div id="cal-body">
+    <div class="cal-add-row">
+      <input class="cal-add-input" id="cal-add-input" type="text" placeholder="Add a task…">
+      <input class="cal-add-date" id="cal-add-date" type="date">
+      <button class="cal-add-btn" id="cal-add-btn">+</button>
+    </div>
+    <div class="cal-list" id="cal-list"></div>
+    <div class="cal-footer" id="cal-footer">Local only — connect vault to sync</div>
+  </div>
+</div>
+
 
 <!-- STATUS BAR -->
 <div id="status-bar">
@@ -720,7 +787,7 @@ async function getStoredHandle(){try{var db=await openDB();return new Promise(fu
 async function clearHandle(){try{var db=await openDB();db.transaction('handles','readwrite').objectStore('handles').delete('vault');}catch(e){}}
 async function tryReconnectVault(){var stored=await getStoredHandle();if(!stored)return;setVaultBtn('scanning');try{var perm=await stored.requestPermission({mode:'readwrite'});if(perm==='granted'){await doConnect(stored);}else{await clearHandle();setVaultBtn('off');}}catch(e){await clearHandle();setVaultBtn('off');}}
 async function handleVaultBtn(){if(!hasFS){alert('Requires Chrome on desktop.');return;}if(vaultConnected){vaultHandle=null;vaultIndex=[];vaultConnected=false;graphNodes=[];graphEdges=[];setVaultBtn('off');document.getElementById('graph-overlay').classList.remove('hidden');document.getElementById('graph-stats').style.display='none';if(graphAnim){cancelAnimationFrame(graphAnim);graphAnim=null;}var ctx=document.getElementById('vault-graph-canvas').getContext('2d');ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);}else{try{var handle=await window.showDirectoryPicker({mode:'readwrite'});await doConnect(handle);}catch(e){if(e.name!=='AbortError')alert('Failed: '+e.message);}}}
-async function doConnect(handle){vaultHandle=handle;await storeHandle(handle);setVaultBtn('scanning');vaultIndex=[];await scanDir(handle,'');vaultConnected=true;setVaultBtn('on');buildGraph();setStatus('Vault connected — '+vaultIndex.length+' notes loaded');}
+async function doConnect(handle){vaultHandle=handle;await storeHandle(handle);setVaultBtn('scanning');vaultIndex=[];await scanDir(handle,'');vaultConnected=true;setVaultBtn('on');buildGraph();setStatus('Vault connected — '+vaultIndex.length+' notes loaded');if(typeof CAL!=='undefined')CAL.onVaultConnected();}
 function setVaultBtn(s){var b=document.getElementById('vault-btn');b.className='hbtn'+(s==='on'?' on':'');b.textContent=s==='on'?'⬡ Vault on':s==='scanning'?'⟳ Scanning...':'⬡ Connect Vault';}
 async function scanDir(dir,path){try{for await(var entry of dir.values()){if(entry.name.startsWith('.'))continue;if(entry.kind==='file'&&entry.name.endsWith('.md')){try{var f=await entry.getFile();var content=await f.text();vaultIndex.push({name:entry.name,path:path?path+'/'+entry.name:entry.name,content:content});}catch(e){}}else if(entry.kind==='directory'){await scanDir(entry,path?path+'/'+entry.name:entry.name);}}}catch(e){}}
 
@@ -1040,6 +1107,10 @@ async function processCommand(txt){
   var spResult=await SP.handleVoice(txt);
   if(spResult!==null){speakResponse(spResult);return;}
 
+  // ── Tasks / Calendar ──────────────────────────────────────
+  var calResult=await CAL.handleVoice(txt);
+  if(calResult!==null){speakResponse(calResult);return;}
+
   // ── Map commands ──────────────────────────────────────────
   if(lower.includes('open map')||lower.includes('show map')||(lower==='map')){
     showWidget('url','🗺 Map','map.html','🗺');speakResponse('Opening map, sir.');return;
@@ -1127,7 +1198,7 @@ async function findAndShowDatasheet(query,key){
 }
 async function sendToBAKER(txt,key){
   var webOn=localStorage.getItem('baker_web_search')==='true';
-  var body={model:'claude-sonnet-4-6',max_tokens:300,system:'You are BAKER, an AI assistant modelled after JARVIS from Iron Man. You run on a HUD with these built-in capabilities: map (fly to locations, get directions), Spotify music control, vault notes, web search, datasheets. Keep responses to 1-3 spoken sentences — they will be read aloud. No markdown. Be precise and sharp. Address as "sir" when natural. If asked about navigation, maps, or directions, tell the user to say "fly to [place]" or "directions to [place]" to use the built-in map.',messages:[{role:'user',content:txt}]};
+  var body={model:'claude-sonnet-4-6',max_tokens:300,system:'You are BAKER, an AI assistant modelled after JARVIS from Iron Man. You run on a HUD with these built-in capabilities: map (fly to locations, get directions), Spotify music control, task/calendar management (add/complete/list tasks), vault notes, web search, datasheets. Keep responses to 1-3 spoken sentences — they will be read aloud. No markdown. Be precise and sharp. Address as "sir" when natural. If asked about navigation say to use "fly to [place]" or "directions to [place]". If asked about tasks/reminders say to use "add task [x]" or "what are my tasks".',messages:[{role:'user',content:txt}]};
   if(webOn)body.tools=[{type:'web_search_20250305',name:'web_search',max_uses:2}];
   try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});var data=await resp.json();var response=data.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text||'';}).join('').trim();speakResponse(response);}catch(e){speakResponse('I encountered a fault, sir.');setOrbState('idle');startWakeWord();}
 }
@@ -1530,6 +1601,352 @@ var SP=(function(){
 })();
 
 // ═══════════════════════════════════════════════════════════
+// ══  CALENDAR / TASKS MODULE (CAL)  ═════════════════════════
+// ═══════════════════════════════════════════════════════════
+var CAL=(function(){
+  var LS_KEY='baker_tasks';
+  var TASKS_PATH=['07-System','Tasks.md']; // vault path: 07-System/Tasks.md
+  var tasks=[]; // {id, text, done, due (YYYY-MM-DD or ''), }
+  var saveDebounce=null;
+
+  // ── ID ────────────────────────────────────────────────────
+  function genId(){return 't'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+  // ── Local storage ─────────────────────────────────────────
+  function loadLocal(){
+    try{var raw=localStorage.getItem(LS_KEY);if(raw)tasks=JSON.parse(raw);}catch(e){tasks=[];}
+  }
+  function saveLocal(){
+    try{localStorage.setItem(LS_KEY,JSON.stringify(tasks));}catch(e){}
+  }
+
+  // ── Markdown <-> tasks ────────────────────────────────────
+  // Format: - [ ] Task text 📅 2026-06-15
+  //         - [x] Done task
+  function parseMarkdown(md){
+    var lines=md.split('\n');
+    var out=[];
+    lines.forEach(function(line){
+      var m=line.match(/^\s*-\s*\[([ xX])\]\s*(.+)$/);
+      if(!m)return;
+      var done=m[1].toLowerCase()==='x';
+      var text=m[2].trim();
+      var due='';
+      var dm=text.match(/📅\s*(\d{4}-\d{2}-\d{2})/);
+      if(dm){due=dm[1];text=text.replace(/📅\s*\d{4}-\d{2}-\d{2}/,'').trim();}
+      out.push({id:genId(),text:text,done:done,due:due});
+    });
+    return out;
+  }
+  function toMarkdown(){
+    var lines=['# Tasks','','_Synced with BAKER — managed via voice or HUD panel_',''];
+    tasks.forEach(function(t){
+      var box=t.done?'[x]':'[ ]';
+      var dueStr=t.due?(' 📅 '+t.due):'';
+      lines.push('- '+box+' '+t.text+dueStr);
+    });
+    lines.push('');
+    return lines.join('\n');
+  }
+
+  // ── Vault I/O ─────────────────────────────────────────────
+  async function vaultRead(){
+    if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected)return null;
+    try{
+      var dir=vaultHandle;
+      for(var i=0;i<TASKS_PATH.length-1;i++){
+        dir=await dir.getDirectoryHandle(TASKS_PATH[i],{create:true});
+      }
+      var fileHandle=await dir.getFileHandle(TASKS_PATH[TASKS_PATH.length-1],{create:true});
+      var file=await fileHandle.getFile();
+      return await file.text();
+    }catch(e){return null;}
+  }
+  async function vaultWrite(md){
+    if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected)return false;
+    try{
+      var dir=vaultHandle;
+      for(var i=0;i<TASKS_PATH.length-1;i++){
+        dir=await dir.getDirectoryHandle(TASKS_PATH[i],{create:true});
+      }
+      var fileHandle=await dir.getFileHandle(TASKS_PATH[TASKS_PATH.length-1],{create:true});
+      var writable=await fileHandle.createWritable();
+      await writable.write(md);
+      await writable.close();
+      return true;
+    }catch(e){return false;}
+  }
+
+  // ── Sync ──────────────────────────────────────────────────
+  async function syncFromVault(){
+    var md=await vaultRead();
+    if(md===null)return false; // no vault — stay on local
+    var parsed=parseMarkdown(md);
+    if(parsed.length||md.trim().length<30){ // either has tasks, or file is basically empty/new
+      tasks=parsed;
+      saveLocal();
+    }
+    return true;
+  }
+  function scheduleSave(){
+    clearTimeout(saveDebounce);
+    saveDebounce=setTimeout(async function(){
+      saveLocal();
+      var footer=document.getElementById('cal-footer');
+      if(typeof vaultConnected!=='undefined'&&vaultConnected){
+        var ok=await vaultWrite(toMarkdown());
+        if(footer){footer.textContent=ok?'✓ Synced to vault':'⚠ Vault write failed';footer.className='cal-footer'+(ok?' synced':'');}
+      }else{
+        if(footer){footer.textContent='Local only — connect vault to sync';footer.className='cal-footer';}
+      }
+    },500);
+  }
+
+  // ── Task operations ───────────────────────────────────────
+  function addTask(text,due){
+    text=text.trim();if(!text)return null;
+    var t={id:genId(),text:text,done:false,due:due||''};
+    tasks.push(t);
+    render();scheduleSave();
+    return t;
+  }
+  function toggleTask(id){
+    var t=tasks.find(x=>x.id===id);if(!t)return;
+    t.done=!t.done;render();scheduleSave();
+  }
+  function deleteTask(id){
+    tasks=tasks.filter(x=>x.id!==id);render();scheduleSave();
+  }
+  function findTaskByText(query){
+    query=query.toLowerCase().trim();
+    // exact match first
+    var exact=tasks.find(t=>t.text.toLowerCase()===query);
+    if(exact)return exact;
+    // contains match
+    return tasks.find(t=>t.text.toLowerCase().includes(query)||query.includes(t.text.toLowerCase()));
+  }
+
+  // ── Date helpers ──────────────────────────────────────────
+  function todayStr(){
+    var d=new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function tomorrowStr(){
+    var d=new Date();d.setDate(d.getDate()+1);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function fmtDue(due){
+    if(!due)return'';
+    var today=todayStr(),tom=tomorrowStr();
+    if(due===today)return'Today';
+    if(due===tom)return'Tomorrow';
+    if(due<today)return'Overdue · '+due;
+    // Show short date
+    var parts=due.split('-');
+    var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return months[parseInt(parts[1])-1]+' '+parseInt(parts[2]);
+  }
+
+  // ── Render ────────────────────────────────────────────────
+  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+  function render(){
+    var list=document.getElementById('cal-list');
+    if(!list)return;
+    if(!tasks.length){
+      list.innerHTML='<div class="cal-empty">No tasks yet.<br>Add one above, or say<br>"add task [name]" to Baker.</div>';
+      updateNavBadge();
+      return;
+    }
+
+    var today=todayStr();
+    var groups={overdue:[],today:[],tomorrow:[],upcoming:[],noDate:[],done:[]};
+    var tom=tomorrowStr();
+
+    tasks.forEach(function(t){
+      if(t.done){groups.done.push(t);return;}
+      if(!t.due){groups.noDate.push(t);return;}
+      if(t.due<today)groups.overdue.push(t);
+      else if(t.due===today)groups.today.push(t);
+      else if(t.due===tom)groups.tomorrow.push(t);
+      else groups.upcoming.push(t);
+    });
+
+    function sortByDue(a,b){return(a.due||'9999').localeCompare(b.due||'9999');}
+    groups.upcoming.sort(sortByDue);
+
+    var html='';
+    function renderGroup(label,cls,items){
+      if(!items.length)return;
+      html+='<div class="cal-group-label'+(cls?' '+cls:'')+'">'+label+' ('+items.length+')</div>';
+      items.forEach(function(t){renderItem(t);});
+    }
+    function renderItem(t){
+      var dueLbl=fmtDue(t.due);
+      var dueCls=(t.due&&t.due<today&&!t.done)?'overdue':'';
+      html+='<div class="cal-item'+(t.done?' done':'')+'" data-id="'+t.id+'">'+
+        '<button class="cal-check'+(t.done?' done':'')+'" data-action="toggle" data-id="'+t.id+'">'+
+        '<svg viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l3.5 3.5L13 4"/></svg>'+
+        '</button>'+
+        '<div class="cal-item-body">'+
+        '<div class="cal-item-text">'+esc(t.text)+'</div>'+
+        (dueLbl?'<div class="cal-item-date '+dueCls+'">'+dueLbl+'</div>':'')+
+        '</div>'+
+        '<button class="cal-del" data-action="delete" data-id="'+t.id+'">✕</button>'+
+        '</div>';
+    }
+
+    renderGroup('Overdue','overdue',groups.overdue);
+    renderGroup('Today','today',groups.today);
+    renderGroup('Tomorrow','',groups.tomorrow);
+    renderGroup('Upcoming','',groups.upcoming);
+    renderGroup('No Date','',groups.noDate);
+    renderGroup('Done','',groups.done);
+
+    list.innerHTML=html;
+
+    // Wire up clicks
+    list.querySelectorAll('[data-action="toggle"]').forEach(btn=>{
+      btn.addEventListener('click',()=>toggleTask(btn.dataset.id));
+    });
+    list.querySelectorAll('[data-action="delete"]').forEach(btn=>{
+      btn.addEventListener('click',()=>deleteTask(btn.dataset.id));
+    });
+
+    updateNavBadge();
+  }
+
+  function updateNavBadge(){
+    var lbl=document.getElementById('cal-nav-lbl');
+    if(!lbl)return;
+    var today=todayStr();
+    var dueCount=tasks.filter(t=>!t.done&&t.due&&t.due<=today).length;
+    lbl.textContent=dueCount>0?('Tasks ('+dueCount+')'):'Tasks';
+  }
+
+  // ── Panel show/hide ───────────────────────────────────────
+  function showPanel(){
+    var p=document.getElementById('calendar-panel');
+    p.classList.add('cal-vis');
+    if(p._wbNormalise)p._wbNormalise();
+    render();
+  }
+  function hidePanel(){document.getElementById('calendar-panel').classList.remove('cal-vis');}
+  function togglePanel(){
+    var p=document.getElementById('calendar-panel');
+    p.classList.toggle('cal-vis');
+    if(p.classList.contains('cal-vis')){
+      if(p._wbNormalise)p._wbNormalise();
+      render();
+    }
+  }
+
+  // ── Voice commands ────────────────────────────────────────
+  // Returns a spoken response string, or null if not a task command
+  async function handleVoice(cmd){
+    var c=cmd.toLowerCase().trim();
+
+    // "add task X" / "add a task to X" / "remind me to X"
+    var addM=c.match(/(?:add (?:a )?task(?: to)?|remind me to|add to my tasks?|new task)\s*[:]?\s*(.+)/);
+    if(addM){
+      var text=addM[1].trim();
+      var due='';
+      // Detect "today"/"tomorrow" in the text
+      if(/\btoday\b/.test(text)){due=todayStr();text=text.replace(/\btoday\b/g,'').trim();}
+      else if(/\btomorrow\b/.test(text)){due=tomorrowStr();text=text.replace(/\btomorrow\b/g,'').trim();}
+      text=text.replace(/\s+/g,' ').replace(/^(to|for)\s+/,'').trim();
+      if(!text)return'What should I add, sir?';
+      addTask(text,due);
+      showPanel();
+      return'Added "'+text+'" to your tasks'+(due?(due===todayStr()?', due today':', due tomorrow'):'')+', sir.';
+    }
+
+    // "complete task X" / "mark X done" / "finish X" / "check off X"
+    var doneM=c.match(/(?:complete|finish|check off|mark (?:as )?done|mark .* (?:as )?done)\s*[:]?\s*(.+)/)||c.match(/mark\s+(.+?)\s+(?:as\s+)?done/);
+    if(doneM){
+      var query=doneM[1].trim();
+      var t=findTaskByText(query);
+      if(!t)return'I couldn\'t find a task matching "'+query+'", sir.';
+      t.done=true;render();scheduleSave();showPanel();
+      return'Marked "'+t.text+'" as done, sir.';
+    }
+
+    // "delete task X" / "remove task X"
+    var delM=c.match(/(?:delete|remove)\s+(?:task|the task)?\s*[:]?\s*(.+)/);
+    if(delM){
+      var dquery=delM[1].trim();
+      var dt=findTaskByText(dquery);
+      if(!dt)return'I couldn\'t find a task matching "'+dquery+'", sir.';
+      deleteTask(dt.id);showPanel();
+      return'Removed "'+dt.text+'" from your tasks, sir.';
+    }
+
+    // "what are my tasks" / "list my tasks" / "show my tasks" / "what's on my list"
+    if(/\b(my tasks|my to.?do|task list|what.?s on my (list|plate))\b/.test(c)){
+      showPanel();
+      var pending=tasks.filter(t=>!t.done);
+      if(!pending.length)return'Your task list is clear, sir.';
+      var today=todayStr();
+      var dueToday=pending.filter(t=>t.due===today);
+      var overdue=pending.filter(t=>t.due&&t.due<today);
+      var parts=[];
+      if(overdue.length)parts.push(overdue.length+' overdue');
+      if(dueToday.length)parts.push(dueToday.length+' due today');
+      parts.push(pending.length+' total pending');
+      var summary='You have '+parts.join(', ')+'.';
+      if(dueToday.length){
+        summary+=' Today: '+dueToday.slice(0,3).map(t=>t.text).join(', ')+'.';
+      }
+      return summary;
+    }
+
+    // "open tasks" / "open calendar" / "show calendar"
+    if(/\bopen (tasks|calendar|todo)\b/.test(c)||/\bshow (tasks|calendar|todo)\b/.test(c)){
+      showPanel();
+      return'Here are your tasks, sir.';
+    }
+
+    return null; // not a task command
+  }
+
+  // ── Init ──────────────────────────────────────────────────
+  var addInputEl,addDateEl,addBtnEl;
+  async function init(){
+    loadLocal();
+    addInputEl=document.getElementById('cal-add-input');
+    addDateEl=document.getElementById('cal-add-date');
+    addBtnEl=document.getElementById('cal-add-btn');
+
+    if(addBtnEl)addBtnEl.addEventListener('click',submitAdd);
+    if(addInputEl)addInputEl.addEventListener('keydown',e=>{if(e.key==='Enter')submitAdd();});
+
+    render();
+
+    // If vault already connected at init, sync
+    if(typeof vaultConnected!=='undefined'&&vaultConnected){
+      await syncFromVault();render();
+    }
+  }
+  function submitAdd(){
+    var text=addInputEl.value.trim();
+    if(!text)return;
+    var due=addDateEl.value||'';
+    addTask(text,due);
+    addInputEl.value='';addDateEl.value='';
+    addInputEl.focus();
+  }
+
+  // Called externally (from doConnect) once vault connects
+  async function onVaultConnected(){
+    await syncFromVault();render();
+    var footer=document.getElementById('cal-footer');
+    if(footer){footer.textContent='✓ Synced to vault';footer.className='cal-footer synced';}
+  }
+
+  return{init,showPanel,hidePanel,togglePanel,handleVoice,addTask,onVaultConnected};
+})();
+
+// ═══════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════
 makeDraggable('orb-panel','orb-panel-hdr');
@@ -1541,6 +1958,13 @@ makeWindowBehavior(
   document.getElementById('spotify-panel').querySelector('.spp-hdr'),
   {minW:280, minH:120}
 );
+// Calendar panel — drag via cal-hdr
+makeWindowBehavior(
+  document.getElementById('calendar-panel'),
+  document.getElementById('calendar-panel').querySelector('.cal-hdr'),
+  {minW:280, minH:200}
+);
+CAL.init();
 
 // Wire orb & record canvas clicks
 (function(){
