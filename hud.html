@@ -889,8 +889,8 @@ function initGraphCanvas(){
   });
   window.addEventListener('mouseup',function(){graphPanning=false;});
   canvas.addEventListener('wheel',function(e){e.preventDefault();var factor=e.deltaY>0?0.9:1.1;var mx=e.clientX,my=e.clientY;graphTransform.x=mx-(mx-graphTransform.x)*factor;graphTransform.y=my-(my-graphTransform.y)*factor;graphTransform.scale=Math.max(0.1,Math.min(5,graphTransform.scale*factor));},{passive:false});
-  canvas.addEventListener('click',function(e){
-    if(!hoveredNode)return;var note=vaultIndex[hoveredNode.id];if(!note)return;
+canvas.addEventListener('click',function(e){
+    if(!hoveredNode)return;var note=vaultIndex[hoveredNode.srcIdx!==undefined?hoveredNode.srcIdx:hoveredNode.id];if(!note)return;
     document.getElementById('note-panel-title').textContent=hoveredNode.name;
     document.getElementById('note-content').textContent=note.content;
     openPanel('note-panel');
