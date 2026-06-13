@@ -240,11 +240,11 @@ var SP=(function(){
     var d=await search(q,'track,album,playlist',6);
     if(!d){res.innerHTML='<div style="padding:10px;font-size:11px;color:var(--red)">Search failed.</div>';return;}
     var html='';
-    var tracks=d.tracks?.items||[];
+var tracks=(d.tracks?.items||[]).filter(Boolean);
     if(tracks.length){html+='<div class="spp-rsec">Tracks</div>';tracks.forEach(t=>{var a=t.album?.images?.[2]?.url||t.album?.images?.[0]?.url||'';html+=`<div class="spp-ri" data-uri="${t.uri}">${a?`<img class="spp-rthumb" src="${a}">`:'<div class="spp-rthumb"></div>'}<div class="spp-rm"><div class="spp-rn">${esc(t.name)}</div><div class="spp-rs">${esc(t.artists?.map(a=>a.name).join(', ')||'')}</div></div></div>`;});}
-    var albums=d.albums?.items||[];
+    var albums=(d.albums?.items||[]).filter(Boolean);
     if(albums.length){html+='<div class="spp-rsec">Albums</div>';albums.slice(0,3).forEach(a=>{var img=a.images?.[2]?.url||a.images?.[0]?.url||'';html+=`<div class="spp-ri" data-uri="${a.uri}">${img?`<img class="spp-rthumb" src="${img}">`:'<div class="spp-rthumb"></div>'}<div class="spp-rm"><div class="spp-rn">${esc(a.name)}</div><div class="spp-rs">${esc(a.artists?.map(x=>x.name).join(', ')||'')}</div></div></div>`;});}
-    var playlists=d.playlists?.items||[];
+    var playlists=(d.playlists?.items||[]).filter(Boolean);
     if(playlists.length){html+='<div class="spp-rsec">Playlists</div>';playlists.slice(0,3).forEach(p=>{var img=p.images?.[0]?.url||'';html+=`<div class="spp-ri" data-uri="${p.uri}">${img?`<img class="spp-rthumb" src="${img}">`:'<div class="spp-rthumb"></div>'}<div class="spp-rm"><div class="spp-rn">${esc(p.name)}</div><div class="spp-rs">${esc(p.description||'')}</div></div></div>`;});}
     if(!html){res.innerHTML='<div style="padding:10px;font-size:11px;color:var(--muted)">No results.</div>';return;}
     res.innerHTML=html;
