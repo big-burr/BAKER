@@ -1699,9 +1699,9 @@ function toggleWebSearch(){var b=document.getElementById('web-search-btn');var o
 function updateSearchToggle(){var on=document.getElementById('search-toggle').checked;localStorage.setItem('baker_web_search',on);document.getElementById('search-lbl').textContent=on?'ON':'OFF';var b=document.getElementById('web-search-btn');b.className='hbtn'+(on?' on':'');b.textContent=(on?'🌐 Web ✓':'🌐 Web');}
 function setEffort(e,noSave){if(!noSave)localStorage.setItem('baker_effort',e);['deep','standard','quick','minimal'].forEach(function(x){document.getElementById('effort-'+x).classList.toggle('active',x===e);});}
 document.getElementById('speech-rate-slider').addEventListener('input',function(){var v=parseInt(this.value);document.getElementById('speech-rate-display').textContent=v;speechRate=v/100;localStorage.setItem('baker_speech_rate',speechRate);});
-
+</script>
 <script src="js/spotify.js"></script>
-
+<script>
 // ═══════════════════════════════════════════════════════════
 // ══  CALENDAR / TASKS MODULE (CAL)  ═════════════════════════
 // ═══════════════════════════════════════════════════════════
