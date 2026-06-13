@@ -166,7 +166,9 @@ var GraphSettings={
   repulsion:100,
   sizeByConnections:false,
   showLabels:false,
-  searchQuery:''
+  searchQuery:'',
+  nodeSizeScale:1,
+  graphArea:1
 };
 var DEFAULT_GRAPH_SETTINGS=JSON.parse(JSON.stringify(GraphSettings));
 
@@ -203,16 +205,39 @@ var GRAPHUI=(function(){
     });
     // Link distance
     var ld=document.getElementById('gui-linkdist');
+    var ldDebounce;
     ld.addEventListener('input',function(){
       GraphSettings.linkDistance=parseInt(this.value,10);
       document.getElementById('gui-linkdist-val').textContent=this.value;
-      // Live-tunable without full rebuild
+      clearTimeout(ldDebounce);
+      ldDebounce=setTimeout(applyAndRebuild,150);
     });
     // Repulsion
     var rp=document.getElementById('gui-repulsion');
+    var rpDebounce;
     rp.addEventListener('input',function(){
       GraphSettings.repulsion=parseInt(this.value,10);
       document.getElementById('gui-repulsion-val').textContent=this.value;
+      clearTimeout(rpDebounce);
+      rpDebounce=setTimeout(applyAndRebuild,150);
+    });
+    // Node size
+    var ns=document.getElementById('gui-nodesize');
+    var nsDebounce;
+    ns.addEventListener('input',function(){
+      GraphSettings.nodeSizeScale=parseInt(this.value,10)/100;
+      document.getElementById('gui-nodesize-val').textContent=this.value;
+      clearTimeout(nsDebounce);
+      nsDebounce=setTimeout(applyAndRebuild,150);
+    });
+    // Graph area
+    var ga=document.getElementById('gui-grapharea');
+    var gaDebounce;
+    ga.addEventListener('input',function(){
+      GraphSettings.graphArea=parseInt(this.value,10)/100;
+      document.getElementById('gui-grapharea-val').textContent=this.value;
+      clearTimeout(gaDebounce);
+      gaDebounce=setTimeout(applyAndRebuild,150);
     });
     // Size by connections
     document.getElementById('gui-sizebyconn').addEventListener('change',function(){
@@ -235,6 +260,10 @@ var GRAPHUI=(function(){
       document.getElementById('gui-linkdist-val').textContent=GraphSettings.linkDistance;
       document.getElementById('gui-repulsion').value=GraphSettings.repulsion;
       document.getElementById('gui-repulsion-val').textContent=GraphSettings.repulsion;
+      document.getElementById('gui-nodesize').value=GraphSettings.nodeSizeScale*100;
+      document.getElementById('gui-nodesize-val').textContent=GraphSettings.nodeSizeScale*100;
+      document.getElementById('gui-grapharea').value=GraphSettings.graphArea*100;
+      document.getElementById('gui-grapharea-val').textContent=GraphSettings.graphArea*100;
       document.getElementById('gui-sizebyconn').checked=false;
       document.getElementById('gui-showlabels').checked=false;
       document.getElementById('gui-search-input').value='';
