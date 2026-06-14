@@ -662,20 +662,27 @@ var VAULTUI=(function(){
 // ═══════════════════════════════════════════════════════════
 // ══  GRAPH SETTINGS  ══════════════════════════════════════
 // ═══════════════════════════════════════════════════════════
-var GraphSettings={
-  typeFilter:{conversation:true,project:true,lecture:true,daily:true,general:true},
-  linkDistance:90,
-  repulsion:100,
-  sizeByConnections:false,
-  showLabels:false,
-  searchQuery:'',
-  nodeSizeScale:1,
-  graphArea:1,
-  treeMode:false,
-  clusterMode:false,
-  nodeBrightness:1.0
-};
-var DEFAULT_GRAPH_SETTINGS=JSON.parse(JSON.stringify(GraphSettings));
+// Safe init: if hud.html already defined GraphSettings, merge in any
+// missing keys rather than overwriting. This prevents the vault-ui.js
+// load from wiping nodeBrightness / gridMode / yggdrasilMode etc.
+(function(){
+  var defaults={
+    typeFilter:{conversation:true,project:true,lecture:true,daily:true,general:true},
+    linkDistance:90,repulsion:100,sizeByConnections:false,showLabels:false,
+    searchQuery:'',nodeSizeScale:1,graphArea:1,
+    treeMode:false,clusterMode:false,gridMode:false,yggdrasilMode:false,
+    nodeBrightness:1.0
+  };
+  if(typeof GraphSettings==='undefined'){
+    GraphSettings=defaults;
+  }else{
+    // Fill in any keys that hud.html's version is missing
+    Object.keys(defaults).forEach(function(k){
+      if(GraphSettings[k]===undefined)GraphSettings[k]=defaults[k];
+    });
+  }
+  DEFAULT_GRAPH_SETTINGS=JSON.parse(JSON.stringify(GraphSettings));
+})();
 
 // ═══════════════════════════════════════════════════════════
 // ══  GRAPH SETTINGS PANEL MODULE (GRAPHUI)  ══════════════
@@ -762,6 +769,24 @@ var GRAPHUI=(function(){
       document.getElementById('gui-clustermode').checked=false;
       applyAndRebuild();
     });
+    // Grid mode
+    document.getElementById('gui-gridmode').addEventListener('change',function(){
+      GraphSettings.gridMode=this.checked;
+      if(this.checked){GraphSettings.treeMode=false;GraphSettings.yggdrasilMode=false;GraphSettings.clusterMode=false;}
+      document.getElementById('gui-treemode').checked=false;
+      document.getElementById('gui-yggmode').checked=false;
+      document.getElementById('gui-clustermode').checked=false;
+      applyAndRebuild();
+    });
+    // Yggdrasil mode
+    document.getElementById('gui-yggmode').addEventListener('change',function(){
+      GraphSettings.yggdrasilMode=this.checked;
+      if(this.checked){GraphSettings.treeMode=false;GraphSettings.gridMode=false;GraphSettings.clusterMode=false;}
+      document.getElementById('gui-treemode').checked=false;
+      document.getElementById('gui-gridmode').checked=false;
+      document.getElementById('gui-clustermode').checked=false;
+      applyAndRebuild();
+    });
     // Node brightness
     document.getElementById('gui-brightness').addEventListener('input',function(){
       GraphSettings.nodeBrightness=parseInt(this.value,10)/100;
@@ -787,6 +812,8 @@ var GRAPHUI=(function(){
       document.getElementById('gui-showlabels').checked=false;
       document.getElementById('gui-clustermode').checked=false;
       document.getElementById('gui-treemode').checked=false;
+      document.getElementById('gui-gridmode').checked=false;
+      document.getElementById('gui-yggmode').checked=false;
       document.getElementById('gui-brightness').value=100;
       document.getElementById('gui-brightness-val').textContent='100';
       document.getElementById('gui-search-input').value='';
