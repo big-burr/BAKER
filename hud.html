@@ -622,8 +622,8 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
     </div>
     <div class="gui-section">
       <div class="gui-section-lbl">Filter by type</div>
-      <label class="gui-filter-row"><input type="checkbox" data-gui-type="conversation" checked><span class="gui-dot" style="background:#a78bfa"></span>Conversation</label>
-      <label class="gui-filter-row"><input type="checkbox" data-gui-type="project" checked><span class="gui-dot" style="background:#60a5fa"></span>Project</label>
+      <label class="gui-filter-row"><input type="checkbox" data-gui-type="conversation" checked><span class="gui-dot" style="background:#c084fc"></span>Conversation</label>
+      <label class="gui-filter-row"><input type="checkbox" data-gui-type="project" checked><span class="gui-dot" style="background:#38bdf8"></span>Project</label>
       <label class="gui-filter-row"><input type="checkbox" data-gui-type="lecture" checked><span class="gui-dot" style="background:#fde047"></span>Lecture</label>
       <label class="gui-filter-row"><input type="checkbox" data-gui-type="daily" checked><span class="gui-dot" style="background:#4ade80"></span>Daily log</label>
       <label class="gui-filter-row"><input type="checkbox" data-gui-type="general" checked><span class="gui-dot" style="background:#7c6af7"></span>General</label>
@@ -673,13 +673,17 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
           <div class="toggle-thumb"></div>
         </label>
       </div>
-      <div class="gui-toggle-row">
+<div class="gui-toggle-row">
         <span>Tree mode</span>
         <label class="toggle" style="transform:scale(.8)">
           <input type="checkbox" id="gui-treemode">
           <div class="toggle-track"></div>
           <div class="toggle-thumb"></div>
         </label>
+      </div>
+      <div class="gui-slider-row" style="margin-top:6px">
+        <div class="gui-slider-lbl"><span>Node brightness</span><span id="gui-brightness-val">100</span></div>
+        <input type="range" class="gui-slider" id="gui-brightness" min="10" max="100" value="100">
       </div>
     </div>
     <button class="gui-reset-btn" id="gui-reset-btn">↺ Reset to defaults</button>
@@ -899,8 +903,9 @@ var GraphSettings={
   searchQuery:'',
   nodeSizeScale:1,
   graphArea:1,
-  treeMode:false,
-  clusterMode:false
+ treeMode:false,
+  clusterMode:false,
+  nodeBrightness:1.0
 };
 var DEFAULT_GRAPH_SETTINGS=JSON.parse(JSON.stringify(GraphSettings));
 
