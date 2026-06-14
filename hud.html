@@ -411,6 +411,23 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
 /* Scrollbars */
 .spp-res::-webkit-scrollbar,.spp-li::-webkit-scrollbar{width:3px}
 .spp-res::-webkit-scrollbar-thumb,.spp-li::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+  .vc-msg{display:flex;flex-direction:column;max-width:88%}
+.vc-msg-user{align-self:flex-end;align-items:flex-end}
+.vc-msg-baker{align-self:flex-start;align-items:flex-start}
+.vc-bubble{padding:9px 13px;border-radius:10px;font-size:12px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+.vc-msg-user .vc-bubble{background:var(--accent);color:#fff;border-radius:10px 10px 2px 10px}
+.vc-msg-baker .vc-bubble{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:10px 10px 10px 2px}
+.vc-thinking span{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent);animation:vc-bnc 1.2s infinite;margin-right:3px}
+.vc-thinking span:nth-child(2){animation-delay:.2s}.vc-thinking span:nth-child(3){animation-delay:.4s}
+@keyframes vc-bnc{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-4px);opacity:1}}
+.vc-meta{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:3px;padding:0 2px}
+.vc-sources{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.vc-chip{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:20px;background:rgba(124,106,247,.08);border:1px solid var(--accent-dim);color:var(--accent);cursor:pointer;transition:all .15s}
+.vc-chip:hover{background:rgba(124,106,247,.18)}
+.vc-mode-pill{background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--muted);font-family:var(--mono);font-size:9px;padding:3px 9px;cursor:pointer;transition:all .15s}
+.vc-mode-active{background:var(--accent);border-color:var(--accent);color:#fff}
+#vc-messages::-webkit-scrollbar{width:3px}
+#vc-messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 </style>
 </head>
 <body>
@@ -440,6 +457,7 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
 <div id="graph-stats">
   <div class="graph-stat">Notes <span id="stat-notes">0</span></div>
   <div class="graph-stat">Links <span id="stat-links">0</span></div>
+  <div class="graph-stat">Mode <span id="stat-mode">◎ Default</span></div>
 </div>
 
 <!-- NAV -->
@@ -464,9 +482,12 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
     <button class="hbtn" id="month-nav-btn" onclick="MCAL.togglePanel()" title="Calendar">
       🗓 Calendar
     </button>
-    <button class="hbtn" id="vault-notes-btn" onclick="VAULTUI.togglePanel()" title="Vault Notes">
-      🗂 Notes
-    </button>
+   <button class="hbtn" id="vault-notes-btn" onclick="VAULTUI.togglePanel()" title="Vault Notes">
+  🗂 Notes
+</button>
+<button class="hbtn" id="vaultchat-nav-btn" onclick="VAULTCHAT.togglePanel()" title="Vault Chat">
+  🧠 Chat
+</button>
     <button class="hbtn" id="graphui-nav-btn" onclick="GRAPHUI.togglePanel()" title="Graph Settings">
       🕸 Graph
     </button>
@@ -747,7 +768,37 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
     </div>
   </div>
 </div>
-
+<!-- VAULT CHAT PANEL -->
+<div id="vaultchat-panel" style="position:fixed;top:64px;left:460px;width:420px;height:520px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:320px;min-height:300px">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--border);cursor:move;user-select:none;border-radius:14px 14px 0 0;flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:7px">
+      <span style="font-size:14px">🧠</span>
+      <span style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase">Vault Chat</span>
+      <span style="font-family:var(--mono);font-size:9px;color:var(--accent)" id="vc-status"></span>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button id="vc-clear-btn" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;font-family:var(--mono);font-size:10px;padding:2px 8px;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">Clear</button>
+      <button onclick="VAULTCHAT.hidePanel()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0 2px;line-height:1">×</button>
+    </div>
+  </div>
+  <div id="vc-messages" style="flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-height:0">
+    <div class="vc-welcome" id="vc-welcome" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:24px;flex:1">
+      <div style="font-size:32px;opacity:.15">🧠</div>
+      <div style="font-family:var(--mono);font-size:12px;color:var(--text)">Vault Chat</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.8;max-width:280px">Ask anything about your notes. I'll find the most relevant ones and answer from your own knowledge.</div>
+    </div>
+  </div>
+  <div style="padding:4px 14px 6px;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-shrink:0">
+    <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Mode:</span>
+    <button id="vc-mode-smart" class="vc-mode-pill vc-mode-active" onclick="VAULTCHAT&&VAULTCHAT.init&&void 0">🧠 Smart</button>
+    <button id="vc-mode-broad" class="vc-mode-pill">🌐 Broad</button>
+    <button id="vc-mode-exact" class="vc-mode-pill">🎯 Exact</button>
+  </div>
+  <div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-shrink:0;background:rgba(22,22,25,.97);border-radius:0 0 14px 14px">
+    <textarea id="vc-input" placeholder="Ask anything about your vault…" rows="1" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:12px;color:var(--text);outline:none;resize:none;max-height:100px;line-height:1.5;transition:border-color .2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+    <button id="vc-send-btn" style="background:var(--accent);border:none;border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;flex-shrink:0;color:#fff">↑</button>
+  </div>
+</div>
 <!-- CONFIRM POPUP -->
 <div class="fp" id="confirm-popup" style="border-radius:10px">
   <div id="confirm-popup-text"></div>
@@ -939,6 +990,7 @@ async function clearHandle(){try{var db=await openDB();db.transaction('handles',
 async function tryReconnectVault(){var stored=await getStoredHandle();if(!stored)return;setVaultBtn('scanning');try{var perm=await stored.requestPermission({mode:'readwrite'});if(perm==='granted'){await doConnect(stored);}else{await clearHandle();setVaultBtn('off');}}catch(e){await clearHandle();setVaultBtn('off');}}
 async function handleVaultBtn(){if(!hasFS){alert('Requires Chrome on desktop.');return;}if(vaultConnected){vaultHandle=null;vaultIndex=[];vaultConnected=false;graphNodes=[];graphEdges=[];setVaultBtn('off');document.getElementById('graph-overlay').classList.remove('hidden');document.getElementById('graph-stats').style.display='none';if(graphAnim){cancelAnimationFrame(graphAnim);graphAnim=null;}var ctx=document.getElementById('vault-graph-canvas').getContext('2d');ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);}else{try{var handle=await window.showDirectoryPicker({mode:'readwrite'});await doConnect(handle);}catch(e){if(e.name!=='AbortError')alert('Failed: '+e.message);}}}
 async function doConnect(handle){vaultHandle=handle;await storeHandle(handle);setVaultBtn('scanning');vaultIndex=[];await scanDir(handle,'');vaultConnected=true;setVaultBtn('on');buildGraph();setStatus('Vault connected — '+vaultIndex.length+' notes loaded');if(typeof CAL!=='undefined')CAL.onVaultConnected();if(typeof VAULTUI!=='undefined')VAULTUI.refresh();}
+  if(typeof VAULTCHAT!=='undefined')VAULTCHAT.onVaultReady();
 function setVaultBtn(s){var b=document.getElementById('vault-btn');b.className='hbtn'+(s==='on'?' on':'');b.textContent=s==='on'?'⬡ Vault on':s==='scanning'?'⟳ Scanning...':'⬡ Connect Vault';}
 async function scanDir(dir,path){try{for await(var entry of dir.values()){if(entry.name.startsWith('.'))continue;if(entry.kind==='file'&&entry.name.endsWith('.md')){try{var f=await entry.getFile();var content=await f.text();vaultIndex.push({name:entry.name,path:path?path+'/'+entry.name:entry.name,content:content,mtime:f.lastModified});}catch(e){}}else if(entry.kind==='directory'){await scanDir(entry,path?path+'/'+entry.name:entry.name);}}}catch(e){}}
 
@@ -992,6 +1044,8 @@ async function sendToConversation(txt,key){conversationHistory.push({role:'user'
 // ═══════════════════════════════════════════════════════════
 // COMMAND PROCESSING
 // ═══════════════════════════════════════════════════════════
+  var vcResult=VAULTCHAT.handleVoice(txt);
+if(vcResult!==null){speakResponse(vcResult);return;}
 async function processCommand(txt){var key=localStorage.getItem('baker_api_key');if(!key){speakResponse('No API key set, sir. Please open Settings.');return;}var lower=txt.toLowerCase().trim();if(conversationMode&&CONVO_EXIT_PHRASES.test(lower)){endConversationMode('Goodbye, sir.');return;}if(conversationMode&&CONVO_SAVE_PHRASES.test(lower)){setOrbState('thinking');var saved=await saveConversationToVault();setOrbState('idle');if(saved){speakResponse('Saved to today\'s daily log, sir.');}else{speakResponse('I couldn\'t save that — your vault isn\'t connected, sir.');}return;}if(conversationMode){setOrbState('thinking');await sendToConversation(txt,key);return;}if(/\b(let'?s (talk|chat)|start a conversation|talk to me|i (want|need) to talk|have a conversation)\b/.test(lower)){startConversationMode();speakResponse('Of course, sir. What\'s on your mind?');return;}if(/\b(open|go to|pull up|show)\b.*\bsettings\b/.test(lower)||lower==='settings'){openSettings();speakResponse('Opening settings, sir.');return;}if(/\b(open|go to|pull up|show|launch)\b.*\b(tools|index|dashboard)\b/.test(lower)){showWidget('url','⊞ Tools','index.html','⊞');speakResponse('Opening tools, sir.');return;}if(/\b(open|go to|switch to)\b.*\b(conversation page|chat page)\b/.test(lower)){window.location.href='conversation.html';return;}if(/\b(open|pull up|show|launch|let'?s (open|use|check))\b.*\b(spotify|music)\b/.test(lower)&&!/\bplay\b/.test(lower)){SP.showPanel();speakResponse('Opening Spotify, sir.');return;}var spResult=await SP.handleVoice(txt);if(spResult!==null){speakResponse(spResult);return;}var calResult=await CAL.handleVoice(txt);if(calResult!==null){speakResponse(calResult);return;}var mcalResult=MCAL.handleVoice(txt);if(mcalResult!==null){speakResponse(mcalResult);return;}var vaultResult=VAULTUI.handleVoice(txt);if(vaultResult!==null){speakResponse(vaultResult);return;}var graphUIResult=GRAPHUI.handleVoice(txt);if(graphUIResult!==null){speakResponse(graphUIResult);return;}if(/\b(open|pull up|show|launch|let'?s (open|use|check))\b.*\bmap\b/.test(lower)&&!/\b(fly to|directions to|route to|on (the )?map)\b/.test(lower)){showWidget('url','🗺 Map','map.html','🗺');speakResponse('Opening map, sir.');return;}var flyM=lower.match(/(?:fly to|zoom to|navigate to|pull up|show me)\s+(.+?)(?:\s+on (?:the )?map)?$/);if(flyM&&(lower.includes('fly to')||lower.includes('zoom to')||lower.includes('on the map')||lower.includes('on map'))){var mapQ=flyM[1].replace(/\s+on\s+(the\s+)?map\s*$/i,'').trim();showWidget('url','🗺 Map','map.html','🗺');mapCmd({cmd:'flyTo',query:mapQ});speakResponse('Flying to '+mapQ+', sir.');return;}var dirM=lower.match(/(?:directions to|get directions to|route to|take me to|how do i get to|navigate me to|guide me to)\s+(.+)/);if(dirM){var dirQ=dirM[1].trim();showWidget('url','🗺 Map','map.html','🗺');mapCmd({cmd:'directionsTo',query:dirQ});speakResponse('Routing to '+dirQ+', sir.');return;}if(lower.includes('where am i')||lower.includes('my location')||lower.includes('locate me')||lower.includes('find my location')){showWidget('url','🗺 Map','map.html','🗺');mapCmd({cmd:'locate'});speakResponse('Locating you, sir.');return;}if(lower.includes('clear route')||lower.includes('clear map')){mapCmd({cmd:'clearRoute'});speakResponse('Route cleared, sir.');return;}if(lower.match(/^(?:open|go to|navigate to|show)\s+https?:\/\//)){var urlMatch=txt.match(/https?:\/\/\S+/);if(urlMatch){showWidget('url','🔗 '+urlMatch[0],urlMatch[0],'🔗');speakResponse('Opening page, sir.');return;}}if(lower.includes('datasheet')||lower.includes('find datasheet')){var query=txt.replace(/find datasheet|datasheet for|datasheet/gi,'').trim();await findAndShowDatasheet(query,key);return;}if(lower.startsWith('show note')||lower.startsWith('text note')){var noteText=txt.replace(/^show note|^text note/i,'').trim();showWidget('text','📝 Note',noteText,'📝');speakResponse('Displaying note, sir.');return;}if(lower==='close'||lower==='back to graph'||lower==='close panel'){closePanel('widget-panel');SP.hidePanel();speakResponse('Closing, sir.');return;}await sendToBAKER(txt,key);}
 
 // ═══════════════════════════════════════════════════════════
@@ -1045,6 +1099,8 @@ makeWindowBehavior(document.getElementById('month-panel'),document.getElementByI
 MCAL.init();
 makeWindowBehavior(document.getElementById('vault-panel'),document.getElementById('vault-panel').querySelector('.vp-hdr'),{minW:300,minH:300});
 VAULTUI.init();
+  makeWindowBehavior(document.getElementById('vaultchat-panel'),document.getElementById('vaultchat-panel').querySelector('div'),{minW:320,minH:300});
+VAULTCHAT.init();
 makeWindowBehavior(document.getElementById('graphui-panel'),document.getElementById('graphui-panel').querySelector('.gui-hdr'),{minW:260,minH:360});
 GRAPHUI.init();
 (function(){
