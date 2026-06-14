@@ -720,7 +720,7 @@ function exitEditMode(refreshView){
     }
   }
 
-  return{init,showPanel,hidePanel,togglePanel,handleVoice,refresh};
+return{init,showPanel,hidePanel,togglePanel,handleVoice,refresh,_openNoteByIdx:openNote};
 })();
 
 // ═══════════════════════════════════════════════════════════
@@ -734,7 +734,9 @@ var GraphSettings={
   showLabels:false,
   searchQuery:'',
   nodeSizeScale:1,
-  graphArea:1
+  graphArea:1,
+  treeMode:false,
+  clusterMode:false
 };
 var DEFAULT_GRAPH_SETTINGS=JSON.parse(JSON.stringify(GraphSettings));
 
@@ -810,9 +812,23 @@ var GRAPHUI=(function(){
       GraphSettings.sizeByConnections=this.checked;
       applyAndRebuild();
     });
-    // Always show labels
+// Always show labels
     document.getElementById('gui-showlabels').addEventListener('change',function(){
       GraphSettings.showLabels=this.checked;
+    });
+    // Cluster by type
+    document.getElementById('gui-clustermode').addEventListener('change',function(){
+      GraphSettings.clusterMode=this.checked;
+      if(this.checked)GraphSettings.treeMode=false;
+      document.getElementById('gui-treemode').checked=false;
+      applyAndRebuild();
+    });
+    // Tree mode
+    document.getElementById('gui-treemode').addEventListener('change',function(){
+      GraphSettings.treeMode=this.checked;
+      if(this.checked)GraphSettings.clusterMode=false;
+      document.getElementById('gui-clustermode').checked=false;
+      applyAndRebuild();
     });
     // Search / highlight
     document.getElementById('gui-search-input').addEventListener('input',function(){
@@ -830,8 +846,10 @@ var GRAPHUI=(function(){
       document.getElementById('gui-nodesize-val').textContent=GraphSettings.nodeSizeScale*100;
       document.getElementById('gui-grapharea').value=GraphSettings.graphArea*100;
       document.getElementById('gui-grapharea-val').textContent=GraphSettings.graphArea*100;
-      document.getElementById('gui-sizebyconn').checked=false;
+   document.getElementById('gui-sizebyconn').checked=false;
       document.getElementById('gui-showlabels').checked=false;
+      document.getElementById('gui-clustermode').checked=false;
+      document.getElementById('gui-treemode').checked=false;
       document.getElementById('gui-search-input').value='';
       applyAndRebuild();
     });
