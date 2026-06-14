@@ -28,9 +28,6 @@ var VAULTUI=(function(){
   }
 
   // ── Frontmatter parsing ───────────────────────────────────
-  // Parses leading YAML frontmatter (--- ... ---) into a flat key->value
-  // map. Values are returned as raw strings (e.g. "[lecture, college]"
-  // for tags) — good enough for search/filter without a full YAML parser.
   function parseFrontmatter(content){
     if(!content)return{};
     var m=content.match(/^---\s*\n([\s\S]*?)\n---/);
@@ -43,8 +40,6 @@ var VAULTUI=(function(){
     return fm;
   }
 
-  // Maps a note's frontmatter `type:` (or path heuristics as fallback)
-  // to one of the 5 graph categories used across the app.
   function noteCategory(note){
     var fm=parseFrontmatter(note.content);
     var t=(fm.type||'').toLowerCase();
@@ -53,7 +48,6 @@ var VAULTUI=(function(){
     if(t==='lecture')return'lecture';
     if(t==='daily-log'||t==='daily')return'daily';
     if(t)return'general';
-    // fallback: path heuristics (mirrors detectType in hud.html)
     return detectIcon._category(note.path);
   }
 
@@ -65,7 +59,6 @@ var VAULTUI=(function(){
     if(p.includes('daily')||p.includes('07-system'))return'📆';
     return'📄';
   }
-  // path-based category fallback (used by noteCategory)
   detectIcon._category=function(path){
     var p=(path||'').toLowerCase();
     if(p.includes('conversation'))return'conversation';
@@ -79,9 +72,6 @@ var VAULTUI=(function(){
   var CATEGORY_ORDER=['all','conversation','project','lecture','daily','general'];
 
   // ── Templates ─────────────────────────────────────────────
-  // Mirrors 07-System/Templates content. Fields are filled with today's
-  // date / typed title at creation time. The real template files are
-  // never read or modified.
   var TEMPLATES={
     'daily-log':{
       label:'📆 Daily Log',
@@ -260,9 +250,6 @@ var VAULTUI=(function(){
     var q=(query||'').toLowerCase().trim();
     var items=vaultIndex.map(function(n,i){return{note:n,idx:i};});
 
-    // ── Search ──
-    // Supports plain text matches plus simple filters:
-    //   type:lecture   tag:project   #project
     if(q){
       var typeMatch=q.match(/(?:^|\s)type:(\S+)/);
       var tagMatch=q.match(/(?:^|\s)(?:tag:|#)(\S+)/);
@@ -286,7 +273,6 @@ var VAULTUI=(function(){
       });
     }
 
-    // ── Type filter chips ──
     if(activeTypeFilter!=='all'){
       items=items.filter(function(o){return noteCategory(o.note)===activeTypeFilter;});
     }
@@ -296,7 +282,6 @@ var VAULTUI=(function(){
       return;
     }
 
-    // ── Sort ──
     if(sortMode==='modified'){
       items=items.slice().sort(function(a,b){return(b.note.mtime||0)-(a.note.mtime||0);});
     }else if(sortMode==='type'){
@@ -309,7 +294,7 @@ var VAULTUI=(function(){
       items=items.slice().sort(function(a,b){return a.note.name.localeCompare(b.note.name);});
     }
 
-    items=items.slice(0,200); // cap for perf
+    items=items.slice(0,200);
 
     var html='';
     items.forEach(function(o){
@@ -328,7 +313,7 @@ var VAULTUI=(function(){
     });
   }
 
-  // ── Filter bar (sort + type chips) ─────────────────────────
+  // ── Filter bar ────────────────────────────────────────────
   function renderFilterBar(){
     if(!filterBarEl)return;
     var html='<select class="vp-sort-select" id="vp-sort-select">'+
@@ -373,14 +358,13 @@ var VAULTUI=(function(){
     currentNoteIdx=null;
   }
 
-  // Open a note by path — looks up vaultIndex and opens viewer
   function openNoteByPath(path){
     var idx=vaultIndex.findIndex(function(n){return n.path===path;});
     if(idx>=0)openNote(idx);
   }
 
   // ── Edit mode ─────────────────────────────────────────────
-function enterEditMode(){
+  function enterEditMode(){
     if(!editBtn)editBtn=document.getElementById('vp-edit-btn');
     if(!saveBtn)saveBtn=document.getElementById('vp-save-btn');
     if(!cancelEditBtn)cancelEditBtn=document.getElementById('vp-cancel-edit-btn');
@@ -397,7 +381,7 @@ function enterEditMode(){
     if(cancelEditBtn)cancelEditBtn.style.display='inline-flex';
     setTimeout(function(){viewerEditArea.focus();},30);
   }
-function exitEditMode(refreshView){
+  function exitEditMode(refreshView){
     editing=false;
     if(!editBtn)editBtn=document.getElementById('vp-edit-btn');
     if(!saveBtn)saveBtn=document.getElementById('vp-save-btn');
@@ -413,9 +397,7 @@ function exitEditMode(refreshView){
       if(note)viewerContentEl.textContent=note.content;
     }
   }
-  function cancelEdit(){
-    exitEditMode(true);
-  }
+  function cancelEdit(){exitEditMode(true);}
 
   async function saveEdit(){
     if(currentNoteIdx===null)return;
@@ -437,18 +419,11 @@ function exitEditMode(refreshView){
       var writable=await fileHandle.createWritable();
       await writable.write(newContent);
       await writable.close();
-
       note.content=newContent;
-      try{
-        var f=await fileHandle.getFile();
-        note.mtime=f.lastModified;
-      }catch(e){}
-
+      try{var f=await fileHandle.getFile();note.mtime=f.lastModified;}catch(e){}
       viewerContentEl.textContent=newContent;
       exitEditMode(false);
       if(typeof setStatus==='function')setStatus('Saved '+note.name+', sir.');
-
-      // Refresh graph if it depends on this note's links/type
       if(typeof buildGraph==='function'&&typeof vaultConnected!=='undefined'&&vaultConnected){
         if(typeof graphNodes!=='undefined'&&graphNodes.length)buildGraph();
       }
@@ -458,17 +433,13 @@ function exitEditMode(refreshView){
     }
   }
 
-  // ── Open a note by name match (for voice) ────────────────
   function findNoteByQuery(query){
     if(typeof vaultIndex==='undefined'||!vaultIndex.length)return null;
     query=query.toLowerCase().trim();
-    // exact filename match
     var exact=vaultIndex.find(n=>n.name.toLowerCase().replace(/\.md$/,'')===query);
     if(exact)return exact;
-    // contains match on name
     var partial=vaultIndex.find(n=>n.name.toLowerCase().includes(query));
     if(partial)return partial;
-    // contains match on path
     return vaultIndex.find(n=>n.path.toLowerCase().includes(query));
   }
 
@@ -508,11 +479,7 @@ function exitEditMode(refreshView){
   function selectTemplate(key){
     var t=TEMPLATES[key];
     if(!t)return;
-    if(!t.needsTitle){
-      createNote(key,'');
-      return;
-    }
-    // Show title-prompt form
+    if(!t.needsTitle){createNote(key,'');return;}
     pendingTemplate=key;
     createListEl.style.display='none';
     createFormEl.style.display='flex';
@@ -526,10 +493,7 @@ function exitEditMode(refreshView){
     if(!pendingTemplate)return;
     var t=TEMPLATES[pendingTemplate];
     var title=createTitleInput.value.trim();
-    if(t.needsTitle&&pendingTemplate!=='weekly-review'&&!title){
-      createTitleInput.focus();
-      return;
-    }
+    if(t.needsTitle&&pendingTemplate!=='weekly-review'&&!title){createTitleInput.focus();return;}
     createNote(pendingTemplate,title);
   }
 
@@ -546,27 +510,16 @@ function exitEditMode(refreshView){
     var fullPath=t.folder+'/'+fname;
 
     try{
-      // Check if it already exists in our in-memory index first
       var existing=vaultIndex.find(function(n){return n.path===fullPath;});
-      if(existing){
-        hideCreatePanel();
-        showPanel();
-        openNoteByPath(fullPath);
-        return;
-      }
+      if(existing){hideCreatePanel();showPanel();openNoteByPath(fullPath);return;}
 
-      // Walk/create folder path
       var dir=vaultHandle;
       for(var i=0;i<folderParts.length;i++){
         dir=await dir.getDirectoryHandle(folderParts[i],{create:true});
       }
 
-      // Check on-disk existence too (covers files not yet in vaultIndex)
       var fileExists=false;
-      try{
-        await dir.getFileHandle(fname,{create:false});
-        fileExists=true;
-      }catch(e){fileExists=false;}
+      try{await dir.getFileHandle(fname,{create:false});fileExists=true;}catch(e){fileExists=false;}
 
       var fileHandle=await dir.getFileHandle(fname,{create:true});
 
@@ -579,7 +532,6 @@ function exitEditMode(refreshView){
         try{var f0=await fileHandle.getFile();mtime=f0.lastModified;}catch(e){}
         vaultIndex.push({name:fname,path:fullPath,content:content,mtime:mtime});
       }else{
-        // Read existing content for the viewer
         var f=await fileHandle.getFile();
         var existingContent=await f.text();
         var idx=vaultIndex.findIndex(function(n){return n.path===fullPath;});
@@ -591,7 +543,6 @@ function exitEditMode(refreshView){
       renderList(searchInput?searchInput.value:'');
       openNoteByPath(fullPath);
 
-      // If the graph view has already been built, refresh it
       if(typeof buildGraph==='function'&&typeof vaultConnected!=='undefined'&&vaultConnected){
         if(typeof graphNodes!=='undefined'&&graphNodes.length)buildGraph();
       }
@@ -612,8 +563,7 @@ function exitEditMode(refreshView){
   }
   function hidePanel(){
     document.getElementById('vault-panel').classList.remove('vp-vis');
-    closeNote();
-    hideCreatePanel();
+    closeNote();hideCreatePanel();
   }
   function togglePanel(){
     var p=document.getElementById('vault-panel');
@@ -622,27 +572,19 @@ function exitEditMode(refreshView){
       if(p._wbNormalise)p._wbNormalise();
       renderFilterBar();
       renderList(searchInput?searchInput.value:'');
-    }else{
-      closeNote();
-      hideCreatePanel();
-    }
+    }else{closeNote();hideCreatePanel();}
   }
 
   // ── Voice ─────────────────────────────────────────────────
-  // Returns spoken response or null if not a vault-browse command
   function handleVoice(cmd){
     var c=cmd.toLowerCase().trim();
 
-    // "new daily log" / "create a daily log" / "start today's log"
     if(/\b(new|create|start)\b.*\b(daily log|today'?s log|day'?s log)\b/.test(c)){
-      showPanel();
-      createNote('daily-log','');
+      showPanel();createNote('daily-log','');
       return'Creating today\'s daily log, sir.';
     }
 
-    // "open my notes" / "browse my vault" / "show my vault notes"
     if(/\b(open|pull up|show|browse|let'?s (open|check|see))\b.*\b(vault|notes?)\b/.test(c)&&!/\bnote\b.*\b(today|down|that)\b/.test(c)){
-      // Distinguish from "show note <text>" (creates a text widget) — only match if no quoted/literal text follows naturally
       var specificMatch=c.match(/(?:pull up|open|show|find|search for)\s+(?:my\s+)?(?:note|notes?)\s+(?:on|about|called|named|titled)\s+(.+)/);
       if(specificMatch){
         var q=specificMatch[1].trim();
@@ -655,12 +597,11 @@ function exitEditMode(refreshView){
       return typeof vaultIndex!=='undefined'&&vaultIndex.length?'Here\'s your vault, sir.':'Your vault isn\'t connected yet, sir.';
     }
 
-    // "pull up my [note name]" / "find my note on X"
     var pullMatch=c.match(/(?:pull up|find|open)\s+(?:my\s+)?(.+?)\s+(?:note|notes)\b/);
     if(pullMatch){
       var pq=pullMatch[1].trim();
       var pnote=findNoteByQuery(pq);
-      if(!pnote)return null; // let it fall through to other handlers
+      if(!pnote)return null;
       showPanel();openNote(vaultIndex.indexOf(pnote));
       return'Here\'s '+pnote.name.replace(/\.md$/,'')+', sir.';
     }
@@ -697,12 +638,8 @@ function exitEditMode(refreshView){
     if(cancelEditBtn)cancelEditBtn.addEventListener('click',cancelEdit);
     if(createBackBtn)createBackBtn.addEventListener('click',function(){
       if(createFormEl&&createFormEl.style.display!=='none'&&pendingTemplate){
-        // back from title form -> choice list
-        pendingTemplate=null;
-        renderCreateChoices();
-      }else{
-        hideCreatePanel();
-      }
+        pendingTemplate=null;renderCreateChoices();
+      }else{hideCreatePanel();}
     });
     var createSubmitBtn=document.getElementById('vp-create-submit');
     if(createSubmitBtn)createSubmitBtn.addEventListener('click',submitCreateForm);
@@ -712,7 +649,6 @@ function exitEditMode(refreshView){
     renderList('');
   }
 
-  // Called externally when vault connects/disconnects to refresh list
   function refresh(){
     if(document.getElementById('vault-panel').classList.contains('vp-vis')){
       renderFilterBar();
@@ -720,11 +656,11 @@ function exitEditMode(refreshView){
     }
   }
 
-return{init,showPanel,hidePanel,togglePanel,handleVoice,refresh,_openNoteByIdx:openNote};
+  return{init,showPanel,hidePanel,togglePanel,handleVoice,refresh,_openNoteByIdx:openNote};
 })();
 
 // ═══════════════════════════════════════════════════════════
-// ══  GRAPH SETTINGS (shared state consumed by the graph sim)  ══
+// ══  GRAPH SETTINGS  ══════════════════════════════════════
 // ═══════════════════════════════════════════════════════════
 var GraphSettings={
   typeFilter:{conversation:true,project:true,lecture:true,daily:true,general:true},
@@ -736,12 +672,13 @@ var GraphSettings={
   nodeSizeScale:1,
   graphArea:1,
   treeMode:false,
-  clusterMode:false
+  clusterMode:false,
+  nodeBrightness:1.0
 };
 var DEFAULT_GRAPH_SETTINGS=JSON.parse(JSON.stringify(GraphSettings));
 
 // ═══════════════════════════════════════════════════════════
-// ══  GRAPH SETTINGS PANEL MODULE (GRAPHUI)  ══════════════════
+// ══  GRAPH SETTINGS PANEL MODULE (GRAPHUI)  ══════════════
 // ═══════════════════════════════════════════════════════════
 var GRAPHUI=(function(){
   function showPanel(){
@@ -757,7 +694,6 @@ var GRAPHUI=(function(){
   }
 
   function applyAndRebuild(){
-    // Re-run the build so filters/sizing take effect; sim restarts gently
     if(typeof vaultConnected!=='undefined'&&vaultConnected&&typeof buildGraph==='function'){
       buildGraph();
     }
@@ -777,8 +713,7 @@ var GRAPHUI=(function(){
     ld.addEventListener('input',function(){
       GraphSettings.linkDistance=parseInt(this.value,10);
       document.getElementById('gui-linkdist-val').textContent=this.value;
-      clearTimeout(ldDebounce);
-      ldDebounce=setTimeout(applyAndRebuild,150);
+      clearTimeout(ldDebounce);ldDebounce=setTimeout(applyAndRebuild,150);
     });
     // Repulsion
     var rp=document.getElementById('gui-repulsion');
@@ -786,8 +721,7 @@ var GRAPHUI=(function(){
     rp.addEventListener('input',function(){
       GraphSettings.repulsion=parseInt(this.value,10);
       document.getElementById('gui-repulsion-val').textContent=this.value;
-      clearTimeout(rpDebounce);
-      rpDebounce=setTimeout(applyAndRebuild,150);
+      clearTimeout(rpDebounce);rpDebounce=setTimeout(applyAndRebuild,150);
     });
     // Node size
     var ns=document.getElementById('gui-nodesize');
@@ -795,8 +729,7 @@ var GRAPHUI=(function(){
     ns.addEventListener('input',function(){
       GraphSettings.nodeSizeScale=parseInt(this.value,10)/100;
       document.getElementById('gui-nodesize-val').textContent=this.value;
-      clearTimeout(nsDebounce);
-      nsDebounce=setTimeout(applyAndRebuild,150);
+      clearTimeout(nsDebounce);nsDebounce=setTimeout(applyAndRebuild,150);
     });
     // Graph area
     var ga=document.getElementById('gui-grapharea');
@@ -804,15 +737,14 @@ var GRAPHUI=(function(){
     ga.addEventListener('input',function(){
       GraphSettings.graphArea=parseInt(this.value,10)/100;
       document.getElementById('gui-grapharea-val').textContent=this.value;
-      clearTimeout(gaDebounce);
-      gaDebounce=setTimeout(applyAndRebuild,150);
+      clearTimeout(gaDebounce);gaDebounce=setTimeout(applyAndRebuild,150);
     });
     // Size by connections
     document.getElementById('gui-sizebyconn').addEventListener('change',function(){
       GraphSettings.sizeByConnections=this.checked;
       applyAndRebuild();
     });
-// Always show labels
+    // Always show labels
     document.getElementById('gui-showlabels').addEventListener('change',function(){
       GraphSettings.showLabels=this.checked;
     });
@@ -823,12 +755,17 @@ var GRAPHUI=(function(){
       document.getElementById('gui-treemode').checked=false;
       applyAndRebuild();
     });
-    // Tree mode
+    // Tree mode (forest)
     document.getElementById('gui-treemode').addEventListener('change',function(){
       GraphSettings.treeMode=this.checked;
       if(this.checked)GraphSettings.clusterMode=false;
       document.getElementById('gui-clustermode').checked=false;
       applyAndRebuild();
+    });
+    // Node brightness
+    document.getElementById('gui-brightness').addEventListener('input',function(){
+      GraphSettings.nodeBrightness=parseInt(this.value,10)/100;
+      document.getElementById('gui-brightness-val').textContent=this.value;
     });
     // Search / highlight
     document.getElementById('gui-search-input').addEventListener('input',function(){
@@ -846,16 +783,17 @@ var GRAPHUI=(function(){
       document.getElementById('gui-nodesize-val').textContent=GraphSettings.nodeSizeScale*100;
       document.getElementById('gui-grapharea').value=GraphSettings.graphArea*100;
       document.getElementById('gui-grapharea-val').textContent=GraphSettings.graphArea*100;
-   document.getElementById('gui-sizebyconn').checked=false;
+      document.getElementById('gui-sizebyconn').checked=false;
       document.getElementById('gui-showlabels').checked=false;
       document.getElementById('gui-clustermode').checked=false;
       document.getElementById('gui-treemode').checked=false;
+      document.getElementById('gui-brightness').value=100;
+      document.getElementById('gui-brightness-val').textContent='100';
       document.getElementById('gui-search-input').value='';
       applyAndRebuild();
     });
   }
 
-  // ── Voice ─────────────────────────────────────────────────
   function handleVoice(cmd){
     var c=cmd.toLowerCase().trim();
     if(/\b(open|pull up|show|let'?s (open|check|see))\b.*\b(graph settings|graph options|graph view settings)\b/.test(c)){
