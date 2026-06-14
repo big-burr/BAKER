@@ -681,6 +681,22 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
           <div class="toggle-thumb"></div>
         </label>
       </div>
+      <div class="gui-toggle-row">
+        <span>Grid mode</span>
+        <label class="toggle" style="transform:scale(.8)">
+          <input type="checkbox" id="gui-gridmode">
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>
+      <div class="gui-toggle-row">
+        <span>🌳 Yggdrasil</span>
+        <label class="toggle" style="transform:scale(.8)">
+          <input type="checkbox" id="gui-yggmode">
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>
       <div class="gui-slider-row" style="margin-top:6px">
         <div class="gui-slider-lbl"><span>Node brightness</span><span id="gui-brightness-val">100</span></div>
         <input type="range" class="gui-slider" id="gui-brightness" min="10" max="100" value="100">
@@ -905,6 +921,8 @@ var GraphSettings={
   graphArea:1,
  treeMode:false,
   clusterMode:false,
+  gridMode:false,
+  yggdrasilMode:false,
   nodeBrightness:1.0
 };
 var DEFAULT_GRAPH_SETTINGS=JSON.parse(JSON.stringify(GraphSettings));
