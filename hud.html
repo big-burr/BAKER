@@ -55,7 +55,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
 .rh-sw{bottom:-4px;left:-4px;width:12px;height:12px;cursor:sw-resize}
 .rh-se{bottom:-4px;right:-4px;width:12px;height:12px;cursor:se-resize}
 .rh-se::after{content:'';position:absolute;bottom:4px;right:4px;width:6px;height:6px;border-right:2px solid var(--border);border-bottom:2px solid var(--border);border-radius:0 0 2px 0;opacity:.6}
-/* Spotify panel inner content must not eat pointer events at the panel edge */
 #spotify-panel>div:not(.rh){overflow:hidden;border-radius:14px}
 .fp-icon{font-size:12px;flex-shrink:0}
 .fp-title{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;flex:1}
@@ -98,10 +97,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
 .sb-pill.speaking{color:var(--green);border-color:rgba(74,222,128,.35)}
 .sb-pill.thinking{color:var(--amber);border-color:rgba(251,191,36,.35)}
 .sb-txt{font-family:var(--mono);font-size:10px;color:var(--muted);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#graph-tooltip{position:fixed;z-index:60;background:rgba(26,26,29,.95);border:1px solid var(--border);border-radius:6px;padding:8px 12px;pointer-events:none;display:none;max-width:240px}
+/* ── GRAPH TOOLTIP — now includes preview ── */
+#graph-tooltip{position:fixed;z-index:60;background:rgba(26,26,29,.95);border:1px solid var(--border);border-radius:6px;padding:8px 12px;pointer-events:none;display:none;max-width:260px}
 .tt-name{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--text);margin-bottom:3px}
 .tt-path{font-family:var(--mono);font-size:9px;color:var(--muted)}
 .tt-type{font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:3px;margin-top:4px;display:inline-block}
+.tt-preview{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:6px;line-height:1.6;white-space:pre-wrap;word-break:break-word;opacity:.8;max-height:48px;overflow:hidden}
+/* ── GRAPH SETTINGS panel taller for new toggles ── */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;padding:24px}
 .overlay.open{display:flex}
 .modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
@@ -132,7 +134,16 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
 .toggle-thumb{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--muted);top:3px;left:3px;transition:all .25s}
 .toggle input:checked~.toggle-thumb{left:23px;background:var(--accent)}
 .toggle-lbl{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.06em;text-align:right;min-width:24px}
-/* ─── CONFIRM POPUP ──────────────────────────────────── */ #confirm-popup{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:300;background:rgba(26,26,29,.97);border:1px solid var(--accent-dim);border-radius:10px;padding:14px 18px;backdrop-filter:blur(20px);box-shadow:0 12px 32px rgba(0,0,0,.6);display:none;flex-direction:column;gap:10px;max-width:320px;text-align:center} #confirm-popup.vis{display:flex} #confirm-popup-text{font-family:var(--sans);font-size:13px;color:var(--text);line-height:1.5} #confirm-popup-btns{display:flex;gap:8px} #confirm-popup-btns button{flex:1;padding:7px;border-radius:6px;font-family:var(--mono);font-size:11px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s} #confirm-popup-btns button:hover{border-color:var(--accent);color:var(--text)} #confirm-popup-btns button.primary{background:var(--accent);border-color:var(--accent);color:#fff} #confirm-popup-btns button.primary:hover{background:#9585ff} /* ─── SPOTIFY FULL PANEL ─────────────────────────────── */
+/* ─── CONFIRM POPUP ── */
+#confirm-popup{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:300;background:rgba(26,26,29,.97);border:1px solid var(--accent-dim);border-radius:10px;padding:14px 18px;backdrop-filter:blur(20px);box-shadow:0 12px 32px rgba(0,0,0,.6);display:none;flex-direction:column;gap:10px;max-width:320px;text-align:center}
+#confirm-popup.vis{display:flex}
+#confirm-popup-text{font-family:var(--sans);font-size:13px;color:var(--text);line-height:1.5}
+#confirm-popup-btns{display:flex;gap:8px}
+#confirm-popup-btns button{flex:1;padding:7px;border-radius:6px;font-family:var(--mono);font-size:11px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s}
+#confirm-popup-btns button:hover{border-color:var(--accent);color:var(--text)}
+#confirm-popup-btns button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+#confirm-popup-btns button.primary:hover{background:#9585ff}
+/* ─── SPOTIFY FULL PANEL ── */
 #spotify-panel{position:fixed;bottom:40px;right:24px;width:340px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:280px;min-height:120px}
 #spotify-panel.sp-vis{display:flex}
 #spotify-panel>div:not(.rh){overflow:hidden;border-radius:14px}
@@ -149,7 +160,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
 .spp-tab:hover:not(.act){color:var(--text)}
 .spp-view{display:none;flex-direction:column}
 .spp-view.act{display:flex}
-/* Now Playing */
 .spp-np{padding:13px;display:flex;flex-direction:column;gap:9px}
 .spp-trow{display:flex;align-items:center;gap:11px}
 .spp-art{width:50px;height:50px;border-radius:7px;object-fit:cover;background:var(--surface2);flex-shrink:0}
@@ -175,7 +185,6 @@ input[type=range].spp-slider{-webkit-appearance:none;flex:1;height:4px;border-ra
 input[type=range].spp-slider::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:var(--accent);cursor:pointer;transition:background .15s}
 input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .spp-idle{padding:26px 14px;text-align:center;color:var(--muted);font-size:12px;line-height:1.7}
-/* Search */
 .spp-sw{padding:10px}
 .spp-srow{display:flex;gap:6px;margin-bottom:8px}
 .spp-si{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:12px;padding:7px 10px;outline:none;transition:border-color .2s}
@@ -191,14 +200,12 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .spp-rm{flex:1;min-width:0}
 .spp-rn{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
 .spp-rs{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* Library */
 .spp-lw{padding:4px 8px 10px}
 .spp-ltabs{display:flex;gap:4px;margin-bottom:6px;padding:4px 0}
 .spp-ltab{background:var(--surface2);border:none;color:var(--muted);font-family:var(--mono);font-size:9px;padding:4px 8px;border-radius:20px;cursor:pointer;transition:all .15s}
 .spp-ltab.lact{background:var(--accent-dim);color:var(--text)}
 .spp-ltab:hover:not(.lact){color:var(--text)}
 .spp-li{overflow-y:auto;max-height:236px}
-/* Devices */
 .spp-dw{padding:10px}
 .spp-dhdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
 .spp-dlbl{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
@@ -212,14 +219,12 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .spp-dname{font-size:12px;color:var(--text)}
 .spp-dtype{font-size:10px;color:var(--muted);text-transform:capitalize}
 .spp-ddot{width:7px;height:7px;border-radius:50%;background:#1db954;flex-shrink:0}
-/* Not connected */
 .spp-nc{padding:22px 14px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:9px}
 .spp-nct{font-family:var(--mono);font-size:12px;color:var(--text)}
 .spp-ncs{font-size:11px;color:var(--muted);line-height:1.6}
 .spp-ncbtn{background:#1db954;border:none;border-radius:20px;color:#000;cursor:pointer;font-family:var(--sans);font-size:12px;font-weight:600;padding:9px 22px;transition:all .15s}
 .spp-ncbtn:hover{background:#1ed760;transform:scale(1.02)}
 .spp-ncbtn:disabled{opacity:.45;cursor:default;transform:none}
-/* Settings Spotify section */
 .sp-set-sep{border-top:1px solid var(--border);padding-top:14px;margin-top:14px}
 .sp-set-hd{font-family:var(--mono);font-size:10px;color:#484650;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .sp-set-status{font-size:11px;color:var(--muted);margin-bottom:7px}
@@ -232,7 +237,7 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .sp-set-gbtn:hover{background:rgba(29,185,84,.1)}
 .sp-disc{background:transparent;border:1px solid rgba(248,113,113,.35);border-radius:4px;padding:7px 12px;font-family:var(--mono);font-size:11px;color:var(--red);cursor:pointer;transition:all .15s;width:100%;margin-top:4px}
 .sp-disc:hover{background:rgba(248,113,113,.08)}
-/* ─── CALENDAR / TASKS PANEL ─────────────────────────── */
+/* ─── CALENDAR / TASKS PANEL ── */
 #calendar-panel{position:fixed;top:64px;right:380px;width:340px;height:440px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:280px;min-height:200px}
 #calendar-panel.cal-vis{display:flex}
 #calendar-panel>div:not(.rh){overflow:hidden;border-radius:14px}
@@ -274,8 +279,7 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .cal-empty{padding:32px 16px;text-align:center;color:var(--muted);font-size:12px;line-height:1.6}
 .cal-footer{padding:6px 12px;border-top:1px solid var(--border);font-family:var(--mono);font-size:9px;color:#484650;text-align:center;flex-shrink:0;letter-spacing:.04em}
 .cal-footer.synced{color:#4ade80}
-
-/* ─── MONTH CALENDAR PANEL ───────────────────────────── */
+/* ─── MONTH CALENDAR PANEL ── */
 #month-panel{position:fixed;top:120px;right:60px;width:380px;height:420px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:320px;min-height:360px}
 #month-panel.mcal-vis{display:flex}
 #month-panel>div:not(.rh){overflow:hidden;border-radius:14px}
@@ -323,10 +327,35 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .mcal-detail-list::-webkit-scrollbar{width:3px}
 .mcal-detail-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 .mcal-detail-empty{padding:32px 16px;text-align:center;color:var(--muted);font-size:12px;line-height:1.6}
-
-/* ─── GRAPH SETTINGS PANEL ───────────────────────────── */ #graphui-panel{position:fixed;top:120px;right:460px;width:300px;height:480px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:260px;min-height:340px} #graphui-panel.gui-vis{display:flex} #graphui-panel>div:not(.rh){overflow:hidden;border-radius:14px} .gui-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--border);cursor:move;user-select:none;border-radius:14px 14px 0 0;flex-shrink:0} .gui-left{display:flex;align-items:center;gap:7px} .gui-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase} .gui-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0 2px;line-height:1;transition:color .15s} .gui-close:hover{color:var(--text)} #gui-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;min-height:0;border-radius:0 0 14px 14px;padding:12px 14px;gap:14px} #gui-body::-webkit-scrollbar{width:3px} #gui-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px} .gui-section{display:flex;flex-direction:column;gap:8px} .gui-section-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#484650} .gui-filter-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);cursor:pointer} .gui-filter-row input{accent-color:var(--accent);cursor:pointer} .gui-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0} .gui-slider-row{display:flex;flex-direction:column;gap:4px} .gui-slider-lbl{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--muted)} .gui-slider-lbl span{color:var(--accent)} input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;border-radius:2px;background:var(--surface2);cursor:pointer;outline:none;accent-color:var(--accent)} .gui-toggle-row{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--text)} .gui-search-row{display:flex;gap:6px} .gui-search-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:12px;padding:7px 10px;outline:none;transition:border-color .2s;min-width:0} .gui-search-input:focus{border-color:var(--accent)} .gui-search-input::placeholder{color:#484650} .gui-reset-btn{background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;font-family:var(--mono);font-size:10px;padding:7px 10px;transition:all .15s} .gui-reset-btn:hover{border-color:var(--accent);color:var(--text)}
-
-/* ─── VAULT NOTES PANEL ──────────────────────────────── */
+/* ─── GRAPH SETTINGS PANEL ── */
+#graphui-panel{position:fixed;top:120px;right:460px;width:300px;height:520px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:260px;min-height:360px}
+#graphui-panel.gui-vis{display:flex}
+#graphui-panel>div:not(.rh){overflow:hidden;border-radius:14px}
+.gui-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--border);cursor:move;user-select:none;border-radius:14px 14px 0 0;flex-shrink:0}
+.gui-left{display:flex;align-items:center;gap:7px}
+.gui-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+.gui-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0 2px;line-height:1;transition:color .15s}
+.gui-close:hover{color:var(--text)}
+#gui-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;min-height:0;border-radius:0 0 14px 14px;padding:12px 14px;gap:14px}
+#gui-body::-webkit-scrollbar{width:3px}
+#gui-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.gui-section{display:flex;flex-direction:column;gap:8px}
+.gui-section-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#484650}
+.gui-filter-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);cursor:pointer}
+.gui-filter-row input{accent-color:var(--accent);cursor:pointer}
+.gui-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.gui-slider-row{display:flex;flex-direction:column;gap:4px}
+.gui-slider-lbl{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--muted)}
+.gui-slider-lbl span{color:var(--accent)}
+input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;border-radius:2px;background:var(--surface2);cursor:pointer;outline:none;accent-color:var(--accent)}
+.gui-toggle-row{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--text)}
+.gui-search-row{display:flex;gap:6px}
+.gui-search-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:12px;padding:7px 10px;outline:none;transition:border-color .2s;min-width:0}
+.gui-search-input:focus{border-color:var(--accent)}
+.gui-search-input::placeholder{color:#484650}
+.gui-reset-btn{background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;font-family:var(--mono);font-size:10px;padding:7px 10px;transition:all .15s}
+.gui-reset-btn:hover{border-color:var(--accent);color:var(--text)}
+/* ─── VAULT NOTES PANEL ── */
 #vault-panel{position:fixed;top:120px;left:60px;width:380px;height:460px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:300px;min-height:300px}
 #vault-panel.vp-vis{display:flex}
 #vault-panel>div:not(.rh){overflow:hidden;border-radius:14px}
@@ -350,7 +379,6 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .vp-item-name{font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vp-item-path{font-family:var(--mono);font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
 .vp-empty{padding:32px 16px;text-align:center;color:var(--muted);font-size:12px;line-height:1.6}
-/* Note viewer overlay */
 #vp-viewer{position:absolute;inset:0;background:rgba(22,22,25,.99);display:none;flex-direction:column;z-index:5;border-radius:0 0 14px 14px}
 #vp-viewer.vis{display:flex}
 .vp-viewer-hdr{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
@@ -360,7 +388,6 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .vp-viewer-content{flex:1;overflow-y:auto;padding:14px 16px;font-family:var(--mono);font-size:11px;line-height:1.8;color:var(--text);white-space:pre-wrap;word-break:break-word}
 .vp-viewer-content::-webkit-scrollbar{width:3px}
 .vp-viewer-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-/* ── NEW: vault notes upgrade styles ── */
 .vp-new-btn{flex-shrink:0;background:var(--accent);border:none;border-radius:8px;color:#fff;cursor:pointer;font-family:var(--mono);font-size:11px;padding:0 12px;transition:background .15s}
 .vp-new-btn:hover{background:#9585ff}
 #vp-create{position:absolute;inset:0;background:rgba(22,22,25,.99);display:none;flex-direction:column;z-index:6;border-radius:0 0 14px 14px}
@@ -381,7 +408,6 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .vp-edit-btn.vp-cancel{border-color:rgba(248,113,113,.35);color:var(--red)}
 .vp-edit-btn.vp-cancel:hover{background:rgba(248,113,113,.08)}
 .vp-viewer-edit{flex:1;width:100%;border:none;outline:none;resize:none;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:11px;line-height:1.8;padding:14px 16px;white-space:pre-wrap}
-
 /* Scrollbars */
 .spp-res::-webkit-scrollbar,.spp-li::-webkit-scrollbar{width:3px}
 .spp-res::-webkit-scrollbar-thumb,.spp-li::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
@@ -402,11 +428,12 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
   <button class="graph-connect-btn" onclick="handleVaultBtn()">⬡ Connect Vault</button>
 </div>
 
-<!-- GRAPH TOOLTIP -->
+<!-- GRAPH TOOLTIP — now includes preview -->
 <div id="graph-tooltip">
   <div class="tt-name" id="tt-name"></div>
   <div class="tt-path" id="tt-path"></div>
   <div class="tt-type" id="tt-type"></div>
+  <div class="tt-preview" id="tt-preview"></div>
 </div>
 
 <!-- GRAPH STATS -->
@@ -516,7 +543,7 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
     </div>
     <button class="spp-close" onclick="SP.hidePanel()">×</button>
   </div>
-  <div id="spp-body"><!-- filled by SP.render() --></div>
+  <div id="spp-body"></div>
 </div>
 
 <!-- CALENDAR / TASKS PANEL -->
@@ -577,7 +604,7 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
   </div>
 </div>
 
-<!-- GRAPH SETTINGS PANEL -->
+<!-- GRAPH SETTINGS PANEL — now includes Cluster and Tree toggles -->
 <div id="graphui-panel">
   <div class="gui-hdr">
     <div class="gui-left">
@@ -638,6 +665,22 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
           <div class="toggle-thumb"></div>
         </label>
       </div>
+      <div class="gui-toggle-row">
+        <span>Cluster by type</span>
+        <label class="toggle" style="transform:scale(.8)">
+          <input type="checkbox" id="gui-clustermode">
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>
+      <div class="gui-toggle-row">
+        <span>Tree mode</span>
+        <label class="toggle" style="transform:scale(.8)">
+          <input type="checkbox" id="gui-treemode">
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>
     </div>
     <button class="gui-reset-btn" id="gui-reset-btn">↺ Reset to defaults</button>
   </div>
@@ -653,17 +696,12 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
     <button class="vp-close" onclick="VAULTUI.hidePanel()">×</button>
   </div>
   <div id="vp-body">
-    <!-- Search row + New button -->
     <div class="vp-search-row">
       <input class="vp-search-input" id="vp-search-input" type="text" placeholder="Search… (try type:lecture or #project)">
       <button class="vp-new-btn" id="vp-new-btn" title="New note from template">+ New</button>
     </div>
-    <!-- Sort/filter bar — populated by VAULTUI.renderFilterBar() -->
     <div class="vp-filter-bar" id="vp-filter-bar"></div>
-    <!-- Note list -->
     <div class="vp-list" id="vp-list"></div>
-
-    <!-- Note viewer overlay -->
     <div id="vp-viewer">
       <div class="vp-viewer-hdr">
         <button class="vp-back" id="vp-back">‹</button>
@@ -675,8 +713,6 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
       <div class="vp-viewer-content" id="vp-viewer-content"></div>
       <textarea class="vp-viewer-edit" id="vp-viewer-edit" style="display:none"></textarea>
     </div>
-
-    <!-- Quick-create overlay -->
     <div id="vp-create">
       <div class="vp-viewer-hdr">
         <button class="vp-back" id="vp-create-back">‹</button>
@@ -826,124 +862,48 @@ function setOrbState(s){
 // ═══════════════════════════════════════════════════════════
 // DRAGGABLE PANELS
 // ═══════════════════════════════════════════════════════════
-function makeWindowBehavior(panelEl, hdrEl, opts) {
-  opts = opts || {};
-  var MIN_W = opts.minW || 180;
-  var MIN_H = opts.minH || 80;
-  var NAV_H = 44;
-  var _normalised = false;
-  function normalise() {
-    if (panelEl.offsetParent === null && panelEl.style.display === 'none') return;
-    var r = panelEl.getBoundingClientRect();
-    if (!r.width || !r.height) return;
-    panelEl.style.left   = r.left + 'px';
-    panelEl.style.top    = r.top  + 'px';
-    panelEl.style.bottom = 'auto';
-    panelEl.style.right  = 'auto';
-    panelEl.style.width  = r.width  + 'px';
-    panelEl.style.height = r.height + 'px';
-    _normalised = true;
-  }
-  if (panelEl.style.display !== 'none') normalise();
-  panelEl._wbNormalise = normalise;
-  ['nw','n','ne','e','se','s','sw','w'].forEach(function(dir){
-    var h = document.createElement('div');
-    h.className = 'rh rh-' + dir;
-    h.dataset.dir = dir;
-    panelEl.appendChild(h);
-  });
-  var dragging = false, dox = 0, doy = 0;
-  hdrEl.addEventListener('mousedown', function(e) {
-    if (e.button !== 0) return;
-    if (e.target.closest('.fp-btns,.spp-close,.spp-tabs,.spp-tab')) return;
-    e.preventDefault();
-    normalise();
-    dragging = true;
-    var r = panelEl.getBoundingClientRect();
-    dox = e.clientX - r.left;
-    doy = e.clientY - r.top;
-    panelEl.style.transition = 'none';
-    bringToFront(panelEl);
-    document.addEventListener('mousemove', onDragMove);
-    document.addEventListener('mouseup',   onDragUp);
-  });
-  function onDragMove(e) {
-    if (!dragging) return;
-    var x = e.clientX - dox;
-    var y = e.clientY - doy;
-    x = Math.max(0, Math.min(window.innerWidth  - panelEl.offsetWidth,  x));
-    y = Math.max(NAV_H, Math.min(window.innerHeight - panelEl.offsetHeight - 30, y));
-    panelEl.style.left = x + 'px';
-    panelEl.style.top  = y + 'px';
-  }
-  function onDragUp() {
-    dragging = false;
-    panelEl.style.transition = '';
-    document.removeEventListener('mousemove', onDragMove);
-    document.removeEventListener('mouseup',   onDragUp);
-  }
-  var resizing = false, rdir = '', rsx = 0, rsy = 0, rx = 0, ry = 0, rw = 0, rh = 0;
-  panelEl.addEventListener('mousedown', function(e) {
-    var handle = e.target.closest('.rh');
-    if (!handle) return;
-    if (e.button !== 0) return;
-    e.preventDefault();
-    e.stopPropagation();
-    normalise();
-    resizing = true;
-    rdir = handle.dataset.dir;
-    rsx = e.clientX; rsy = e.clientY;
-    var r = panelEl.getBoundingClientRect();
-    rx = r.left; ry = r.top; rw = r.width; rh = r.height;
-    panelEl.style.transition = 'none';
-    bringToFront(panelEl);
-    document.addEventListener('mousemove', onResizeMove);
-    document.addEventListener('mouseup',   onResizeUp);
-  });
-  function onResizeMove(e) {
-    if (!resizing) return;
-    var dx = e.clientX - rsx;
-    var dy = e.clientY - rsy;
-    var nx = rx, ny = ry, nw = rw, nh = rh;
-    if (rdir.includes('e')) nw = Math.max(MIN_W, rw + dx);
-    if (rdir.includes('w')) { nw = Math.max(MIN_W, rw - dx); nx = rx + rw - nw; }
-    if (rdir.includes('s')) nh = Math.max(MIN_H, rh + dy);
-    if (rdir.includes('n')) { nh = Math.max(MIN_H, rh - dy); ny = ry + rh - nh; }
-    nx = Math.max(0, Math.min(window.innerWidth  - MIN_W, nx));
-    ny = Math.max(NAV_H, Math.min(window.innerHeight - MIN_H - 30, ny));
-    panelEl.style.left   = nx + 'px';
-    panelEl.style.top    = ny + 'px';
-    panelEl.style.width  = nw + 'px';
-    panelEl.style.height = nh + 'px';
-  }
-  function onResizeUp() {
-    resizing = false;
-    panelEl.style.transition = '';
-    document.removeEventListener('mousemove', onResizeMove);
-    document.removeEventListener('mouseup',   onResizeUp);
-  }
-  panelEl.addEventListener('mousedown', function(e) {
-    if (!e.target.closest('.rh')) bringToFront(panelEl);
-  });
+function makeWindowBehavior(panelEl,hdrEl,opts){
+  opts=opts||{};var MIN_W=opts.minW||180;var MIN_H=opts.minH||80;var NAV_H=44;
+  function normalise(){if(panelEl.offsetParent===null&&panelEl.style.display==='none')return;var r=panelEl.getBoundingClientRect();if(!r.width||!r.height)return;panelEl.style.left=r.left+'px';panelEl.style.top=r.top+'px';panelEl.style.bottom='auto';panelEl.style.right='auto';panelEl.style.width=r.width+'px';panelEl.style.height=r.height+'px';}
+  if(panelEl.style.display!=='none')normalise();
+  panelEl._wbNormalise=normalise;
+  ['nw','n','ne','e','se','s','sw','w'].forEach(function(dir){var h=document.createElement('div');h.className='rh rh-'+dir;h.dataset.dir=dir;panelEl.appendChild(h);});
+  var dragging=false,dox=0,doy=0;
+  hdrEl.addEventListener('mousedown',function(e){if(e.button!==0)return;if(e.target.closest('.fp-btns,.spp-close,.spp-tabs,.spp-tab'))return;e.preventDefault();normalise();dragging=true;var r=panelEl.getBoundingClientRect();dox=e.clientX-r.left;doy=e.clientY-r.top;panelEl.style.transition='none';bringToFront(panelEl);document.addEventListener('mousemove',onDragMove);document.addEventListener('mouseup',onDragUp);});
+  function onDragMove(e){if(!dragging)return;var x=e.clientX-dox;var y=e.clientY-doy;x=Math.max(0,Math.min(window.innerWidth-panelEl.offsetWidth,x));y=Math.max(NAV_H,Math.min(window.innerHeight-panelEl.offsetHeight-30,y));panelEl.style.left=x+'px';panelEl.style.top=y+'px';}
+  function onDragUp(){dragging=false;panelEl.style.transition='';document.removeEventListener('mousemove',onDragMove);document.removeEventListener('mouseup',onDragUp);}
+  var resizing=false,rdir='',rsx=0,rsy=0,rx=0,ry=0,rw=0,rh=0;
+  panelEl.addEventListener('mousedown',function(e){var handle=e.target.closest('.rh');if(!handle)return;if(e.button!==0)return;e.preventDefault();e.stopPropagation();normalise();resizing=true;rdir=handle.dataset.dir;rsx=e.clientX;rsy=e.clientY;var r=panelEl.getBoundingClientRect();rx=r.left;ry=r.top;rw=r.width;rh=r.height;panelEl.style.transition='none';bringToFront(panelEl);document.addEventListener('mousemove',onResizeMove);document.addEventListener('mouseup',onResizeUp);});
+  function onResizeMove(e){if(!resizing)return;var dx=e.clientX-rsx;var dy=e.clientY-rsy;var nx=rx,ny=ry,nw=rw,nh=rh;if(rdir.includes('e'))nw=Math.max(MIN_W,rw+dx);if(rdir.includes('w')){nw=Math.max(MIN_W,rw-dx);nx=rx+rw-nw;}if(rdir.includes('s'))nh=Math.max(MIN_H,rh+dy);if(rdir.includes('n')){nh=Math.max(MIN_H,rh-dy);ny=ry+rh-nh;}nx=Math.max(0,Math.min(window.innerWidth-MIN_W,nx));ny=Math.max(NAV_H,Math.min(window.innerHeight-MIN_H-30,ny));panelEl.style.left=nx+'px';panelEl.style.top=ny+'px';panelEl.style.width=nw+'px';panelEl.style.height=nh+'px';}
+  function onResizeUp(){resizing=false;panelEl.style.transition='';document.removeEventListener('mousemove',onResizeMove);document.removeEventListener('mouseup',onResizeUp);}
+  panelEl.addEventListener('mousedown',function(e){if(!e.target.closest('.rh'))bringToFront(panelEl);});
 }
-var _zTop = 30;
-function bringToFront(el) { el.style.zIndex = ++_zTop; }
-function makeDraggable(panelId, hdrId) {
-  var p = document.getElementById(panelId);
-  var h = document.getElementById(hdrId);
-  if (p && h) makeWindowBehavior(p, h);
-}
+var _zTop=30;
+function bringToFront(el){el.style.zIndex=++_zTop;}
+function makeDraggable(panelId,hdrId){var p=document.getElementById(panelId);var h=document.getElementById(hdrId);if(p&&h)makeWindowBehavior(p,h);}
 function toggleMinimize(id){document.getElementById(id).classList.toggle('minimized');}
 function closePanel(id){document.getElementById(id).style.display='none';}
-function openPanel(id){
-  var p=document.getElementById(id);
-  p.style.display='flex';
-  p.classList.remove('minimized');
-  if(p._wbNormalise)p._wbNormalise();
-}
+function openPanel(id){var p=document.getElementById(id);p.style.display='flex';p.classList.remove('minimized');if(p._wbNormalise)p._wbNormalise();}
 </script>
 <script src="js/vault-graph.js"></script>
 <script>
+// ═══════════════════════════════════════════════════════════
+// VAULT GRAPH SETTINGS — GraphSettings includes treeMode + clusterMode
+// ═══════════════════════════════════════════════════════════
+var GraphSettings={
+  typeFilter:{conversation:true,project:true,lecture:true,daily:true,general:true},
+  linkDistance:90,
+  repulsion:100,
+  sizeByConnections:false,
+  showLabels:false,
+  searchQuery:'',
+  nodeSizeScale:1,
+  graphArea:1,
+  treeMode:false,
+  clusterMode:false
+};
+var DEFAULT_GRAPH_SETTINGS=JSON.parse(JSON.stringify(GraphSettings));
+
 // ═══════════════════════════════════════════════════════════
 // VAULT
 // ═══════════════════════════════════════════════════════════
@@ -957,7 +917,6 @@ async function tryReconnectVault(){var stored=await getStoredHandle();if(!stored
 async function handleVaultBtn(){if(!hasFS){alert('Requires Chrome on desktop.');return;}if(vaultConnected){vaultHandle=null;vaultIndex=[];vaultConnected=false;graphNodes=[];graphEdges=[];setVaultBtn('off');document.getElementById('graph-overlay').classList.remove('hidden');document.getElementById('graph-stats').style.display='none';if(graphAnim){cancelAnimationFrame(graphAnim);graphAnim=null;}var ctx=document.getElementById('vault-graph-canvas').getContext('2d');ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);}else{try{var handle=await window.showDirectoryPicker({mode:'readwrite'});await doConnect(handle);}catch(e){if(e.name!=='AbortError')alert('Failed: '+e.message);}}}
 async function doConnect(handle){vaultHandle=handle;await storeHandle(handle);setVaultBtn('scanning');vaultIndex=[];await scanDir(handle,'');vaultConnected=true;setVaultBtn('on');buildGraph();setStatus('Vault connected — '+vaultIndex.length+' notes loaded');if(typeof CAL!=='undefined')CAL.onVaultConnected();if(typeof VAULTUI!=='undefined')VAULTUI.refresh();}
 function setVaultBtn(s){var b=document.getElementById('vault-btn');b.className='hbtn'+(s==='on'?' on':'');b.textContent=s==='on'?'⬡ Vault on':s==='scanning'?'⟳ Scanning...':'⬡ Connect Vault';}
-// EDIT 1: capture mtime during vault scan
 async function scanDir(dir,path){try{for await(var entry of dir.values()){if(entry.name.startsWith('.'))continue;if(entry.kind==='file'&&entry.name.endsWith('.md')){try{var f=await entry.getFile();var content=await f.text();vaultIndex.push({name:entry.name,path:path?path+'/'+entry.name:entry.name,content:content,mtime:f.lastModified});}catch(e){}}else if(entry.kind==='directory'){await scanDir(entry,path?path+'/'+entry.name:entry.name);}}}catch(e){}}
 
 // ═══════════════════════════════════════════════════════════
@@ -966,13 +925,7 @@ async function scanDir(dir,path){try{for await(var entry of dir.values()){if(ent
 var voiceRec=null,voiceActive=false,isSpeaking=false;
 var voiceFinal='',silenceTimer=null,speechRate=0.92;
 var MID_SENTENCE_WORDS=['and','but','so','because','that','which','who','when','where','if','although','however','therefore','then','or','nor','yet','for','as','since','while','though','unless','until','after','before','even'];
-function getSilenceWindow(txt){
-  var trimmed=(txt||'').trim().toLowerCase();
-  var lastWord=trimmed.split(/\s+/).pop().replace(/[.,!?]*/g,'');
-  var base=conversationMode?2200:3000;
-  if(MID_SENTENCE_WORDS.indexOf(lastWord)!==-1)return base+1500;
-  return base;
-}
+function getSilenceWindow(txt){var trimmed=(txt||'').trim().toLowerCase();var lastWord=trimmed.split(/\s+/).pop().replace(/[.,!?]*/g,'');var base=conversationMode?2200:3000;if(MID_SENTENCE_WORDS.indexOf(lastWord)!==-1)return base+1500;return base;}
 var wakeRec=null;
 var HOT_WORDS=['hey baker','baker','yo baker','ok baker'];
 var speakEndTime=0,ECHO_LOCKOUT_MS=1800;
@@ -980,238 +933,48 @@ var cachedVoices=[];
 var conversationMode=false;
 var conversationHistory=[];
 function loadVoices(){cachedVoices=speechSynthesis.getVoices();}
-
-function startWakeWord(){
-  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;stopWakeWord();
-  wakeRec=new SR();wakeRec.continuous=true;wakeRec.interimResults=false;wakeRec.lang='en-US';
-  wakeRec.onresult=function(e){var txt=e.results[e.results.length-1][0].transcript.toLowerCase().trim();if(HOT_WORDS.some(function(w){return txt.includes(w);})){stopWakeWord();activateListening();}};
-  wakeRec.onend=function(){if(!voiceActive&&!isSpeaking)try{wakeRec.start();}catch(e){}};
-  try{wakeRec.start();document.getElementById('wake-status').textContent='👂 listening for wake word';}catch(e){}
-}
+function startWakeWord(){var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;stopWakeWord();wakeRec=new SR();wakeRec.continuous=true;wakeRec.interimResults=false;wakeRec.lang='en-US';wakeRec.onresult=function(e){var txt=e.results[e.results.length-1][0].transcript.toLowerCase().trim();if(HOT_WORDS.some(function(w){return txt.includes(w);})){stopWakeWord();activateListening();}};wakeRec.onend=function(){if(!voiceActive&&!isSpeaking)try{wakeRec.start();}catch(e){}};try{wakeRec.start();document.getElementById('wake-status').textContent='👂 listening for wake word';}catch(e){}}
 function stopWakeWord(){if(wakeRec){wakeRec.stop();wakeRec=null;}document.getElementById('wake-status').textContent='';}
-function handleOrbClick(e){
-  if(orbMusicMode)return;
-  if(conversationMode){endConversationMode('Goodbye, sir.');return;}
-  if(isSpeaking){stopSpeaking();return;}
-  if(voiceActive){stopVoice();}else{activateListening();}
-}
+function handleOrbClick(e){if(orbMusicMode)return;if(conversationMode){endConversationMode('Goodbye, sir.');return;}if(isSpeaking){stopSpeaking();return;}if(voiceActive){stopVoice();}else{activateListening();}}
 
 // ═══════════════════════════════════════════════════════════
 // RECORD / MUSIC MODE
 // ═══════════════════════════════════════════════════════════
 var orbMusicMode=false;
 var recordAngle=0,recordImg=null,recordArtUrl='',recordRafId=null,recordLastTime=0,recordSpinning=true;
-
-function toggleMusicMode(){
-  if(!SP.isConnected()){if(isSpeaking){stopSpeaking();return;}if(voiceActive){stopVoice();}else{activateListening();}return;}
-  orbMusicMode=!orbMusicMode;_applyMusicMode();
-}
-function _applyMusicMode(){
-  var orbCanvas=document.getElementById('orb-canvas');
-  var recCanvas=document.getElementById('record-canvas');
-  var footNormal=document.getElementById('orb-foot-normal');
-  var footMusic=document.getElementById('orb-foot-music');
-  var panel=document.getElementById('orb-panel');
-  var icon=document.getElementById('orb-mode-icon');
-  var lbl=document.getElementById('orb-panel-label');
-  if(orbMusicMode){orbCanvas.style.display='none';recCanvas.style.display='block';footNormal.style.display='none';footMusic.style.display='block';panel.classList.add('music-mode');icon.textContent='♫';lbl.textContent='Now Playing';_syncRecordFromState();_startRecordLoop();}
-  else{orbCanvas.style.display='block';recCanvas.style.display='none';footNormal.style.display='block';footMusic.style.display='none';panel.classList.remove('music-mode');icon.textContent='◈';lbl.textContent='BAKER';_stopRecordLoop();}
-}
-function _syncRecordFromState(){
-  var state=SP.getCurrentTrack&&SP.getCurrentTrack();if(!state||!state.item)return;var it=state.item;
-  var tn=document.getElementById('orb-track-name');var an=document.getElementById('orb-artist-name');
-  if(tn)tn.textContent=it.name||'';if(an)an.textContent=(it.artists&&it.artists.map(function(a){return a.name;}).join(', '))||'';
-  var pp=document.getElementById('orb-music-pp');if(pp)pp.textContent=state.is_playing?'⏸':'▶';recordSpinning=!!state.is_playing;
-  var artUrl=(it.album&&it.album.images&&(it.album.images[1]||it.album.images[0]))?((it.album.images[1]||it.album.images[0]).url):'';
-  if(artUrl&&artUrl!==recordArtUrl){recordArtUrl=artUrl;recordImg=new Image();recordImg.crossOrigin='anonymous';recordImg.src=artUrl;}
-}
-function orbMusicSyncState(state){
-  if(!orbMusicMode)return;if(!state||!state.item)return;var it=state.item;
-  var tn=document.getElementById('orb-track-name');var an=document.getElementById('orb-artist-name');
-  if(tn)tn.textContent=it.name||'';if(an)an.textContent=(it.artists&&it.artists.map(function(a){return a.name;}).join(', '))||'';
-  var pp=document.getElementById('orb-music-pp');if(pp)pp.textContent=state.is_playing?'⏸':'▶';recordSpinning=!!state.is_playing;
-  var artUrl=(it.album&&it.album.images&&(it.album.images[1]||it.album.images[0]))?((it.album.images[1]||it.album.images[0]).url):'';
-  if(artUrl&&artUrl!==recordArtUrl){recordArtUrl=artUrl;recordImg=new Image();recordImg.crossOrigin='anonymous';recordImg.src=artUrl;}
-}
-function orbMusicTogglePlay(){
-  var state=SP.getCurrentTrack&&SP.getCurrentTrack();
-  if(state&&state.is_playing){SP.pause();}else{SP.resume();}
-  recordSpinning=!recordSpinning;
-  var pp=document.getElementById('orb-music-pp');if(pp)pp.textContent=recordSpinning?'⏸':'▶';
-}
-function _startRecordLoop(){
-  if(recordRafId)return;recordLastTime=performance.now();
-  function frame(now){
-    if(!orbMusicMode){recordRafId=null;return;}
-    recordRafId=requestAnimationFrame(frame);
-    var dt=(now-recordLastTime)/1000;recordLastTime=now;
-    if(recordSpinning)recordAngle+=dt*(Math.PI*2/3);_drawRecord();
-  }
-  recordRafId=requestAnimationFrame(frame);
-}
+function toggleMusicMode(){if(!SP.isConnected()){if(isSpeaking){stopSpeaking();return;}if(voiceActive){stopVoice();}else{activateListening();}return;}orbMusicMode=!orbMusicMode;_applyMusicMode();}
+function _applyMusicMode(){var orbCanvas=document.getElementById('orb-canvas');var recCanvas=document.getElementById('record-canvas');var footNormal=document.getElementById('orb-foot-normal');var footMusic=document.getElementById('orb-foot-music');var panel=document.getElementById('orb-panel');var icon=document.getElementById('orb-mode-icon');var lbl=document.getElementById('orb-panel-label');if(orbMusicMode){orbCanvas.style.display='none';recCanvas.style.display='block';footNormal.style.display='none';footMusic.style.display='block';panel.classList.add('music-mode');icon.textContent='♫';lbl.textContent='Now Playing';_syncRecordFromState();_startRecordLoop();}else{orbCanvas.style.display='block';recCanvas.style.display='none';footNormal.style.display='block';footMusic.style.display='none';panel.classList.remove('music-mode');icon.textContent='◈';lbl.textContent='BAKER';_stopRecordLoop();}}
+function _syncRecordFromState(){var state=SP.getCurrentTrack&&SP.getCurrentTrack();if(!state||!state.item)return;var it=state.item;var tn=document.getElementById('orb-track-name');var an=document.getElementById('orb-artist-name');if(tn)tn.textContent=it.name||'';if(an)an.textContent=(it.artists&&it.artists.map(function(a){return a.name;}).join(', '))||'';var pp=document.getElementById('orb-music-pp');if(pp)pp.textContent=state.is_playing?'⏸':'▶';recordSpinning=!!state.is_playing;var artUrl=(it.album&&it.album.images&&(it.album.images[1]||it.album.images[0]))?((it.album.images[1]||it.album.images[0]).url):'';if(artUrl&&artUrl!==recordArtUrl){recordArtUrl=artUrl;recordImg=new Image();recordImg.crossOrigin='anonymous';recordImg.src=artUrl;}}
+function orbMusicSyncState(state){if(!orbMusicMode)return;if(!state||!state.item)return;var it=state.item;var tn=document.getElementById('orb-track-name');var an=document.getElementById('orb-artist-name');if(tn)tn.textContent=it.name||'';if(an)an.textContent=(it.artists&&it.artists.map(function(a){return a.name;}).join(', '))||'';var pp=document.getElementById('orb-music-pp');if(pp)pp.textContent=state.is_playing?'⏸':'▶';recordSpinning=!!state.is_playing;var artUrl=(it.album&&it.album.images&&(it.album.images[1]||it.album.images[0]))?((it.album.images[1]||it.album.images[0]).url):'';if(artUrl&&artUrl!==recordArtUrl){recordArtUrl=artUrl;recordImg=new Image();recordImg.crossOrigin='anonymous';recordImg.src=artUrl;}}
+function orbMusicTogglePlay(){var state=SP.getCurrentTrack&&SP.getCurrentTrack();if(state&&state.is_playing){SP.pause();}else{SP.resume();}recordSpinning=!recordSpinning;var pp=document.getElementById('orb-music-pp');if(pp)pp.textContent=recordSpinning?'⏸':'▶';}
+function _startRecordLoop(){if(recordRafId)return;recordLastTime=performance.now();function frame(now){if(!orbMusicMode){recordRafId=null;return;}recordRafId=requestAnimationFrame(frame);var dt=(now-recordLastTime)/1000;recordLastTime=now;if(recordSpinning)recordAngle+=dt*(Math.PI*2/3);_drawRecord();}recordRafId=requestAnimationFrame(frame);}
 function _stopRecordLoop(){if(recordRafId){cancelAnimationFrame(recordRafId);recordRafId=null;}}
-function _drawRecord(){
-  var canvas=document.getElementById('record-canvas');if(!canvas)return;
-  var W=canvas.offsetWidth,H=canvas.offsetHeight;if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H;}if(!W||!H)return;
-  var ctx=canvas.getContext('2d');ctx.clearRect(0,0,W,H);
-  var cx=W/2,cy=H/2,maxR=Math.min(W,H)/2-8,artR=maxR*0.56,vinylR=maxR,labelR=artR*1.08,holeR=maxR*0.06;
-  ctx.save();ctx.shadowColor='rgba(0,0,0,0.7)';ctx.shadowBlur=24;ctx.shadowOffsetX=4;ctx.shadowOffsetY=6;ctx.beginPath();ctx.arc(cx,cy,vinylR,0,Math.PI*2);ctx.fillStyle='#111';ctx.fill();ctx.restore();
-  ctx.save();ctx.beginPath();ctx.arc(cx,cy,vinylR,0,Math.PI*2);ctx.clip();
-  ctx.beginPath();ctx.arc(cx,cy,vinylR,0,Math.PI*2);ctx.fillStyle='#0e0e0f';ctx.fill();
-  for(var gr=artR*1.12;gr<vinylR-2;gr+=5){ctx.beginPath();ctx.arc(cx,cy,gr,0,Math.PI*2);ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=1;ctx.stroke();}
-  ctx.save();ctx.translate(cx,cy);ctx.rotate(recordAngle*0.7);ctx.translate(-cx,-cy);
-  for(var ri=0;ri<3;ri++){var gStart=(artR*1.15)+(ri*12);var gEnd=Math.min(gStart+8,vinylR-2);ctx.beginPath();ctx.arc(cx,cy,gStart,Math.PI*0.9,Math.PI*1.4);ctx.strokeStyle='rgba(255,255,255,0.07)';ctx.lineWidth=gEnd-gStart;ctx.stroke();}
-  ctx.restore();ctx.restore();
-  ctx.save();ctx.translate(cx,cy);ctx.rotate(recordAngle);ctx.beginPath();ctx.arc(0,0,artR,0,Math.PI*2);ctx.clip();
-  if(recordImg&&recordImg.complete&&recordImg.naturalWidth>0){ctx.drawImage(recordImg,-artR,-artR,artR*2,artR*2);ctx.beginPath();ctx.arc(0,0,artR,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,0.18)';ctx.fill();}
-  else{var grd=ctx.createRadialGradient(0,0,0,0,0,artR);grd.addColorStop(0,'#2a1f5e');grd.addColorStop(1,'#0f0f10');ctx.beginPath();ctx.arc(0,0,artR,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();ctx.font='bold '+(artR*0.45)+'px IBM Plex Mono, monospace';ctx.fillStyle='rgba(124,106,247,0.6)';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('♫',0,0);}
-  ctx.restore();
-  ctx.save();ctx.beginPath();ctx.arc(cx,cy,labelR,0,Math.PI*2);ctx.strokeStyle='rgba(124,106,247,0.25)';ctx.lineWidth=1.5;ctx.stroke();ctx.restore();
-  ctx.save();var refGrd=ctx.createLinearGradient(cx-vinylR,cy-vinylR,cx+vinylR*0.3,cy+vinylR*0.3);refGrd.addColorStop(0,'rgba(255,255,255,0.04)');refGrd.addColorStop(0.5,'rgba(255,255,255,0.01)');refGrd.addColorStop(1,'rgba(255,255,255,0)');ctx.beginPath();ctx.arc(cx,cy,vinylR-1,0,Math.PI*2);ctx.fillStyle=refGrd;ctx.fill();ctx.restore();
-  ctx.save();ctx.beginPath();ctx.arc(cx,cy,holeR,0,Math.PI*2);ctx.fillStyle='#0a0a0b';ctx.fill();ctx.beginPath();ctx.arc(cx,cy,holeR,0,Math.PI*2);ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=0.8;ctx.stroke();ctx.restore();
-  if(recordSpinning){ctx.save();var armPivotX=cx+vinylR*0.55,armPivotY=cy-vinylR*1.05,armAngle=0.38,armLen=vinylR*0.88,tipX=armPivotX+Math.sin(armAngle)*armLen,tipY=armPivotY+Math.cos(armAngle)*armLen;ctx.beginPath();ctx.moveTo(armPivotX,armPivotY);ctx.lineTo(tipX,tipY);ctx.strokeStyle='rgba(200,200,220,0.55)';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.stroke();ctx.beginPath();ctx.arc(armPivotX,armPivotY,4,0,Math.PI*2);ctx.fillStyle='rgba(200,200,220,0.7)';ctx.fill();ctx.beginPath();ctx.arc(tipX,tipY,2.5,0,Math.PI*2);ctx.fillStyle='rgba(124,106,247,0.9)';ctx.fill();ctx.restore();}
-}
-
-function activateListening(){
-  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){setStatus('Voice requires Chrome');return;}
-  if(window.orbInitAudio)window.orbInitAudio();
-  var msSince=Date.now()-speakEndTime;if(msSince<ECHO_LOCKOUT_MS){setTimeout(activateListening,ECHO_LOCKOUT_MS-msSince+50);return;}
-  voiceFinal='';document.getElementById('orb-live').textContent='';
-  voiceRec=new SR();voiceRec.continuous=true;voiceRec.interimResults=true;voiceRec.lang='en-US';
-  voiceRec.onstart=function(){voiceActive=true;setOrbState('listening');setStatus('Listening...');};
-  voiceRec.onresult=function(e){var interim='';for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)voiceFinal+=e.results[i][0].transcript+' ';else interim+=e.results[i][0].transcript;}var live=voiceFinal+interim;var liveEl=document.getElementById('orb-live');liveEl.textContent=live;var lastWord=live.trim().toLowerCase().split(/\s+/).pop().replace(/[.,!?]*/g,'');liveEl.style.opacity=(MID_SENTENCE_WORDS.indexOf(lastWord)!==-1)?'0.5':'1';if(silenceTimer)clearTimeout(silenceTimer);silenceTimer=setTimeout(function(){if(voiceActive)stopVoice();},getSilenceWindow(live));};
-  voiceRec.onend=function(){if(voiceActive){try{voiceRec.start();}catch(e){}}};
-  voiceRec.onerror=function(e){if(e.error==='not-allowed'){setStatus('Microphone denied');stopVoice();}};
-  try{voiceRec.start();}catch(e){setStatus('Could not start mic');}
-}
-function stopVoice(){
-  voiceActive=false;if(silenceTimer){clearTimeout(silenceTimer);silenceTimer=null;}
-  if(voiceRec){voiceRec.stop();voiceRec=null;}
-  var txt=voiceFinal.trim();voiceFinal='';document.getElementById('orb-live').textContent='';setOrbState('thinking');
-  if(txt){setStatus('Processing: '+txt);processCommand(txt);}
-  else{setOrbState('idle');if(conversationMode){setStatus('Listening for you, sir...');setTimeout(activateListening,400);}else{setStatus('Say "Baker" to begin');startWakeWord();}}
-}
-function stopSpeaking(){
-  speechSynthesis.cancel();isSpeaking=false;speakEndTime=Date.now();setOrbState('idle');
-  if(conversationMode){setStatus('Listening for you, sir...');setTimeout(activateListening,ECHO_LOCKOUT_MS);}
-  else{setStatus('Say "Baker" to begin');setTimeout(startWakeWord,ECHO_LOCKOUT_MS);}
-}
+function _drawRecord(){var canvas=document.getElementById('record-canvas');if(!canvas)return;var W=canvas.offsetWidth,H=canvas.offsetHeight;if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H;}if(!W||!H)return;var ctx=canvas.getContext('2d');ctx.clearRect(0,0,W,H);var cx=W/2,cy=H/2,maxR=Math.min(W,H)/2-8,artR=maxR*0.56,vinylR=maxR,labelR=artR*1.08,holeR=maxR*0.06;ctx.save();ctx.shadowColor='rgba(0,0,0,0.7)';ctx.shadowBlur=24;ctx.shadowOffsetX=4;ctx.shadowOffsetY=6;ctx.beginPath();ctx.arc(cx,cy,vinylR,0,Math.PI*2);ctx.fillStyle='#111';ctx.fill();ctx.restore();ctx.save();ctx.beginPath();ctx.arc(cx,cy,vinylR,0,Math.PI*2);ctx.clip();ctx.beginPath();ctx.arc(cx,cy,vinylR,0,Math.PI*2);ctx.fillStyle='#0e0e0f';ctx.fill();for(var gr=artR*1.12;gr<vinylR-2;gr+=5){ctx.beginPath();ctx.arc(cx,cy,gr,0,Math.PI*2);ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=1;ctx.stroke();}ctx.save();ctx.translate(cx,cy);ctx.rotate(recordAngle*0.7);ctx.translate(-cx,-cy);for(var ri=0;ri<3;ri++){var gStart=(artR*1.15)+(ri*12);var gEnd=Math.min(gStart+8,vinylR-2);ctx.beginPath();ctx.arc(cx,cy,gStart,Math.PI*0.9,Math.PI*1.4);ctx.strokeStyle='rgba(255,255,255,0.07)';ctx.lineWidth=gEnd-gStart;ctx.stroke();}ctx.restore();ctx.restore();ctx.save();ctx.translate(cx,cy);ctx.rotate(recordAngle);ctx.beginPath();ctx.arc(0,0,artR,0,Math.PI*2);ctx.clip();if(recordImg&&recordImg.complete&&recordImg.naturalWidth>0){ctx.drawImage(recordImg,-artR,-artR,artR*2,artR*2);ctx.beginPath();ctx.arc(0,0,artR,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,0.18)';ctx.fill();}else{var grd=ctx.createRadialGradient(0,0,0,0,0,artR);grd.addColorStop(0,'#2a1f5e');grd.addColorStop(1,'#0f0f10');ctx.beginPath();ctx.arc(0,0,artR,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();ctx.font='bold '+(artR*0.45)+'px IBM Plex Mono, monospace';ctx.fillStyle='rgba(124,106,247,0.6)';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('♫',0,0);}ctx.restore();ctx.save();ctx.beginPath();ctx.arc(cx,cy,labelR,0,Math.PI*2);ctx.strokeStyle='rgba(124,106,247,0.25)';ctx.lineWidth=1.5;ctx.stroke();ctx.restore();ctx.save();var refGrd=ctx.createLinearGradient(cx-vinylR,cy-vinylR,cx+vinylR*0.3,cy+vinylR*0.3);refGrd.addColorStop(0,'rgba(255,255,255,0.04)');refGrd.addColorStop(0.5,'rgba(255,255,255,0.01)');refGrd.addColorStop(1,'rgba(255,255,255,0)');ctx.beginPath();ctx.arc(cx,cy,vinylR-1,0,Math.PI*2);ctx.fillStyle=refGrd;ctx.fill();ctx.restore();ctx.save();ctx.beginPath();ctx.arc(cx,cy,holeR,0,Math.PI*2);ctx.fillStyle='#0a0a0b';ctx.fill();ctx.beginPath();ctx.arc(cx,cy,holeR,0,Math.PI*2);ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=0.8;ctx.stroke();ctx.restore();if(recordSpinning){ctx.save();var armPivotX=cx+vinylR*0.55,armPivotY=cy-vinylR*1.05,armAngle=0.38,armLen=vinylR*0.88,tipX=armPivotX+Math.sin(armAngle)*armLen,tipY=armPivotY+Math.cos(armAngle)*armLen;ctx.beginPath();ctx.moveTo(armPivotX,armPivotY);ctx.lineTo(tipX,tipY);ctx.strokeStyle='rgba(200,200,220,0.55)';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.stroke();ctx.beginPath();ctx.arc(armPivotX,armPivotY,4,0,Math.PI*2);ctx.fillStyle='rgba(200,200,220,0.7)';ctx.fill();ctx.beginPath();ctx.arc(tipX,tipY,2.5,0,Math.PI*2);ctx.fillStyle='rgba(124,106,247,0.9)';ctx.fill();ctx.restore();}}
+function activateListening(){var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){setStatus('Voice requires Chrome');return;}if(window.orbInitAudio)window.orbInitAudio();var msSince=Date.now()-speakEndTime;if(msSince<ECHO_LOCKOUT_MS){setTimeout(activateListening,ECHO_LOCKOUT_MS-msSince+50);return;}voiceFinal='';document.getElementById('orb-live').textContent='';voiceRec=new SR();voiceRec.continuous=true;voiceRec.interimResults=true;voiceRec.lang='en-US';voiceRec.onstart=function(){voiceActive=true;setOrbState('listening');setStatus('Listening...');};voiceRec.onresult=function(e){var interim='';for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)voiceFinal+=e.results[i][0].transcript+' ';else interim+=e.results[i][0].transcript;}var live=voiceFinal+interim;var liveEl=document.getElementById('orb-live');liveEl.textContent=live;var lastWord=live.trim().toLowerCase().split(/\s+/).pop().replace(/[.,!?]*/g,'');liveEl.style.opacity=(MID_SENTENCE_WORDS.indexOf(lastWord)!==-1)?'0.5':'1';if(silenceTimer)clearTimeout(silenceTimer);silenceTimer=setTimeout(function(){if(voiceActive)stopVoice();},getSilenceWindow(live));};voiceRec.onend=function(){if(voiceActive){try{voiceRec.start();}catch(e){}}};voiceRec.onerror=function(e){if(e.error==='not-allowed'){setStatus('Microphone denied');stopVoice();}};try{voiceRec.start();}catch(e){setStatus('Could not start mic');}}
+function stopVoice(){voiceActive=false;if(silenceTimer){clearTimeout(silenceTimer);silenceTimer=null;}if(voiceRec){voiceRec.stop();voiceRec=null;}var txt=voiceFinal.trim();voiceFinal='';document.getElementById('orb-live').textContent='';setOrbState('thinking');if(txt){setStatus('Processing: '+txt);processCommand(txt);}else{setOrbState('idle');if(conversationMode){setStatus('Listening for you, sir...');setTimeout(activateListening,400);}else{setStatus('Say "Baker" to begin');startWakeWord();}}}
+function stopSpeaking(){speechSynthesis.cancel();isSpeaking=false;speakEndTime=Date.now();setOrbState('idle');if(conversationMode){setStatus('Listening for you, sir...');setTimeout(activateListening,ECHO_LOCKOUT_MS);}else{setStatus('Say "Baker" to begin');setTimeout(startWakeWord,ECHO_LOCKOUT_MS);}}
 
 // ═══════════════════════════════════════════════════════════
 // CONVERSATION MODE
 // ═══════════════════════════════════════════════════════════
-function startConversationMode(){
-  conversationMode=true;conversationHistory=[];
-  document.getElementById('orb-panel').classList.add('conversation-mode');
-  setStatus('💬 Conversation mode — say "bye Baker" or click the orb to end');
-  document.getElementById('orb-status-txt').textContent='💬 Conversation mode';
-  document.getElementById('orb-status-txt').className='orb-status-txt active';
-}
-function endConversationMode(farewell){
-  conversationMode=false;
-  var historySnapshot=conversationHistory.slice();
-  conversationHistory=[];
-  document.getElementById('orb-panel').classList.remove('conversation-mode');
-  if(voiceActive)stopVoice();
-  function finishExit(){
-    if(farewell){speakResponse(farewell);}
-    else{speechSynthesis.cancel();isSpeaking=false;setOrbState('idle');setStatus('Say "Baker" to begin');document.getElementById('orb-status-txt').textContent='Say "Baker" to begin';document.getElementById('orb-status-txt').className='orb-status-txt';startWakeWord();}
-  }
-  if(historySnapshot.length>=2&&typeof vaultConnected!=='undefined'&&vaultConnected){
-    showConfirmPopup('Save a summary of this conversation to today\'s log?',function(){conversationHistory=historySnapshot;saveConversationSummary().then(function(){conversationHistory=[];finishExit();});},finishExit);
-  }else{finishExit();}
-}
-function showConfirmPopup(text,onYes,onNo){
-  var popup=document.getElementById('confirm-popup');document.getElementById('confirm-popup-text').textContent=text;popup.classList.add('vis');
-  var yesBtn=document.getElementById('confirm-yes');var noBtn=document.getElementById('confirm-no');
-  function cleanup(){popup.classList.remove('vis');yesBtn.onclick=null;noBtn.onclick=null;}
-  yesBtn.onclick=function(){cleanup();if(onYes)onYes();};noBtn.onclick=function(){cleanup();if(onNo)onNo();};
-}
-async function saveConversationSummary(){
-  var key=localStorage.getItem('baker_api_key');
-  if(!key||!conversationHistory.length)return false;
-  if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected)return false;
-  try{
-    var transcript=conversationHistory.map(function(m){return(m.role==='user'?'User':'BAKER')+': '+m.content;}).join('\n');
-    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:80,system:'Summarize this conversation in ONE short sentence (under 15 words) suitable as a bullet point in a daily log. No preamble, just the sentence.',messages:[{role:'user',content:transcript}]})});
-    var data=await resp.json();if(data.error)return false;
-    var summary=data.content.map(function(b){return b.text||'';}).join('').trim();if(!summary)return false;
-    var now=new Date();var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');var timeStr=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-    var dir=await vaultHandle.getDirectoryHandle('00-Capture',{create:true});var fname=dateStr+'.md';var fileHandle=await dir.getFileHandle(fname,{create:true});var file=await fileHandle.getFile();var existing=await file.text();
-    var bullet='- '+timeStr+' — '+summary+'\n';
-    var newContent=existing.trim().length?(existing.trim()+'\n'+bullet):('# Daily Log — '+dateStr+'\n\n'+bullet);
-    var writable=await fileHandle.createWritable();await writable.write(newContent);await writable.close();
-    if(typeof vaultIndex!=='undefined'){var idx=vaultIndex.findIndex(function(n){return n.path==='00-Capture/'+fname;});if(idx>=0)vaultIndex[idx].content=newContent;else vaultIndex.push({name:fname,path:'00-Capture/'+fname,content:newContent});}
-    return true;
-  }catch(e){return false;}
-}
+function startConversationMode(){conversationMode=true;conversationHistory=[];document.getElementById('orb-panel').classList.add('conversation-mode');setStatus('💬 Conversation mode — say "bye Baker" or click the orb to end');document.getElementById('orb-status-txt').textContent='💬 Conversation mode';document.getElementById('orb-status-txt').className='orb-status-txt active';}
+function endConversationMode(farewell){conversationMode=false;var historySnapshot=conversationHistory.slice();conversationHistory=[];document.getElementById('orb-panel').classList.remove('conversation-mode');if(voiceActive)stopVoice();function finishExit(){if(farewell){speakResponse(farewell);}else{speechSynthesis.cancel();isSpeaking=false;setOrbState('idle');setStatus('Say "Baker" to begin');document.getElementById('orb-status-txt').textContent='Say "Baker" to begin';document.getElementById('orb-status-txt').className='orb-status-txt';startWakeWord();}}if(historySnapshot.length>=2&&typeof vaultConnected!=='undefined'&&vaultConnected){showConfirmPopup('Save a summary of this conversation to today\'s log?',function(){conversationHistory=historySnapshot;saveConversationSummary().then(function(){conversationHistory=[];finishExit();});},finishExit);}else{finishExit();}}
+function showConfirmPopup(text,onYes,onNo){var popup=document.getElementById('confirm-popup');document.getElementById('confirm-popup-text').textContent=text;popup.classList.add('vis');var yesBtn=document.getElementById('confirm-yes');var noBtn=document.getElementById('confirm-no');function cleanup(){popup.classList.remove('vis');yesBtn.onclick=null;noBtn.onclick=null;}yesBtn.onclick=function(){cleanup();if(onYes)onYes();};noBtn.onclick=function(){cleanup();if(onNo)onNo();};}
+async function saveConversationSummary(){var key=localStorage.getItem('baker_api_key');if(!key||!conversationHistory.length)return false;if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected)return false;try{var transcript=conversationHistory.map(function(m){return(m.role==='user'?'User':'BAKER')+': '+m.content;}).join('\n');var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:80,system:'Summarize this conversation in ONE short sentence (under 15 words) suitable as a bullet point in a daily log. No preamble, just the sentence.',messages:[{role:'user',content:transcript}]})});var data=await resp.json();if(data.error)return false;var summary=data.content.map(function(b){return b.text||'';}).join('').trim();if(!summary)return false;var now=new Date();var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');var timeStr=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');var dir=await vaultHandle.getDirectoryHandle('00-Capture',{create:true});var fname=dateStr+'.md';var fileHandle=await dir.getFileHandle(fname,{create:true});var file=await fileHandle.getFile();var existing=await file.text();var bullet='- '+timeStr+' — '+summary+'\n';var newContent=existing.trim().length?(existing.trim()+'\n'+bullet):('# Daily Log — '+dateStr+'\n\n'+bullet);var writable=await fileHandle.createWritable();await writable.write(newContent);await writable.close();if(typeof vaultIndex!=='undefined'){var idx=vaultIndex.findIndex(function(n){return n.path==='00-Capture/'+fname;});if(idx>=0)vaultIndex[idx].content=newContent;else vaultIndex.push({name:fname,path:'00-Capture/'+fname,content:newContent});}return true;}catch(e){return false;}}
 var CONVO_EXIT_PHRASES=/\b(bye baker|goodbye baker|bye[,]? baker|that'?s all|that'?ll be all|end conversation|stop talking|we'?re done|i'?m done|talk later)\b/;
 var CONVO_SAVE_PHRASES=/\b(save (this|that|our) conversation|save (this|that) to (my|the) (vault|daily log|notes)|log this conversation|write this down)\b/;
-async function saveConversationToVault(){
-  if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected)return false;
-  try{
-    var now=new Date();var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');var timeStr=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-    var dir=await vaultHandle.getDirectoryHandle('00-Capture',{create:true});var fname=dateStr+'.md';var fileHandle=await dir.getFileHandle(fname,{create:true});var file=await fileHandle.getFile();var existing=await file.text();
-    var transcript='\n## Conversation with Baker — '+timeStr+'\n\n';conversationHistory.forEach(function(m){var who=m.role==='user'?'**You:**':'**Baker:**';transcript+=who+' '+m.content+'\n\n';});
-    var newContent=existing.trim().length?(existing.trim()+'\n'+transcript):('# Daily Log — '+dateStr+transcript);
-    var writable=await fileHandle.createWritable();await writable.write(newContent);await writable.close();return true;
-  }catch(e){return false;}
-}
-async function sendToConversation(txt,key){
-  conversationHistory.push({role:'user',content:txt});
-  var webOn=localStorage.getItem('baker_web_search')==='true';
-  var sys='You are BAKER, an AI assistant modelled after JARVIS from Iron Man, currently in a live spoken conversation with the user. This is a natural back-and-forth dialogue — respond conversationally, ask follow-up questions when helpful, and remember context from earlier in this conversation. Keep responses concise (1-4 spoken sentences) since they are read aloud via text-to-speech. No markdown, no lists, no headers — plain spoken prose only. Address the user as "sir" occasionally but not every sentence. If the user wants to capture notes, ideas, or a journal/daily-log entry from this conversation, acknowledge naturally — note-saving to the vault happens automatically when the conversation ends.';
-  var body={model:'claude-sonnet-4-6',max_tokens:300,system:sys,messages:conversationHistory.slice(-20)};
-  if(webOn)body.tools=[{type:'web_search_20250305',name:'web_search',max_uses:2}];
-  try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});var data=await resp.json();var response=data.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text||'';}).join('').trim();conversationHistory.push({role:'assistant',content:response});speakResponse(response);}
-  catch(e){speakResponse('I encountered a fault, sir.');setOrbState('idle');if(conversationMode)setTimeout(activateListening,ECHO_LOCKOUT_MS);else startWakeWord();}
-}
+async function saveConversationToVault(){if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected)return false;try{var now=new Date();var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');var timeStr=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');var dir=await vaultHandle.getDirectoryHandle('00-Capture',{create:true});var fname=dateStr+'.md';var fileHandle=await dir.getFileHandle(fname,{create:true});var file=await fileHandle.getFile();var existing=await file.text();var transcript='\n## Conversation with Baker — '+timeStr+'\n\n';conversationHistory.forEach(function(m){var who=m.role==='user'?'**You:**':'**Baker:**';transcript+=who+' '+m.content+'\n\n';});var newContent=existing.trim().length?(existing.trim()+'\n'+transcript):('# Daily Log — '+dateStr+transcript);var writable=await fileHandle.createWritable();await writable.write(newContent);await writable.close();return true;}catch(e){return false;}}
+async function sendToConversation(txt,key){conversationHistory.push({role:'user',content:txt});var webOn=localStorage.getItem('baker_web_search')==='true';var sys='You are BAKER, an AI assistant modelled after JARVIS from Iron Man, currently in a live spoken conversation with the user. This is a natural back-and-forth dialogue — respond conversationally, ask follow-up questions when helpful, and remember context from earlier in this conversation. Keep responses concise (1-4 spoken sentences) since they are read aloud via text-to-speech. No markdown, no lists, no headers — plain spoken prose only. Address the user as "sir" occasionally but not every sentence. If the user wants to capture notes, ideas, or a journal/daily-log entry from this conversation, acknowledge naturally — note-saving to the vault happens automatically when the conversation ends.';var body={model:'claude-sonnet-4-6',max_tokens:300,system:sys,messages:conversationHistory.slice(-20)};if(webOn)body.tools=[{type:'web_search_20250305',name:'web_search',max_uses:2}];try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});var data=await resp.json();var response=data.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text||'';}).join('').trim();conversationHistory.push({role:'assistant',content:response});speakResponse(response);}catch(e){speakResponse('I encountered a fault, sir.');setOrbState('idle');if(conversationMode)setTimeout(activateListening,ECHO_LOCKOUT_MS);else startWakeWord();}}
 
 // ═══════════════════════════════════════════════════════════
 // COMMAND PROCESSING
 // ═══════════════════════════════════════════════════════════
-async function processCommand(txt){
-  var key=localStorage.getItem('baker_api_key');if(!key){speakResponse('No API key set, sir. Please open Settings.');return;}
-  var lower=txt.toLowerCase().trim();
-  if(conversationMode&&CONVO_EXIT_PHRASES.test(lower)){endConversationMode('Goodbye, sir.');return;}
-  if(conversationMode&&CONVO_SAVE_PHRASES.test(lower)){setOrbState('thinking');var saved=await saveConversationToVault();setOrbState('idle');if(saved){speakResponse('Saved to today\'s daily log, sir.');}else{speakResponse('I couldn\'t save that — your vault isn\'t connected, sir.');}return;}
-  if(conversationMode){setOrbState('thinking');await sendToConversation(txt,key);return;}
-  if(/\b(let'?s (talk|chat)|start a conversation|talk to me|i (want|need) to talk|have a conversation)\b/.test(lower)){startConversationMode();speakResponse('Of course, sir. What\'s on your mind?');return;}
-  if(/\b(open|go to|pull up|show)\b.*\bsettings\b/.test(lower)||lower==='settings'){openSettings();speakResponse('Opening settings, sir.');return;}
-  if(/\b(open|go to|pull up|show|launch)\b.*\b(tools|index|dashboard)\b/.test(lower)){showWidget('url','⊞ Tools','index.html','⊞');speakResponse('Opening tools, sir.');return;}
-  if(/\b(open|go to|switch to)\b.*\b(conversation page|chat page)\b/.test(lower)){window.location.href='conversation.html';return;}
-  if(/\b(open|pull up|show|launch|let'?s (open|use|check))\b.*\b(spotify|music)\b/.test(lower)&&!/\bplay\b/.test(lower)){SP.showPanel();speakResponse('Opening Spotify, sir.');return;}
-  var spResult=await SP.handleVoice(txt);if(spResult!==null){speakResponse(spResult);return;}
-  var calResult=await CAL.handleVoice(txt);if(calResult!==null){speakResponse(calResult);return;}
-  var mcalResult=MCAL.handleVoice(txt);if(mcalResult!==null){speakResponse(mcalResult);return;}
-  var vaultResult=VAULTUI.handleVoice(txt);if(vaultResult!==null){speakResponse(vaultResult);return;}
-  var graphUIResult=GRAPHUI.handleVoice(txt);if(graphUIResult!==null){speakResponse(graphUIResult);return;}
-  if(/\b(open|pull up|show|launch|let'?s (open|use|check))\b.*\bmap\b/.test(lower)&&!/\b(fly to|directions to|route to|on (the )?map)\b/.test(lower)){showWidget('url','🗺 Map','map.html','🗺');speakResponse('Opening map, sir.');return;}
-  var flyM=lower.match(/(?:fly to|zoom to|navigate to|pull up|show me)\s+(.+?)(?:\s+on (?:the )?map)?$/);
-  if(flyM&&(lower.includes('fly to')||lower.includes('zoom to')||lower.includes('on the map')||lower.includes('on map'))){var mapQ=flyM[1].replace(/\s+on\s+(the\s+)?map\s*$/i,'').trim();showWidget('url','🗺 Map','map.html','🗺');mapCmd({cmd:'flyTo',query:mapQ});speakResponse('Flying to '+mapQ+', sir.');return;}
-  var dirM=lower.match(/(?:directions to|get directions to|route to|take me to|how do i get to|navigate me to|guide me to)\s+(.+)/);
-  if(dirM){var dirQ=dirM[1].trim();showWidget('url','🗺 Map','map.html','🗺');mapCmd({cmd:'directionsTo',query:dirQ});speakResponse('Routing to '+dirQ+', sir.');return;}
-  if(lower.includes('where am i')||lower.includes('my location')||lower.includes('locate me')||lower.includes('find my location')){showWidget('url','🗺 Map','map.html','🗺');mapCmd({cmd:'locate'});speakResponse('Locating you, sir.');return;}
-  if(lower.includes('clear route')||lower.includes('clear map')){mapCmd({cmd:'clearRoute'});speakResponse('Route cleared, sir.');return;}
-  if(lower.match(/^(?:open|go to|navigate to|show)\s+https?:\/\//)){var urlMatch=txt.match(/https?:\/\/\S+/);if(urlMatch){showWidget('url','🔗 '+urlMatch[0],urlMatch[0],'🔗');speakResponse('Opening page, sir.');return;}}
-  if(lower.includes('datasheet')||lower.includes('find datasheet')){var query=txt.replace(/find datasheet|datasheet for|datasheet/gi,'').trim();await findAndShowDatasheet(query,key);return;}
-  if(lower.startsWith('show note')||lower.startsWith('text note')){var noteText=txt.replace(/^show note|^text note/i,'').trim();showWidget('text','📝 Note',noteText,'📝');speakResponse('Displaying note, sir.');return;}
-  if(lower==='close'||lower==='back to graph'||lower==='close panel'){closePanel('widget-panel');SP.hidePanel();speakResponse('Closing, sir.');return;}
-  await sendToBAKER(txt,key);
-}
+async function processCommand(txt){var key=localStorage.getItem('baker_api_key');if(!key){speakResponse('No API key set, sir. Please open Settings.');return;}var lower=txt.toLowerCase().trim();if(conversationMode&&CONVO_EXIT_PHRASES.test(lower)){endConversationMode('Goodbye, sir.');return;}if(conversationMode&&CONVO_SAVE_PHRASES.test(lower)){setOrbState('thinking');var saved=await saveConversationToVault();setOrbState('idle');if(saved){speakResponse('Saved to today\'s daily log, sir.');}else{speakResponse('I couldn\'t save that — your vault isn\'t connected, sir.');}return;}if(conversationMode){setOrbState('thinking');await sendToConversation(txt,key);return;}if(/\b(let'?s (talk|chat)|start a conversation|talk to me|i (want|need) to talk|have a conversation)\b/.test(lower)){startConversationMode();speakResponse('Of course, sir. What\'s on your mind?');return;}if(/\b(open|go to|pull up|show)\b.*\bsettings\b/.test(lower)||lower==='settings'){openSettings();speakResponse('Opening settings, sir.');return;}if(/\b(open|go to|pull up|show|launch)\b.*\b(tools|index|dashboard)\b/.test(lower)){showWidget('url','⊞ Tools','index.html','⊞');speakResponse('Opening tools, sir.');return;}if(/\b(open|go to|switch to)\b.*\b(conversation page|chat page)\b/.test(lower)){window.location.href='conversation.html';return;}if(/\b(open|pull up|show|launch|let'?s (open|use|check))\b.*\b(spotify|music)\b/.test(lower)&&!/\bplay\b/.test(lower)){SP.showPanel();speakResponse('Opening Spotify, sir.');return;}var spResult=await SP.handleVoice(txt);if(spResult!==null){speakResponse(spResult);return;}var calResult=await CAL.handleVoice(txt);if(calResult!==null){speakResponse(calResult);return;}var mcalResult=MCAL.handleVoice(txt);if(mcalResult!==null){speakResponse(mcalResult);return;}var vaultResult=VAULTUI.handleVoice(txt);if(vaultResult!==null){speakResponse(vaultResult);return;}var graphUIResult=GRAPHUI.handleVoice(txt);if(graphUIResult!==null){speakResponse(graphUIResult);return;}if(/\b(open|pull up|show|launch|let'?s (open|use|check))\b.*\bmap\b/.test(lower)&&!/\b(fly to|directions to|route to|on (the )?map)\b/.test(lower)){showWidget('url','🗺 Map','map.html','🗺');speakResponse('Opening map, sir.');return;}var flyM=lower.match(/(?:fly to|zoom to|navigate to|pull up|show me)\s+(.+?)(?:\s+on (?:the )?map)?$/);if(flyM&&(lower.includes('fly to')||lower.includes('zoom to')||lower.includes('on the map')||lower.includes('on map'))){var mapQ=flyM[1].replace(/\s+on\s+(the\s+)?map\s*$/i,'').trim();showWidget('url','🗺 Map','map.html','🗺');mapCmd({cmd:'flyTo',query:mapQ});speakResponse('Flying to '+mapQ+', sir.');return;}var dirM=lower.match(/(?:directions to|get directions to|route to|take me to|how do i get to|navigate me to|guide me to)\s+(.+)/);if(dirM){var dirQ=dirM[1].trim();showWidget('url','🗺 Map','map.html','🗺');mapCmd({cmd:'directionsTo',query:dirQ});speakResponse('Routing to '+dirQ+', sir.');return;}if(lower.includes('where am i')||lower.includes('my location')||lower.includes('locate me')||lower.includes('find my location')){showWidget('url','🗺 Map','map.html','🗺');mapCmd({cmd:'locate'});speakResponse('Locating you, sir.');return;}if(lower.includes('clear route')||lower.includes('clear map')){mapCmd({cmd:'clearRoute'});speakResponse('Route cleared, sir.');return;}if(lower.match(/^(?:open|go to|navigate to|show)\s+https?:\/\//)){var urlMatch=txt.match(/https?:\/\/\S+/);if(urlMatch){showWidget('url','🔗 '+urlMatch[0],urlMatch[0],'🔗');speakResponse('Opening page, sir.');return;}}if(lower.includes('datasheet')||lower.includes('find datasheet')){var query=txt.replace(/find datasheet|datasheet for|datasheet/gi,'').trim();await findAndShowDatasheet(query,key);return;}if(lower.startsWith('show note')||lower.startsWith('text note')){var noteText=txt.replace(/^show note|^text note/i,'').trim();showWidget('text','📝 Note',noteText,'📝');speakResponse('Displaying note, sir.');return;}if(lower==='close'||lower==='back to graph'||lower==='close panel'){closePanel('widget-panel');SP.hidePanel();speakResponse('Closing, sir.');return;}await sendToBAKER(txt,key);}
 
 // ═══════════════════════════════════════════════════════════
 // WIDGET SYSTEM
 // ═══════════════════════════════════════════════════════════
-function showWidget(type,title,data,icon){
-  var panel=document.getElementById('widget-panel');var body=document.getElementById('widget-body');
-  document.getElementById('widget-title').textContent=title||type;document.getElementById('widget-icon').textContent=icon||'⬡';
-  body.innerHTML='';
-  if(type==='url'||type==='pdf'){var iframe=document.createElement('iframe');iframe.id='widget-frame';iframe.style.cssText='width:100%;height:100%;border:none;background:var(--surface2);border-radius:0 0 10px 10px';iframe.src=data||'';body.appendChild(iframe);}
-  else if(type==='text'){var div=document.createElement('div');div.style.cssText='padding:16px;overflow-y:auto;height:100%;font-family:var(--mono);font-size:12px;line-height:1.8;color:var(--text);white-space:pre-wrap;word-break:break-word';div.textContent=data||'';body.appendChild(div);}
-  openPanel('widget-panel');
-  if(!panel.style.left||panel.style.left===''){panel.style.left=Math.max(0,(window.innerWidth-480)/2)+'px';panel.style.top='64px';panel.style.width='480px';panel.style.height='360px';}
-}
+function showWidget(type,title,data,icon){var panel=document.getElementById('widget-panel');var body=document.getElementById('widget-body');document.getElementById('widget-title').textContent=title||type;document.getElementById('widget-icon').textContent=icon||'⬡';body.innerHTML='';if(type==='url'||type==='pdf'){var iframe=document.createElement('iframe');iframe.id='widget-frame';iframe.style.cssText='width:100%;height:100%;border:none;background:var(--surface2);border-radius:0 0 10px 10px';iframe.src=data||'';body.appendChild(iframe);}else if(type==='text'){var div=document.createElement('div');div.style.cssText='padding:16px;overflow-y:auto;height:100%;font-family:var(--mono);font-size:12px;line-height:1.8;color:var(--text);white-space:pre-wrap;word-break:break-word';div.textContent=data||'';body.appendChild(div);}openPanel('widget-panel');if(!panel.style.left||panel.style.left===''){panel.style.left=Math.max(0,(window.innerWidth-480)/2)+'px';panel.style.top='64px';panel.style.width='480px';panel.style.height='360px';}}
 
 // ═══════════════════════════════════════════════════════════
 // MAP COMMAND
@@ -1219,52 +982,19 @@ function showWidget(type,title,data,icon){
 var _mapPendingCmd=null;
 window.addEventListener('message',function(e){if(e.data&&e.data.type==='mapReady'&&_mapPendingCmd){var frame=document.getElementById('widget-frame');if(frame&&frame.contentWindow){frame.contentWindow.postMessage(_mapPendingCmd,'*');_mapPendingCmd=null;}}});
 function mapCmd(data){var frame=document.getElementById('widget-frame');if(!frame||!frame.contentWindow)return;frame.contentWindow.postMessage(data,'*');_mapPendingCmd=data;setTimeout(function(){if(_mapPendingCmd===data)_mapPendingCmd=null;},8000);}
-async function findAndShowDatasheet(query,key){
-  setStatus('Searching datasheet: '+query);
-  try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:200,system:'Return ONLY a direct URL to an official manufacturer datasheet PDF for the component named. No explanation. Just the URL.',messages:[{role:'user',content:'Datasheet PDF URL for: '+query}]})});var data=await resp.json();var url=data.content.map(function(b){return b.text||'';}).join('').trim();if(url.startsWith('http')){showWidget('pdf','📄 '+query,url,'📄');speakResponse('Datasheet found, sir.');}else{speakResponse('Could not locate a direct datasheet for '+query+', sir.');setOrbState('idle');startWakeWord();}}catch(e){speakResponse('Datasheet search failed, sir.');setOrbState('idle');startWakeWord();}
-}
-async function sendToBAKER(txt,key){
-  var webOn=localStorage.getItem('baker_web_search')==='true';
-  var body={model:'claude-sonnet-4-6',max_tokens:300,system:'You are BAKER, an AI assistant modelled after JARVIS from Iron Man. You run on a HUD with these built-in capabilities: map (fly to locations, get directions), Spotify music control, task/calendar management (add/complete/list tasks), vault notes, web search, datasheets. Keep responses to 1-3 spoken sentences — they will be read aloud. No markdown. Be precise and sharp. Address as "sir" when natural. If asked about navigation say to use "fly to [place]" or "directions to [place]". If asked about tasks/reminders say to use "add task [x]" or "what are my tasks".',messages:[{role:'user',content:txt}]};
-  if(webOn)body.tools=[{type:'web_search_20250305',name:'web_search',max_uses:2}];
-  try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});var data=await resp.json();var response=data.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text||'';}).join('').trim();speakResponse(response);}
-  catch(e){speakResponse('I encountered a fault, sir.');setOrbState('idle');startWakeWord();}
-}
+async function findAndShowDatasheet(query,key){setStatus('Searching datasheet: '+query);try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:200,system:'Return ONLY a direct URL to an official manufacturer datasheet PDF for the component named. No explanation. Just the URL.',messages:[{role:'user',content:'Datasheet PDF URL for: '+query}]})});var data=await resp.json();var url=data.content.map(function(b){return b.text||'';}).join('').trim();if(url.startsWith('http')){showWidget('pdf','📄 '+query,url,'📄');speakResponse('Datasheet found, sir.');}else{speakResponse('Could not locate a direct datasheet for '+query+', sir.');setOrbState('idle');startWakeWord();}}catch(e){speakResponse('Datasheet search failed, sir.');setOrbState('idle');startWakeWord();}}
+async function sendToBAKER(txt,key){var webOn=localStorage.getItem('baker_web_search')==='true';var body={model:'claude-sonnet-4-6',max_tokens:300,system:'You are BAKER, an AI assistant modelled after JARVIS from Iron Man. You run on a HUD with these built-in capabilities: map (fly to locations, get directions), Spotify music control, task/calendar management (add/complete/list tasks), vault notes, web search, datasheets. Keep responses to 1-3 spoken sentences — they will be read aloud. No markdown. Be precise and sharp. Address as "sir" when natural. If asked about navigation say to use "fly to [place]" or "directions to [place]". If asked about tasks/reminders say to use "add task [x]" or "what are my tasks".',messages:[{role:'user',content:txt}]};if(webOn)body.tools=[{type:'web_search_20250305',name:'web_search',max_uses:2}];try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});var data=await resp.json();var response=data.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text||'';}).join('').trim();speakResponse(response);}catch(e){speakResponse('I encountered a fault, sir.');setOrbState('idle');startWakeWord();}}
 
 // ═══════════════════════════════════════════════════════════
 // SPEAK
 // ═══════════════════════════════════════════════════════════
-function speakResponse(txt){
-  isSpeaking=true;setOrbState('speaking');setStatus(txt);
-  document.getElementById('orb-status-txt').textContent=txt;document.getElementById('orb-status-txt').className='orb-status-txt active';
-  var voices=cachedVoices.length?cachedVoices:speechSynthesis.getVoices();
-  var utt=new SpeechSynthesisUtterance(txt);
-  var preferred=['Daniel','Google UK English Male','Microsoft George','Microsoft David','Alex'];
-  var chosen=null;preferred.forEach(function(p){if(!chosen)chosen=voices.find(function(v){return v.name.indexOf(p)!==-1;});});
-  if(!chosen)chosen=voices.find(function(v){return v.lang&&v.lang.indexOf('en')===0;});
-  if(chosen)utt.voice=chosen;utt.rate=speechRate;utt.pitch=0.85;utt.volume=1;
-  utt.onend=function(){
-    isSpeaking=false;speakEndTime=Date.now();setOrbState('idle');
-    if(conversationMode){var lbl='💬 Conversation — listening...';setStatus(lbl);document.getElementById('orb-status-txt').textContent=lbl;document.getElementById('orb-status-txt').className='orb-status-txt active';setTimeout(activateListening,ECHO_LOCKOUT_MS);}
-    else{setStatus('Say "Baker" to begin');document.getElementById('orb-status-txt').textContent='Say "Baker" to begin';document.getElementById('orb-status-txt').className='orb-status-txt';setTimeout(startWakeWord,ECHO_LOCKOUT_MS);}
-  };
-  utt.onerror=function(){isSpeaking=false;setOrbState('idle');if(conversationMode){setTimeout(activateListening,ECHO_LOCKOUT_MS);}else{startWakeWord();}};
-  speechSynthesis.speak(utt);
-}
+function speakResponse(txt){isSpeaking=true;setOrbState('speaking');setStatus(txt);document.getElementById('orb-status-txt').textContent=txt;document.getElementById('orb-status-txt').className='orb-status-txt active';var voices=cachedVoices.length?cachedVoices:speechSynthesis.getVoices();var utt=new SpeechSynthesisUtterance(txt);var preferred=['Daniel','Google UK English Male','Microsoft George','Microsoft David','Alex'];var chosen=null;preferred.forEach(function(p){if(!chosen)chosen=voices.find(function(v){return v.name.indexOf(p)!==-1;});});if(!chosen)chosen=voices.find(function(v){return v.lang&&v.lang.indexOf('en')===0;});if(chosen)utt.voice=chosen;utt.rate=speechRate;utt.pitch=0.85;utt.volume=1;utt.onend=function(){isSpeaking=false;speakEndTime=Date.now();setOrbState('idle');if(conversationMode){var lbl='💬 Conversation — listening...';setStatus(lbl);document.getElementById('orb-status-txt').textContent=lbl;document.getElementById('orb-status-txt').className='orb-status-txt active';setTimeout(activateListening,ECHO_LOCKOUT_MS);}else{setStatus('Say "Baker" to begin');document.getElementById('orb-status-txt').textContent='Say "Baker" to begin';document.getElementById('orb-status-txt').className='orb-status-txt';setTimeout(startWakeWord,ECHO_LOCKOUT_MS);}};utt.onerror=function(){isSpeaking=false;setOrbState('idle');if(conversationMode){setTimeout(activateListening,ECHO_LOCKOUT_MS);}else{startWakeWord();}};speechSynthesis.speak(utt);}
 function setStatus(txt){document.getElementById('sb-txt').textContent=txt;}
 
 // ═══════════════════════════════════════════════════════════
 // SETTINGS
 // ═══════════════════════════════════════════════════════════
-function openSettings(){
-  var overlay=document.getElementById('overlay');overlay.classList.add('open');
-  var k=localStorage.getItem('baker_api_key');if(k)document.getElementById('key-input').value=k;
-  var ws=localStorage.getItem('baker_web_search')==='true';document.getElementById('search-toggle').checked=ws;document.getElementById('search-lbl').textContent=ws?'ON':'OFF';
-  var effort=localStorage.getItem('baker_effort')||'standard';setEffort(effort,true);
-  var rate=parseFloat(localStorage.getItem('baker_speech_rate')||'0.92');var pct=Math.round(rate*100);document.getElementById('speech-rate-slider').value=pct;document.getElementById('speech-rate-display').textContent=pct;
-  var id=localStorage.getItem('baker_spotify_id');if(id){var inp=document.getElementById('sp-set-id-inp');if(inp)inp.value=id;}
-  SP.updateSettingsUI();
-}
+function openSettings(){var overlay=document.getElementById('overlay');overlay.classList.add('open');var k=localStorage.getItem('baker_api_key');if(k)document.getElementById('key-input').value=k;var ws=localStorage.getItem('baker_web_search')==='true';document.getElementById('search-toggle').checked=ws;document.getElementById('search-lbl').textContent=ws?'ON':'OFF';var effort=localStorage.getItem('baker_effort')||'standard';setEffort(effort,true);var rate=parseFloat(localStorage.getItem('baker_speech_rate')||'0.92');var pct=Math.round(rate*100);document.getElementById('speech-rate-slider').value=pct;document.getElementById('speech-rate-display').textContent=pct;var id=localStorage.getItem('baker_spotify_id');if(id){var inp=document.getElementById('sp-set-id-inp');if(inp)inp.value=id;}SP.updateSettingsUI();}
 function closeSettings(){document.getElementById('overlay').classList.remove('open');}
 function closeIfOutside(e){if(e.target===document.getElementById('overlay'))closeSettings();}
 function toggleShow(){var i=document.getElementById('key-input');i.type=i.type==='password'?'text':'password';}
@@ -1292,7 +1022,7 @@ makeWindowBehavior(document.getElementById('month-panel'),document.getElementByI
 MCAL.init();
 makeWindowBehavior(document.getElementById('vault-panel'),document.getElementById('vault-panel').querySelector('.vp-hdr'),{minW:300,minH:300});
 VAULTUI.init();
-makeWindowBehavior(document.getElementById('graphui-panel'),document.getElementById('graphui-panel').querySelector('.gui-hdr'),{minW:260,minH:340});
+makeWindowBehavior(document.getElementById('graphui-panel'),document.getElementById('graphui-panel').querySelector('.gui-hdr'),{minW:260,minH:360});
 GRAPHUI.init();
 (function(){
   var oc=document.getElementById('orb-canvas');var rc=document.getElementById('record-canvas');
