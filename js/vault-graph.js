@@ -15,6 +15,27 @@ var typeColors={
 };
 var ORPHAN_COLOR='#00e5cc';
 
+// ── Sap flow particle system ──────────────────────────────
+var sapParticles=[];
+function _initSapParticles(){
+  sapParticles=[];
+  if(!GraphSettings.treeMode&&!GraphSettings.yggdrasilMode)return;
+  graphEdges.forEach(function(e){
+    if(Math.random()<0.6){
+      sapParticles.push({
+        edgeA:e.a,edgeB:e.b,
+        t:Math.random(),       // 0..1 position along edge
+        speed:(0.003+Math.random()*0.005)*(Math.random()<0.5?1:-1),
+        size:1.5+Math.random()*1.5,
+        alpha:0.4+Math.random()*0.4
+      });
+    }
+  });
+}
+
+// ── Leaf sway state ───────────────────────────────────────
+var swayTime=0;
+
 function getPreviewLines(content,n){
   if(!content)return'';
   var stripped=content.replace(/^---[\s\S]*?---\s*/,'').trim();
@@ -24,14 +45,46 @@ function getPreviewLines(content,n){
 function initGraphCanvas(){
   var canvas=document.getElementById('vault-graph-canvas');
   canvas.width=window.innerWidth;canvas.height=window.innerHeight;
-  window.addEventListener('resize',function(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
+  window.addEventListener('resize',function(){
+    canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+  });
 
+  // Pan
   canvas.addEventListener('mousedown',function(e){
     if(e.target!==canvas)return;
     graphPanning=true;
     graphPanStart={x:e.clientX-graphTransform.x,y:e.clientY-graphTransform.y};
   });
 
+  // Pinch-to-zoom (touch)
+  var lastPinchDist=null;
+  canvas.addEventListener('touchstart',function(e){
+    if(e.touches.length===2){
+      lastPinchDist=Math.hypot(
+        e.touches[0].clientX-e.touches[1].clientX,
+        e.touches[0].clientY-e.touches[1].clientY
+      );
+    }
+  },{passive:true});
+  canvas.addEventListener('touchmove',function(e){
+    if(e.touches.length===2&&lastPinchDist!==null){
+      e.preventDefault();
+      var dist=Math.hypot(
+        e.touches[0].clientX-e.touches[1].clientX,
+        e.touches[0].clientY-e.touches[1].clientY
+      );
+      var factor=dist/lastPinchDist;
+      var mx=(e.touches[0].clientX+e.touches[1].clientX)/2;
+      var my=(e.touches[0].clientY+e.touches[1].clientY)/2;
+      graphTransform.x=mx-(mx-graphTransform.x)*factor;
+      graphTransform.y=my-(my-graphTransform.y)*factor;
+      graphTransform.scale=Math.max(0.1,Math.min(5,graphTransform.scale*factor));
+      lastPinchDist=dist;
+    }
+  },{passive:false});
+  canvas.addEventListener('touchend',function(){lastPinchDist=null;});
+
+  // Hover + tooltip
   window.addEventListener('mousemove',function(e){
     if(graphPanning){
       graphTransform.x=e.clientX-graphPanStart.x;
@@ -50,15 +103,26 @@ function initGraphCanvas(){
         document.getElementById('tt-name').textContent=hoveredNode.name;
         document.getElementById('tt-path').textContent=hoveredNode.path;
         var typeEl=document.getElementById('tt-type');
-        typeEl.textContent=hoveredNode.type+(hoveredNode.orphan?' · orphan':'')+(pinnedNodes[hoveredNode.id]?' · pinned':'');
+        var linkCount=graphEdges.filter(function(e){return e.a===hoveredNode.id||e.b===hoveredNode.id;}).length;
+        typeEl.textContent=hoveredNode.type+(hoveredNode.orphan?' · orphan':'')+(pinnedNodes[hoveredNode.id]?' · pinned':'')+' · '+linkCount+' links';
         var col=hoveredNode.orphan?ORPHAN_COLOR:(typeColors[hoveredNode.type]||'#7c6af7');
         typeEl.style.background=col+'22';typeEl.style.color=col;
         typeEl.style.border='1px solid '+col+'44';
+        // Preview + last modified
         var previewEl=document.getElementById('tt-preview');
-        if(previewEl)previewEl.textContent=getPreviewLines(hoveredNode.content,3);
+        if(previewEl){
+          var note=vaultIndex[hoveredNode.srcIdx];
+          var preview=getPreviewLines(hoveredNode.content,3);
+          var modLine='';
+          if(note&&note.mtime){
+            var d=new Date(note.mtime);
+            modLine='\n— '+d.toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'});
+          }
+          previewEl.textContent=preview+(modLine?'\n'+modLine:'');
+        }
         tip.style.display='block';
-        tip.style.left=Math.min(e.clientX+14,window.innerWidth-260)+'px';
-        tip.style.top=Math.min(e.clientY-10,window.innerHeight-120)+'px';
+        tip.style.left=Math.min(e.clientX+14,window.innerWidth-270)+'px';
+        tip.style.top=Math.min(e.clientY-10,window.innerHeight-130)+'px';
         canvas.style.cursor='pointer';
       }else{
         tip.style.display='none';
@@ -69,6 +133,7 @@ function initGraphCanvas(){
 
   window.addEventListener('mouseup',function(){graphPanning=false;});
 
+  // Scroll zoom
   canvas.addEventListener('wheel',function(e){
     e.preventDefault();
     var factor=e.deltaY>0?0.9:1.1;
@@ -78,6 +143,7 @@ function initGraphCanvas(){
     graphTransform.scale=Math.max(0.1,Math.min(5,graphTransform.scale*factor));
   },{passive:false});
 
+  // Click → open note
   canvas.addEventListener('click',function(e){
     if(!hoveredNode)return;
     var note=vaultIndex[hoveredNode.srcIdx!==undefined?hoveredNode.srcIdx:hoveredNode.id];
@@ -91,6 +157,7 @@ function initGraphCanvas(){
     }
   });
 
+  // Double-click → pin/unpin
   canvas.addEventListener('dblclick',function(e){
     if(!hoveredNode)return;
     var id=hoveredNode.id;
@@ -113,7 +180,8 @@ function buildGraph(){
     return{id:i,srcIdx:c.srcIdx,name:c.name,path:c.path,type:c.type,
            content:c.content,x:0,y:0,vx:0,vy:0,
            radius:(4+Math.min(c.content.length/600,7))*(GraphSettings.nodeSizeScale||1),
-           connCount:0,orphan:false,pinned:!!pinnedNodes[i]};
+           connCount:0,orphan:false,pinned:!!pinnedNodes[i],
+           swayOffset:Math.random()*Math.PI*2};
   });
 
   var edgeMap={};graphEdges=[];
@@ -147,19 +215,15 @@ function buildGraph(){
 
   document.getElementById('stat-notes').textContent=graphNodes.length;
   document.getElementById('stat-links').textContent=graphEdges.length;
+  _updateModeLabel();
 
   var W=window.innerWidth,H=window.innerHeight;
 
-  if(GraphSettings.yggdrasilMode){
-    _layoutYggdrasil(W,H);
-  }else if(GraphSettings.treeMode){
-    _layoutForest(W,H);
-  }else if(GraphSettings.gridMode){
-    _layoutGrid(W,H);
-  }else if(GraphSettings.clusterMode){
-    _layoutCluster(W,H);
-  }else{
-    // Default: force-directed random spread
+  if(GraphSettings.yggdrasilMode){_layoutYggdrasil(W,H);}
+  else if(GraphSettings.treeMode){_layoutForest(W,H);}
+  else if(GraphSettings.gridMode){_layoutGrid(W,H);}
+  else if(GraphSettings.clusterMode){_layoutCluster(W,H);}
+  else{
     var spread=Math.min(0.95,0.7*(GraphSettings.graphArea||1));
     var margin=(1-spread)/2;
     graphNodes.forEach(function(n){
@@ -168,11 +232,21 @@ function buildGraph(){
     });
   }
 
+  _initSapParticles();
   simTick=0;if(graphAnim)cancelAnimationFrame(graphAnim);runGraphSim();
 }
 
-// ── GRID LAYOUT (the old "square mode") ──────────────────
-// Sorts all nodes by connection count desc, arranges into a tight grid
+function _updateModeLabel(){
+  var el=document.getElementById('stat-mode');
+  if(!el)return;
+  var mode=GraphSettings.yggdrasilMode?'🌳 Yggdrasil':
+            GraphSettings.treeMode?'🌲 Forest':
+            GraphSettings.gridMode?'⊞ Grid':
+            GraphSettings.clusterMode?'⬡ Cluster':'◎ Default';
+  el.textContent=mode;
+}
+
+// ── GRID LAYOUT ───────────────────────────────────────────
 function _layoutGrid(W,H){
   var sorted=graphNodes.slice().sort(function(a,b){return b.connCount-a.connCount;});
   var cols=Math.ceil(Math.sqrt(sorted.length*1.6));
@@ -184,13 +258,12 @@ function _layoutGrid(W,H){
   });
 }
 
-// ── FOREST LAYOUT ────────────────────────────────────────
-// Each type = its own tree. More horizontal padding between trees.
+// ── FOREST LAYOUT ─────────────────────────────────────────
 function _layoutForest(W,H){
   var TYPE_ORDER=['conversation','project','lecture','daily','general'];
-  // More padding: 6% margin each side, 4% gap between trees
   var USABLE_LEFT=0.06,USABLE_RIGHT=0.94;
   var USABLE_TOP=0.08,USABLE_BOTTOM=0.86;
+  var GAP_FRAC=0.04;
 
   var groups={};
   TYPE_ORDER.forEach(function(t){groups[t]=[];});
@@ -205,8 +278,6 @@ function _layoutForest(W,H){
   var ordered=_centerLargest(activeGroups);
 
   var numSlots=ordered.length+(orphans.length>0?1:0);
-  // Add inter-tree gap of 4% of W between each slot
-  var GAP_FRAC=0.04;
   var totalGap=GAP_FRAC*(numSlots-1);
   var usableW=(USABLE_RIGHT-USABLE_LEFT)-totalGap;
   var slotW=usableW/Math.max(numSlots,1);
@@ -215,34 +286,26 @@ function _layoutForest(W,H){
 
   ordered.forEach(function(type,treeIdx){
     var members=groups[type];
-    // Center of this tree's slot, accounting for gaps
     var treeCX=W*(USABLE_LEFT+(treeIdx*(slotW+GAP_FRAC)+slotW*0.5));
-
-    if(members.length===1){
-      members[0].x=treeCX;members[0].y=baseY-treeH*0.3;return;
-    }
-
+    if(members.length===1){members[0].x=treeCX;members[0].y=baseY-treeH*0.3;return;}
     members.sort(function(a,b){return b.connCount-a.connCount;});
     var layers=_buildLayers(members);
     var numLayers=layers.length;
-
     layers.forEach(function(layer,li){
       var yFrac=li/(Math.max(numLayers-1,1));
       var y=baseY-yFrac*treeH*0.85;
-      // Canopy width capped to 85% of slot to prevent overlap
       var spreadFrac=0.12+yFrac*0.42;
       var maxSpread=(slotW*W)*spreadFrac*0.5;
-
       layer.forEach(function(node,ni){
         var xFrac=layer.length===1?0.5:(ni/(layer.length-1));
-        node.x=treeCX-maxSpread+xFrac*(maxSpread*2);
+        node.x=treeCX-maxSpread+xFrac*(maxSpread*2)+(Math.random()-0.5)*8;
         node.y=y+(Math.random()-0.5)*10;
-        node.x+=(Math.random()-0.5)*8;
+        // Tag leaf nodes for sway
+        node.isLeaf=(li===numLayers-1);
       });
     });
   });
 
-  // Orphan grove — far right
   if(orphans.length>0){
     var groveCX=W*(USABLE_LEFT+(ordered.length*(slotW+GAP_FRAC)+slotW*0.5));
     orphans.forEach(function(n,i){
@@ -250,98 +313,71 @@ function _layoutForest(W,H){
       var r=25+Math.random()*35;
       n.x=groveCX+Math.cos(angle)*r;
       n.y=baseY-treeH*0.22+Math.sin(angle)*r*0.5;
+      n.isLeaf=true;
     });
   }
 }
 
-// ── YGGDRASIL LAYOUT ─────────────────────────────────────
-// One giant tree spanning the whole canvas.
-// Trunk = most connected node at center bottom (the world tree root).
-// Branches split by type: each type gets a main branch direction.
-// Notes spread along their branch, higher = less connected.
-// Roots: orphan nodes hang below the trunk like roots.
-// The 9 realms vibe: different branch angles for each type.
+// ── YGGDRASIL LAYOUT ──────────────────────────────────────
 function _layoutYggdrasil(W,H){
   var CX=W*0.5;
-  var TRUNK_Y=H*0.78;    // trunk node sits here
-  var CANOPY_TOP=H*0.06; // topmost leaves
-  var ROOT_BOT=H*0.95;   // deepest roots
+  var TRUNK_Y=H*0.78;
+  var CANOPY_TOP=H*0.06;
+  var ROOT_BOT=H*0.95;
 
-  // Sort all non-orphan nodes by connCount desc
   var orphans=graphNodes.filter(function(n){return n.orphan;});
   var nonOrphans=graphNodes.filter(function(n){return!n.orphan;});
   nonOrphans.sort(function(a,b){return b.connCount-a.connCount;});
 
-  // Place trunk (most connected overall) at center
   if(nonOrphans.length>0){
     nonOrphans[0].x=CX;nonOrphans[0].y=TRUNK_Y;
+    nonOrphans[0].isLeaf=false;
   }
 
-  // Assign branch angles per type — spread around top arc like branches
-  // Each type = one main branch direction emanating from trunk
   var TYPE_ORDER=['conversation','project','lecture','daily','general'];
   var typeGroups={};
   TYPE_ORDER.forEach(function(t){typeGroups[t]=[];});
-  // Skip the trunk node (index 0) — it's special
   nonOrphans.slice(1).forEach(function(n){typeGroups[n.type].push(n);});
 
   var activeTypes=TYPE_ORDER.filter(function(t){return typeGroups[t].length>0;});
   var numBranches=activeTypes.length;
-
-  // Branch angles: spread from -150° to -30° (top arc, left to right)
-  // -90° = straight up (center branch gets that)
-  var angleStart=-Math.PI*0.88;
-  var angleEnd=-Math.PI*0.12;
+  var angleStart=-Math.PI*0.88,angleEnd=-Math.PI*0.12;
   var trunkTreeH=TRUNK_Y-CANOPY_TOP;
 
   activeTypes.forEach(function(type,bi){
-    var members=typeGroups[type];
-    if(!members.length)return;
-
-    // Main branch angle for this type
+    var members=typeGroups[type];if(!members.length)return;
     var t=numBranches===1?0.5:(bi/(numBranches-1));
     var branchAngle=angleStart+(angleEnd-angleStart)*t;
-
-    // Sort members by connCount desc — more connected = closer to trunk
     members.sort(function(a,b){return b.connCount-a.connCount;});
-
-    // Place nodes along the branch in sub-layers
-    // Layer 0 = closest to trunk, last layer = tip (leaf)
     var layers=_buildLayers(members);
     var numLayers=layers.length;
-
     layers.forEach(function(layer,li){
-      // Distance from trunk — further out as li increases
       var distFrac=(li+1)/(numLayers+1);
       var dist=distFrac*trunkTreeH*0.88;
-
-      // Sub-branch spread perpendicular to main branch angle
-      // Widens as we go outward
       var spreadW=dist*0.28*(1+distFrac*0.5);
-
       var bx=CX+Math.cos(branchAngle)*dist;
       var by=TRUNK_Y+Math.sin(branchAngle)*dist;
-
       layer.forEach(function(node,ni){
         var xFrac=layer.length===1?0:(ni/(layer.length-1)-0.5);
-        // Perpendicular direction (rotate branch angle by 90°)
         var perpAngle=branchAngle+Math.PI/2;
         node.x=bx+Math.cos(perpAngle)*xFrac*spreadW*2+(Math.random()-0.5)*10;
         node.y=by+Math.sin(perpAngle)*xFrac*spreadW*2+(Math.random()-0.5)*8;
+        node.isLeaf=(li===numLayers-1);
       });
     });
   });
 
-  // Roots: orphans hang below the trunk in a root system
+  // Roots
   orphans.forEach(function(n,i){
     var angle=Math.PI*0.3+((i/(Math.max(orphans.length-1,1)))*Math.PI*0.4);
     var dist=(0.15+Math.random()*0.55)*(ROOT_BOT-TRUNK_Y);
     n.x=CX+Math.cos(angle)*dist*0.7+(Math.random()-0.5)*40;
     n.y=TRUNK_Y+Math.sin(angle)*dist;
+    n.isLeaf=false;
   });
 }
 
-// ── CLUSTER LAYOUT ───────────────────────────────────────
+// ── CLUSTER LAYOUT ────────────────────────────────────────
 function _layoutCluster(W,H){
   var typeOrder=['conversation','project','lecture','daily','general'];
   var groupCenters={};
@@ -352,18 +388,15 @@ function _layoutCluster(W,H){
     var angle=(gi/activeTypes.length)*Math.PI*2-Math.PI/2;
     groupCenters[t]={x:W/2+Math.cos(angle)*W*0.28,y:H/2+Math.sin(angle)*H*0.28};
   });
-  var orphans=graphNodes.filter(function(n){return n.orphan;});
-  var nonOrphans=graphNodes.filter(function(n){return!n.orphan;});
-  nonOrphans.forEach(function(n){
-    var center=groupCenters[n.type]||{x:W/2,y:H/2};
-    n.x=center.x+(Math.random()-0.5)*160;
-    n.y=center.y+(Math.random()-0.5)*160;
-  });
-  orphans.forEach(function(n,i){
-    var angle=(i/Math.max(1,orphans.length))*Math.PI*2;
-    var r=40+Math.random()*40;
-    n.x=W*0.12+Math.cos(angle)*r;
-    n.y=H*0.82+Math.sin(angle)*r;
+  graphNodes.forEach(function(n){
+    if(n.orphan){
+      var angle=(graphNodes.indexOf(n)/Math.max(1,graphNodes.filter(function(x){return x.orphan;}).length))*Math.PI*2;
+      n.x=W*0.12+Math.cos(angle)*45;n.y=H*0.82+Math.sin(angle)*45;
+    }else{
+      var center=groupCenters[n.type]||{x:W/2,y:H/2};
+      n.x=center.x+(Math.random()-0.5)*160;
+      n.y=center.y+(Math.random()-0.5)*160;
+    }
   });
 }
 
@@ -376,13 +409,11 @@ function _centerLargest(arr){
   result.splice(mid,0,biggest);
   return result;
 }
-
 function _buildLayers(members){
   var layers=[];var i=0;var layerSize=1;
   while(i<members.length){
     layers.push(members.slice(i,i+layerSize));
-    i+=layerSize;
-    layerSize=Math.min(Math.ceil(layerSize*1.6),6);
+    i+=layerSize;layerSize=Math.min(Math.ceil(layerSize*1.6),6);
   }
   return layers;
 }
@@ -396,10 +427,14 @@ function detectType(path,content){
   return'general';
 }
 
+// ── SIMULATION + DRAW LOOP ────────────────────────────────
 var GRAPH_FPS=1000/30,lastGraphFrame=0;
 function runGraphSim(){
   graphAnim=requestAnimationFrame(function(now){
     runGraphSim();if(now-lastGraphFrame<GRAPH_FPS)return;lastGraphFrame=now;
+    var dt=1/30;
+    swayTime+=dt;
+
     var canvas=document.getElementById('vault-graph-canvas');
     var ctx=canvas.getContext('2d');
     var W=canvas.width,H=canvas.height;
@@ -413,7 +448,7 @@ function runGraphSim(){
     var brightness=GraphSettings.nodeBrightness!==undefined?GraphSettings.nodeBrightness:1.0;
     var staticLayout=treeMode||gridMode||yggMode;
 
-    // ── SIM (only in default + cluster mode) ─────────────
+    // Physics sim (default + cluster only)
     if(simTick<300&&!staticLayout){
       var k=Math.sqrt((W*H)/Math.max(graphNodes.length,1))*0.9*repulsion;
       for(var i=0;i<graphNodes.length;i++){
@@ -443,8 +478,10 @@ function runGraphSim(){
         typeOrder.forEach(function(t){
           var m=graphNodes.filter(function(n){return n.type===t&&!n.orphan;});
           if(!m.length)return;
-          activeCenters[t]={x:m.reduce(function(s,n){return s+n.x;},0)/m.length,
-                             y:m.reduce(function(s,n){return s+n.y;},0)/m.length};
+          activeCenters[t]={
+            x:m.reduce(function(s,n){return s+n.x;},0)/m.length,
+            y:m.reduce(function(s,n){return s+n.y;},0)/m.length
+          };
         });
         graphNodes.forEach(function(n){
           if(n.orphan){n.vx+=(W*0.12-n.x)*0.002;n.vy+=(H*0.82-n.y)*0.002;}
@@ -464,7 +501,14 @@ function runGraphSim(){
       simTick++;
     }
 
-    // ── DRAW ─────────────────────────────────────────────
+    // Advance sap particles
+    sapParticles.forEach(function(p){
+      p.t+=p.speed;
+      if(p.t>1)p.t=0;
+      if(p.t<0)p.t=1;
+    });
+
+    // ── DRAW ──────────────────────────────────────────────
     ctx.clearRect(0,0,W,H);
     ctx.save();
     ctx.translate(graphTransform.x,graphTransform.y);
@@ -480,14 +524,19 @@ function runGraphSim(){
       graphNodes.forEach(function(n){if(n.name.toLowerCase().includes(query))matchedNodes[n.id]=true;});
     }
 
-    // ── EDGES ─────────────────────────────────────────────
+    // Cross-type edges arc over in tree/ygg modes
     graphEdges.forEach(function(e){
       var a=graphNodes[e.a],b=graphNodes[e.b];if(!a||!b)return;
       var isHL=hoveredNode&&(e.a===hoveredNode.id||e.b===hoveredNode.id);
       var baseW=0.5+Math.min(e.weight-1,4)*0.6;
       var col=typeColors[a.type]||'#7c6af7';
-      if((treeMode||yggMode)&&a.type===b.type){
+      var sameType=a.type===b.type;
+
+      if((treeMode||yggMode)&&sameType){
         _drawBranchEdge(ctx,a,b,col,isHL,baseW);
+      }else if((treeMode||yggMode)&&!sameType){
+        // Cross-type: arc gracefully over the scene
+        _drawArcEdge(ctx,a,b,isHL,baseW);
       }else{
         ctx.beginPath();
         ctx.strokeStyle=isHL?(col+'cc'):'rgba(124,106,247,0.08)';
@@ -498,16 +547,33 @@ function runGraphSim(){
     });
     ctx.shadowBlur=0;
 
+    // Sap flow particles (tree + ygg modes)
+    if(treeMode||yggMode){
+      sapParticles.forEach(function(p){
+        var a=graphNodes[p.edgeA],b=graphNodes[p.edgeB];
+        if(!a||!b)return;
+        var px=a.x+(b.x-a.x)*p.t;
+        var py=a.y+(b.y-a.y)*p.t;
+        var col=typeColors[a.type]||'#7c6af7';
+        ctx.beginPath();ctx.arc(px,py,p.size,0,Math.PI*2);
+        ctx.fillStyle=col+(Math.round(p.alpha*255).toString(16).padStart(2,'0'));
+        ctx.shadowColor=col;ctx.shadowBlur=4;
+        ctx.fill();ctx.shadowBlur=0;
+      });
+    }
+
+    // Nodes with leaf sway
     graphNodes.forEach(function(n){_drawNode(ctx,n,matchedNodes,brightness);});
+
     ctx.restore();
   });
 }
 
-// ── Draw organic branch edge ──────────────────────────────
+// ── Draw curved branch edge ───────────────────────────────
 function _drawBranchEdge(ctx,a,b,col,isHL,baseW){
   var mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
   var trunkY=Math.max(a.y,b.y);
-  var cpx=mx+(Math.random()-0.5)*20;
+  var cpx=mx+(Math.random()-0.5)*18;
   var cpy=my+(trunkY-my)*0.3;
   ctx.beginPath();ctx.moveTo(a.x,a.y);
   ctx.quadraticCurveTo(cpx,cpy,b.x,b.y);
@@ -517,11 +583,26 @@ function _drawBranchEdge(ctx,a,b,col,isHL,baseW){
   ctx.stroke();ctx.shadowBlur=0;
 }
 
+// ── Draw arcing cross-type edge ───────────────────────────
+function _drawArcEdge(ctx,a,b,isHL,baseW){
+  var mx=(a.x+b.x)/2;
+  var my=(a.y+b.y)/2;
+  // Arc rises above both nodes
+  var rise=Math.min(Math.abs(b.x-a.x)*0.4,120);
+  var cpx=mx;
+  var cpy=Math.min(a.y,b.y)-rise;
+  ctx.beginPath();ctx.moveTo(a.x,a.y);
+  ctx.quadraticCurveTo(cpx,cpy,b.x,b.y);
+  ctx.strokeStyle=isHL?'rgba(124,106,247,0.5)':'rgba(124,106,247,0.05)';
+  ctx.lineWidth=isHL?1.5:0.6;
+  ctx.setLineDash([4,6]);
+  ctx.stroke();ctx.setLineDash([]);
+}
+
 // ── Draw forest decorations ───────────────────────────────
 function _drawForest(ctx,W,H){
   var TYPE_ORDER=['conversation','project','lecture','daily','general'];
-  var USABLE_LEFT=0.06,USABLE_RIGHT=0.94;
-  var GAP_FRAC=0.04;
+  var USABLE_LEFT=0.06,USABLE_RIGHT=0.94,GAP_FRAC=0.04;
   var orphans=graphNodes.filter(function(n){return n.orphan;});
   var activeGroups=TYPE_ORDER.filter(function(t){
     return graphNodes.some(function(n){return n.type===t&&!n.orphan;});
@@ -531,7 +612,6 @@ function _drawForest(ctx,W,H){
            graphNodes.filter(function(n){return n.type===a;}).length;
   });
   orderedTypes=_centerLargest(orderedTypes);
-
   var numSlots=orderedTypes.length+(orphans.length>0?1:0);
   var totalGap=GAP_FRAC*(numSlots-1);
   var usableW=(USABLE_RIGHT-USABLE_LEFT)-totalGap;
@@ -543,31 +623,23 @@ function _drawForest(ctx,W,H){
     if(!members.length)return;
     var col=typeColors[type]||'#7c6af7';
     var treeCX=W*(USABLE_LEFT+(treeIdx*(slotW+GAP_FRAC)+slotW*0.5));
-
     var xs=members.map(function(n){return n.x;});
     var ys=members.map(function(n){return n.y;});
     var minX=Math.min.apply(null,xs)-20,maxX=Math.max.apply(null,xs)+20;
     var minY=Math.min.apply(null,ys)-20,maxY=Math.max.apply(null,ys)+20;
-
-    // Halo
     var haloR=Math.max((maxX-minX),(maxY-minY))*0.65;
     var haloGrd=ctx.createRadialGradient(treeCX,(minY+maxY)/2,0,treeCX,(minY+maxY)/2,haloR+40);
     haloGrd.addColorStop(0,col+'12');haloGrd.addColorStop(1,col+'00');
     ctx.beginPath();
     ctx.ellipse(treeCX,(minY+maxY)/2,(maxX-minX)/2+30,(maxY-minY)/2+30,0,0,Math.PI*2);
     ctx.fillStyle=haloGrd;ctx.fill();
-
-    // Ground + roots
     var trunk=members[0];
     ctx.beginPath();
-    ctx.moveTo(treeCX-W*slotW*0.35,baseY+2);
-    ctx.lineTo(treeCX+W*slotW*0.35,baseY+2);
+    ctx.moveTo(treeCX-W*slotW*0.35,baseY+2);ctx.lineTo(treeCX+W*slotW*0.35,baseY+2);
     ctx.strokeStyle=col+'44';ctx.lineWidth=1.5;ctx.stroke();
     ctx.beginPath();
     ctx.moveTo(trunk.x,trunk.y+trunk.radius);ctx.lineTo(trunk.x,baseY+2);
     ctx.strokeStyle=col+'30';ctx.lineWidth=2;ctx.stroke();
-
-    // Label
     ctx.font='bold 10px IBM Plex Mono, monospace';
     ctx.fillStyle=col+'cc';ctx.textAlign='center';
     ctx.fillText(type.toUpperCase(),treeCX,baseY+16);
@@ -580,9 +652,9 @@ function _drawForest(ctx,W,H){
     var groveCX=W*(USABLE_LEFT+(orderedTypes.length*(slotW+GAP_FRAC)+slotW*0.5));
     ctx.font='bold 10px IBM Plex Mono, monospace';
     ctx.fillStyle=ORPHAN_COLOR+'80';ctx.textAlign='center';
-    ctx.fillText('ORPHANS',groveCX,baseY+16);
+    ctx.fillText('ORPHANS',groveCX,H*0.86+16);
     ctx.fillStyle=ORPHAN_COLOR+'50';ctx.font='9px IBM Plex Mono, monospace';
-    ctx.fillText(orphans.length+' notes',groveCX,baseY+28);
+    ctx.fillText(orphans.length+' notes',groveCX,H*0.86+28);
     ctx.textAlign='left';
   }
 }
@@ -590,30 +662,19 @@ function _drawForest(ctx,W,H){
 // ── Draw Yggdrasil decorations ────────────────────────────
 function _drawYggdrasil(ctx,W,H){
   var CX=W*0.5,TRUNK_Y=H*0.78;
-  var nonOrphans=graphNodes.filter(function(n){return!n.orphan;});
-  var trunk=nonOrphans.sort(function(a,b){return b.connCount-a.connCount;})[0];
-
-  // Great trunk line — from roots up through trunk node to canopy
   var grad=ctx.createLinearGradient(CX,H*0.95,CX,H*0.06);
   grad.addColorStop(0,'rgba(74,222,128,0.08)');
   grad.addColorStop(0.4,'rgba(124,106,247,0.15)');
   grad.addColorStop(1,'rgba(124,106,247,0.04)');
-  ctx.beginPath();
-  ctx.moveTo(CX,H*0.95);ctx.lineTo(CX,H*0.06);
+  ctx.beginPath();ctx.moveTo(CX,H*0.95);ctx.lineTo(CX,H*0.06);
   ctx.strokeStyle=grad;ctx.lineWidth=3;ctx.stroke();
-
-  // Nine realms ring — a faint circle around the trunk
   ctx.beginPath();ctx.arc(CX,TRUNK_Y,22,0,Math.PI*2);
   ctx.strokeStyle='rgba(124,106,247,0.35)';ctx.lineWidth=1.5;ctx.stroke();
   ctx.beginPath();ctx.arc(CX,TRUNK_Y,8,0,Math.PI*2);
   ctx.fillStyle='rgba(124,106,247,0.2)';ctx.fill();
-
-  // World label
   ctx.font='bold 9px IBM Plex Mono, monospace';
   ctx.fillStyle='rgba(232,230,240,0.25)';ctx.textAlign='center';
   ctx.fillText('YGGDRASIL',CX,H*0.06-8);
-
-  // Type branch labels at midpoint of each branch direction
   var TYPE_ORDER=['conversation','project','lecture','daily','general'];
   var activeTypes=TYPE_ORDER.filter(function(t){
     return graphNodes.some(function(n){return n.type===t&&!n.orphan;});
@@ -621,7 +682,6 @@ function _drawYggdrasil(ctx,W,H){
   var numBranches=activeTypes.length;
   var angleStart=-Math.PI*0.88,angleEnd=-Math.PI*0.12;
   var branchLabelDist=(TRUNK_Y-H*0.06)*0.45;
-
   activeTypes.forEach(function(type,bi){
     var t=numBranches===1?0.5:(bi/(numBranches-1));
     var angle=angleStart+(angleEnd-angleStart)*t;
@@ -632,11 +692,9 @@ function _drawYggdrasil(ctx,W,H){
     ctx.fillStyle=col+'99';ctx.textAlign='center';
     ctx.fillText(type.toUpperCase(),lx,ly-14);
   });
-
-  // Root label
+  var orphanCount=graphNodes.filter(function(n){return n.orphan;}).length;
   ctx.font='9px IBM Plex Mono, monospace';
   ctx.fillStyle=ORPHAN_COLOR+'60';ctx.textAlign='center';
-  var orphanCount=graphNodes.filter(function(n){return n.orphan;}).length;
   if(orphanCount>0)ctx.fillText('roots ('+orphanCount+')',CX,H*0.97);
   ctx.textAlign='left';
 }
@@ -673,7 +731,7 @@ function _drawClusterHalos(ctx){
   }
 }
 
-// ── Draw a single node ────────────────────────────────────
+// ── Draw a single node (with leaf sway) ──────────────────
 function _drawNode(ctx,n,matchedNodes,brightness){
   var isPinned=!!pinnedNodes[n.id];
   var isOrphan=n.orphan;
@@ -685,6 +743,16 @@ function _drawNode(ctx,n,matchedNodes,brightness){
   var isMatch=matchedNodes&&matchedNodes[n.id];
   var r=isHv?n.radius*2.2:isCn?n.radius*1.4:isMatch?n.radius*1.8:n.radius;
 
+  // Leaf sway — only in tree/ygg modes and for leaf nodes
+  var drawX=n.x,drawY=n.y;
+  var isStaticLeafMode=(GraphSettings.treeMode||GraphSettings.yggdrasilMode);
+  if(isStaticLeafMode&&n.isLeaf&&!isPinned){
+    var swayAmt=2.5;
+    var freq=0.6+((n.swayOffset||0)*0.3);
+    drawX=n.x+Math.sin(swayTime*freq+(n.swayOffset||0))*swayAmt;
+    drawY=n.y+Math.cos(swayTime*freq*0.7+(n.swayOffset||0))*swayAmt*0.4;
+  }
+
   if(isPinned){ctx.shadowColor='#f87171';ctx.shadowBlur=12;}
   else if(isHv){ctx.shadowColor=color;ctx.shadowBlur=16;}
   else if(isMatch){ctx.shadowColor='#fde047';ctx.shadowBlur=16;}
@@ -695,7 +763,7 @@ function _drawNode(ctx,n,matchedNodes,brightness){
   var baseAlpha=Math.round((0.30+brightness*0.70)*255).toString(16).padStart(2,'0');
   var query=GraphSettings.searchQuery||'';
 
-  ctx.beginPath();ctx.arc(n.x,n.y,r,0,Math.PI*2);
+  ctx.beginPath();ctx.arc(drawX,drawY,r,0,Math.PI*2);
   var fillColor;
   if(isPinned){fillColor='#f87171';}
   else if(isHv){fillColor=color;}
@@ -706,7 +774,7 @@ function _drawNode(ctx,n,matchedNodes,brightness){
 
   if(isPinned){
     ctx.shadowBlur=0;ctx.strokeStyle='#f87171';ctx.lineWidth=1.5;
-    var boxS=r*2+6;ctx.strokeRect(n.x-boxS/2,n.y-boxS/2,boxS,boxS);
+    var boxS=r*2+6;ctx.strokeRect(drawX-boxS/2,drawY-boxS/2,boxS,boxS);
   }
 
   var showLabel=isHv||isMatch||isPinned||GraphSettings.showLabels||(graphTransform.scale>1.8);
@@ -714,7 +782,7 @@ function _drawNode(ctx,n,matchedNodes,brightness){
     ctx.shadowBlur=0;
     ctx.font=(isHv||isMatch?'bold ':'')+'10px IBM Plex Mono, monospace';
     ctx.fillStyle=isPinned?'#f87171':(isHv||isMatch)?'rgba(232,230,240,1)':'rgba(232,230,240,0.6)';
-    ctx.fillText(n.name,n.x+r+3,n.y+3);
+    ctx.fillText(n.name,drawX+r+3,drawY+3);
   }
   ctx.shadowBlur=0;
 }
