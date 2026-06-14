@@ -271,6 +271,13 @@ var VAULTUI=(function(){
         }
         return true;
       });
+
+      // TF-IDF re-rank when free text present
+      if(freeText&&items.length>1){
+        var scores=_vaultTFIDF(freeText,items.map(function(o){return o.note;}));
+        items=items.map(function(o,i){return{note:o.note,idx:o.idx,score:scores[i]||0};});
+        items.sort(function(a,b){return b.score-a.score;});
+      }
     }
 
     if(activeTypeFilter!=='all'){
@@ -311,6 +318,60 @@ var VAULTUI=(function(){
     listEl.querySelectorAll('.vp-item').forEach(function(item){
       item.addEventListener('click',function(){openNote(parseInt(item.dataset.idx));});
     });
+  }
+
+  // ── TF-IDF engine (for note search ranking) ──────────────
+  var _idfCache={};
+  var _STOP=new Set(['the','and','for','are','but','not','you','all','can','had','was','one','our','out','get','has','how','its','may','now','see','who','did','too','use','that','this','with','have','from','they','will','been','were','said','each','into','than','your','more','then','some','them','what','when','also','just','know','take','after','could','think','about','would','these','those','other','well','want','much','still','while','even','back','come','made','only','over','here','down','does','like','time','most','date','type','tags','status']);
+
+  function _buildVaultIDF(){
+    _idfCache={};
+    var N=vaultIndex.length;if(!N)return;
+    var df={};
+    vaultIndex.forEach(function(note){
+      var words=new Set((note.name+' '+note.content).toLowerCase().split(/\W+/).filter(function(w){return w.length>2&&!_STOP.has(w);}));
+      words.forEach(function(w){df[w]=(df[w]||0)+1;});
+    });
+    Object.keys(df).forEach(function(w){_idfCache[w]=Math.log((N+1)/(df[w]+1))+1;});
+  }
+
+  function _vaultTFIDF(query,notes){
+    if(!Object.keys(_idfCache).length)_buildVaultIDF();
+    var qWords=query.toLowerCase().split(/\W+/).filter(function(w){return w.length>2&&!_STOP.has(w);});
+    if(!qWords.length)return notes.map(function(){return 0;});
+    return notes.map(function(note){
+      var content=(note.name+' '+note.content).toLowerCase();
+      var words=content.split(/\W+/);
+      var tf={};words.forEach(function(w){if(w.length>2)tf[w]=(tf[w]||0)+1;});
+      var total=words.length||1;
+      var score=0;
+      qWords.forEach(function(w){
+        var termTF=(tf[w]||0)/total;
+        var idf=_idfCache[w]||Math.log(2);
+        var nameBoost=note.name.toLowerCase().includes(w)?5:1;
+        score+=termTF*idf*nameBoost;
+      });
+      // Recency boost
+      var dm=note.name.match(/(\d{4}-\d{2}-\d{2})/);
+      if(dm){var age=(Date.now()-new Date(dm[1]).getTime())/(86400000);if(age<7)score*=1.5;else if(age<30)score*=1.2;}
+      return score;
+    });
+  }
+
+  // Rebuild IDF when vault loads
+  function _onVaultReady(){_buildVaultIDF();}
+
+  // ── Daily log task pre-fill ───────────────────────────────
+  // When creating a daily log, inject today's tasks from CAL as checkboxes
+  function _injectTodaysTasks(content){
+    if(typeof CAL==='undefined')return content;
+    var tasks=CAL.getTasks();
+    var today=(function(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
+    var todayTasks=tasks.filter(function(t){return!t.done&&(t.due===today||!t.due);});
+    if(!todayTasks.length)return content;
+    var taskLines=todayTasks.map(function(t){return'- [ ] '+t.text+(t.due?' 📅 '+t.due:'');}).join('\n');
+    // Replace the placeholder checkboxes in the Top 3 section
+    return content.replace('- [ ] \n- [ ] \n- [ ] ',''+taskLines+'\n');
   }
 
   // ── Filter bar ────────────────────────────────────────────
@@ -525,6 +586,8 @@ var VAULTUI=(function(){
 
       if(!fileExists){
         var content=t.body(title);
+        // Pre-fill today's tasks into daily log
+        if(key==='daily-log')content=_injectTodaysTasks(content);
         var writable=await fileHandle.createWritable();
         await writable.write(content);
         await writable.close();
@@ -650,6 +713,7 @@ var VAULTUI=(function(){
   }
 
   function refresh(){
+    _onVaultReady(); // rebuild TF-IDF index when vault connects
     if(document.getElementById('vault-panel').classList.contains('vp-vis')){
       renderFilterBar();
       renderList(searchInput?searchInput.value:'');
@@ -831,4 +895,224 @@ var GRAPHUI=(function(){
 
   function init(){bindControls();}
   return{init,showPanel,hidePanel,togglePanel,handleVoice};
+})();
+
+
+// ═══════════════════════════════════════════════════════════
+// ══  VAULT CHAT PANEL MODULE (VAULTCHAT)  ══════════════════
+// ═══════════════════════════════════════════════════════════
+var VAULTCHAT=(function(){
+  var history=[];
+  var busy=false;
+  var currentMode='smart';
+  var modeMeta={
+    smart:{label:'Balanced',topN:12,minScore:0.03},
+    broad:{label:'Wide sweep',topN:20,minScore:0.01},
+    exact:{label:'Tight focus',topN:6,minScore:0.08}
+  };
+  var STOP=new Set(['the','and','for','are','but','not','you','all','can','had','was','one','our','out','get','has','how','its','may','now','see','who','did','too','use','that','this','with','have','from','they','will','been','were','said','each','into','than','your','more','then','some','them','what','when','also','just','know','take','after','could','think','about','would','these','those','other','well','want','much','still','while','even','back','come','made','only','over','here','down','does','like','time','most','date','type','tags','status']);
+  var idfCache={};
+
+  function buildIDF(){
+    idfCache={};
+    var N=(typeof vaultIndex!=='undefined')?vaultIndex.length:0;
+    if(!N)return;
+    var df={};
+    vaultIndex.forEach(function(note){
+      var words=new Set((note.name+' '+note.content).toLowerCase().split(/\W+/).filter(function(w){return w.length>2&&!STOP.has(w);}));
+      words.forEach(function(w){df[w]=(df[w]||0)+1;});
+    });
+    Object.keys(df).forEach(function(w){idfCache[w]=Math.log((N+1)/(df[w]+1))+1;});
+  }
+
+  function tfidfScore(query,note){
+    var qWords=query.toLowerCase().split(/\W+/).filter(function(w){return w.length>2&&!STOP.has(w);});
+    if(!qWords.length)return 0;
+    var content=(note.name+' '+note.content).toLowerCase();
+    var words=content.split(/\W+/);
+    var tf={};words.forEach(function(w){if(w.length>2)tf[w]=(tf[w]||0)+1;});
+    var total=words.length||1;
+    var score=0;
+    qWords.forEach(function(w){
+      var idf=idfCache[w]||Math.log(2);
+      score+=((tf[w]||0)/total)*idf*(note.name.toLowerCase().includes(w)?5:1);
+    });
+    var dm=note.name.match(/(\d{4}-\d{2}-\d{2})/);
+    if(dm){var age=(Date.now()-new Date(dm[1]).getTime())/86400000;if(age<7)score*=1.5;else if(age<30)score*=1.2;}
+    return score;
+  }
+
+  function findRelevant(query,topN,minScore){
+    if(typeof vaultIndex==='undefined'||!vaultIndex.length)return[];
+    if(!Object.keys(idfCache).length)buildIDF();
+    var scored=vaultIndex.map(function(note){return{note:note,score:tfidfScore(query,note)};});
+    scored.sort(function(a,b){return b.score-a.score;});
+    var results=scored.filter(function(s){return s.score>0;}).slice(0,topN);
+    var maxScore=results.length?results[0].score:1;
+    return results.map(function(s){return{note:s.note,score:s.score,pct:Math.round((s.score/maxScore)*100)};});
+  }
+
+  function buildSystem(relevant,query){
+    var h=new Date().getHours();
+    var tod=h>=5&&h<12?'morning':h>=12&&h<17?'afternoon':h>=17&&h<21?'evening':'night';
+    var now=new Date();
+    var ctx='[Date: '+now.toLocaleDateString([],{weekday:'long',year:'numeric',month:'long',day:'numeric'})+']';
+    var sys='You are BAKER, an intelligent AI second brain modelled after JARVIS from Iron Man.\n'+
+      'You have access to the user\'s personal knowledge vault.\n'+
+      'Personality: precise, composed, quietly witty. Address as "sir" occasionally.\n'+
+      'It is currently '+tod+'. '+ctx+'\n\n'+
+      'RULES:\n- Answer from the vault notes provided\n'+
+      '- If notes don\'t contain the answer, say so and suggest what to add\n'+
+      '- Reference specific notes by name when relevant\n'+
+      '- Spot patterns across notes the user might miss\n\n';
+    if(!relevant.length){sys+='No vault connected or no relevant notes found.';return sys;}
+    sys+='VAULT NOTES IN CONTEXT ('+relevant.length+' most relevant):\n\n';
+    relevant.forEach(function(r){
+      var trimmed=r.note.content.length>1500?r.note.content.slice(0,1500)+'\n...[truncated]':r.note.content;
+      sys+='=== '+r.note.name+' ===\n'+trimmed+'\n\n';
+    });
+    sys+='Answer using the vault notes above. Be specific.';
+    return sys;
+  }
+
+  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function getTime(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+
+  function _panel(){return document.getElementById('vaultchat-panel');}
+  function _msgs(){return document.getElementById('vc-messages');}
+  function _input(){return document.getElementById('vc-input');}
+
+  function render(){
+    var p=_panel();if(!p)return;
+    // Panel already built via HTML — just refresh state
+    var connected=typeof vaultConnected!=='undefined'&&vaultConnected;
+    var statusEl=document.getElementById('vc-status');
+    if(statusEl)statusEl.textContent=connected?(typeof vaultIndex!=='undefined'?vaultIndex.length+' notes':''):'Not connected';
+  }
+
+  function appendMsg(role,txt,sources){
+    var msgs=_msgs();if(!msgs)return;
+    var wrap=document.createElement('div');wrap.className='vc-msg vc-msg-'+role;
+    var bub=document.createElement('div');bub.className='vc-bubble';bub.textContent=txt;
+    var meta=document.createElement('div');meta.className='vc-meta';
+    meta.textContent=(role==='user'?'You':'BAKER')+' · '+getTime();
+    wrap.appendChild(bub);wrap.appendChild(meta);
+    if(role==='baker'&&sources&&sources.length){
+      var row=document.createElement('div');row.className='vc-sources';
+      sources.slice(0,5).forEach(function(s){
+        var chip=document.createElement('span');chip.className='vc-chip';
+        chip.textContent=s.note.name.replace('.md','');
+        chip.title=s.note.path;
+        chip.addEventListener('click',function(){
+          if(typeof VAULTUI!=='undefined'&&VAULTUI._openNoteByIdx){
+            var idx=(typeof vaultIndex!=='undefined')?vaultIndex.indexOf(s.note):-1;
+            if(idx>=0){VAULTUI.showPanel();setTimeout(function(){VAULTUI._openNoteByIdx(idx);},80);}
+          }
+        });
+        row.appendChild(chip);
+      });
+      wrap.appendChild(row);
+    }
+    msgs.appendChild(wrap);msgs.scrollTop=msgs.scrollHeight;
+  }
+
+  function showThinking(){
+    var msgs=_msgs();if(!msgs)return;
+    var d=document.createElement('div');d.className='vc-msg vc-msg-baker';d.id='vc-thinking';
+    d.innerHTML='<div class="vc-bubble vc-thinking"><span></span><span></span><span></span></div>';
+    msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
+  }
+  function removeThinking(){var t=document.getElementById('vc-thinking');if(t)t.remove();}
+
+  async function send(){
+    if(busy)return;
+    var input=_input();if(!input)return;
+    var txt=input.value.trim();if(!txt)return;
+    var key=localStorage.getItem('baker_api_key');
+    if(!key){appendMsg('baker','No API key set, sir. Open Settings.');return;}
+    input.value='';
+    appendMsg('user',txt);
+    // Remove welcome if present
+    var welcome=document.getElementById('vc-welcome');if(welcome)welcome.remove();
+
+    var meta=modeMeta[currentMode];
+    var relevant=findRelevant(txt,meta.topN,meta.minScore);
+    history.push({role:'user',content:txt});
+    busy=true;
+    var sendBtn=document.getElementById('vc-send-btn');
+    if(sendBtn)sendBtn.disabled=true;
+    showThinking();
+
+    try{
+      var resp=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:buildSystem(relevant,txt),messages:history.slice(-20)})
+      });
+      var data=await resp.json();
+      if(data.error)throw new Error(data.error.message);
+      var raw=data.content.map(function(b){return b.text||'';}).join('').trim();
+      removeThinking();
+      appendMsg('baker',raw,relevant);
+      history.push({role:'assistant',content:raw});
+      if(history.length>30)history=history.slice(-30);
+    }catch(err){
+      removeThinking();
+      appendMsg('baker','I encountered a fault, sir: '+err.message);
+    }
+    busy=false;
+    if(sendBtn)sendBtn.disabled=false;
+    if(input)input.focus();
+  }
+
+  function setMode(mode){
+    currentMode=mode;
+    ['smart','broad','exact'].forEach(function(m){
+      var el=document.getElementById('vc-mode-'+m);
+      if(el)el.className='vc-mode-pill'+(m===mode?' vc-mode-active':'');
+    });
+  }
+
+  function clearChat(){
+    history=[];
+    var msgs=_msgs();if(!msgs)return;
+    msgs.innerHTML='<div class="vc-welcome" id="vc-welcome"><div class="vc-welcome-icon">🧠</div><div class="vc-welcome-title">Vault Chat</div><div class="vc-welcome-sub">Ask anything about your notes.</div></div>';
+  }
+
+  function showPanel(){
+    var p=_panel();if(!p)return;
+    p.classList.add('vc-vis');
+    if(p._wbNormalise)p._wbNormalise();
+    buildIDF();render();
+    setTimeout(function(){var i=_input();if(i)i.focus();},100);
+  }
+  function hidePanel(){var p=_panel();if(p)p.classList.remove('vc-vis');}
+  function togglePanel(){var p=_panel();if(!p)return;p.classList.toggle('vc-vis');if(p.classList.contains('vc-vis')){if(p._wbNormalise)p._wbNormalise();buildIDF();render();setTimeout(function(){var i=_input();if(i)i.focus();},100);}}
+
+  function handleVoice(cmd){
+    var c=cmd.toLowerCase().trim();
+    if(/\b(open|pull up|show|launch)\b.*\b(vault chat|chat|ask my vault|query my vault)\b/.test(c)){
+      showPanel();return'Opening vault chat, sir.';
+    }
+    return null;
+  }
+
+  function onVaultReady(){buildIDF();}
+
+  function init(){
+    var input=_input();
+    if(input){
+      input.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
+    }
+    var sendBtn=document.getElementById('vc-send-btn');
+    if(sendBtn)sendBtn.addEventListener('click',send);
+    ['smart','broad','exact'].forEach(function(m){
+      var el=document.getElementById('vc-mode-'+m);
+      if(el)el.addEventListener('click',function(){setMode(m);});
+    });
+    var clearBtn=document.getElementById('vc-clear-btn');
+    if(clearBtn)clearBtn.addEventListener('click',clearChat);
+  }
+
+  return{init,showPanel,hidePanel,togglePanel,handleVoice,onVaultReady,send};
 })();
