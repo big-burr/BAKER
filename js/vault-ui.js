@@ -737,15 +737,11 @@ var VAULTUI=(function(){
     treeMode:false,clusterMode:false,gridMode:false,yggdrasilMode:false,
     nodeBrightness:1.0
   };
-  if(typeof GraphSettings==='undefined'){
-    GraphSettings=defaults;
-  }else{
-    // Fill in any keys that hud.html's version is missing
-    Object.keys(defaults).forEach(function(k){
-      if(GraphSettings[k]===undefined)GraphSettings[k]=defaults[k];
-    });
-  }
-  DEFAULT_GRAPH_SETTINGS=JSON.parse(JSON.stringify(GraphSettings));
+  if(typeof GraphSettings==='undefined'){window.GraphSettings={};}
+  Object.keys(defaults).forEach(function(k){
+    if(GraphSettings[k]===undefined)GraphSettings[k]=defaults[k];
+  });
+  window.DEFAULT_GRAPH_SETTINGS=JSON.parse(JSON.stringify(GraphSettings));
 })();
 
 // ═══════════════════════════════════════════════════════════
