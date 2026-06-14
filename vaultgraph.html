@@ -1,420 +1,1020 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BAKER — Vault Graph</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#7c6af7">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#0f0f10;--surface:#1a1a1d;--surface2:#222226;--border:#2e2e34;--accent:#7c6af7;--accent-dim:#3d3578;--text:#e8e6f0;--muted:#7a7880;--green:#4ade80;--amber:#fbbf24;--red:#f87171;--blue:#60a5fa;--purple:#a78bfa;--orange:#fb923c;--yellow:#fde047;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;}
-body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
-.hdr{border-bottom:1px solid var(--border);padding:11px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--surface)}
-a.back{background:transparent;border:1px solid var(--border);border-radius:4px;padding:4px 9px;font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;transition:all .15s}
-a.back:hover{border-color:var(--accent);color:var(--text)}
-.logo{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--accent);letter-spacing:.1em;background:rgba(124,106,247,.12);border:1px solid var(--accent-dim);padding:3px 8px;border-radius:4px}
-.hdr-sub{font-size:12px;color:var(--muted)}
-.hdr-right{margin-left:auto;display:flex;gap:7px;align-items:center}
-.hbtn{border:1px solid var(--border);border-radius:4px;padding:5px 10px;font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);white-space:nowrap}
-.hbtn:hover{border-color:var(--accent);color:var(--text)}
-.hbtn:disabled{opacity:.3;cursor:not-allowed}
-.hbtn.vault-on{color:var(--green);border-color:var(--green);background:rgba(74,222,128,.06)}
-.hbtn.vault-scanning{color:var(--amber);border-color:var(--amber)}
-.hbtn.danger{color:var(--red);border-color:rgba(248,113,113,.4)}
-.hbtn.danger:hover{background:rgba(248,113,113,.07)}
-.main{display:grid;grid-template-columns:320px 1fr;flex:1;overflow:hidden}
-.sidebar{display:flex;flex-direction:column;border-right:1px solid var(--border);overflow-y:auto;background:var(--surface)}
-.sidebar::-webkit-scrollbar{width:3px}
-.sidebar::-webkit-scrollbar-thumb{background:var(--border)}
-.s-section{padding:14px 16px;border-bottom:1px solid var(--border)}
-.s-title{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.stat{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px;text-align:center}
-.stat-val{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--accent)}
-.stat-lbl{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:3px;letter-spacing:.05em}
-.threshold-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.threshold-lbl{font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap}
-input[type=range]{flex:1;accent-color:var(--accent)}
-.threshold-val{font-family:var(--mono);font-size:11px;color:var(--accent);min-width:32px;text-align:right}
-.run-btn{width:100%;padding:10px;background:var(--accent);border:none;border-radius:4px;font-family:var(--mono);font-size:12px;font-weight:500;color:#fff;cursor:pointer;letter-spacing:.08em;transition:opacity .15s}
-.run-btn:hover{opacity:.88}
-.run-btn:disabled{opacity:.35;cursor:not-allowed}
-.progress-wrap{margin-top:10px;display:none}
-.progress-bar{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-bottom:6px}
-.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s;width:0%}
-.progress-txt{font-family:var(--mono);font-size:10px;color:var(--muted)}
-.legend{display:flex;flex-direction:column;gap:6px}
-.legend-item{display:flex;align-items:center;gap:8px}
-.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.legend-lbl{font-family:var(--mono);font-size:10px;color:var(--muted)}
-.filter-chips{display:flex;flex-wrap:wrap;gap:5px}
-.fchip{font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:20px;cursor:pointer;transition:all .15s;border:1px solid var(--border);color:var(--muted);background:transparent}
-.fchip:hover{border-color:var(--accent)}
-.fchip.active{color:#fff}
-.fchip.conversation.active{background:rgba(167,139,250,.8);border-color:var(--purple)}
-.fchip.project.active{background:rgba(96,165,250,.8);border-color:var(--blue)}
-.fchip.lecture.active{background:rgba(253,224,71,.7);border-color:var(--yellow);color:#1a1a1d}
-.fchip.analyze.active{background:rgba(251,146,60,.8);border-color:var(--orange)}
-.fchip.general.active{background:rgba(124,106,247,.8);border-color:var(--accent)}
-.note-list{display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto}
-.note-list::-webkit-scrollbar{width:3px}
-.note-list::-webkit-scrollbar-thumb{background:var(--border)}
-.note-item{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:4px;cursor:pointer;transition:all .15s;border:1px solid transparent}
-.note-item:hover{background:var(--surface2);border-color:var(--border)}
-.note-item.selected{background:rgba(124,106,247,.1);border-color:var(--accent-dim)}
-.ni-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.ni-name{font-family:var(--mono);font-size:10px;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ni-count{font-family:var(--mono);font-size:9px;color:var(--muted)}
-.content{flex:1;overflow:hidden;display:flex;flex-direction:column}
-.conn-view{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px}
-.conn-view::-webkit-scrollbar{width:3px}
-.conn-view::-webkit-scrollbar-thumb{background:var(--border)}
-.conn-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px;transition:all .15s}
-.conn-card:hover{border-color:var(--accent);background:var(--surface2)}
-.cc-dots{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;padding-top:2px}
-.cc-dot{width:10px;height:10px;border-radius:50%}
-.cc-line{width:2px;flex:1;min-height:16px;background:var(--border);border-radius:1px}
-.cc-body{flex:1}
-.cc-names{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
-.cc-note{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--text)}
-.cc-arrow{font-family:var(--mono);font-size:11px;color:var(--muted)}
-.cc-type{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:20px;border:1px solid var(--border);color:var(--muted)}
-.cc-strength{height:3px;border-radius:2px;background:var(--border);margin-bottom:6px;overflow:hidden;width:80px}
-.cc-strength-fill{height:100%;border-radius:2px}
-.cc-reason{font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:8px}
-.cc-action{display:flex;gap:6px}
-.cc-btn{background:transparent;border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-family:var(--mono);font-size:9px;color:var(--muted);cursor:pointer;transition:all .15s}
-.cc-btn:hover{border-color:var(--accent);color:var(--text)}
-.cc-btn.written{color:var(--green);border-color:var(--green)}
-.ph{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:32px}
-.ph-icon{font-size:36px;opacity:.2}
-.ph-title{font-family:var(--mono);font-size:14px;color:var(--text);opacity:.6}
-.ph-sub{font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.9;max-width:320px;opacity:.6}
-.content-hdr{padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
-.ch-lbl{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
-.pill{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:20px;border:1px solid var(--border);color:var(--muted)}
-.pill.ok{color:var(--green);border-color:var(--green)}
-.pill.amber{color:var(--amber);border-color:var(--amber)}
-.write-all-btn{font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:4px;border:1px solid var(--green);color:var(--green);background:rgba(74,222,128,.06);cursor:pointer;transition:all .15s}
-.write-all-btn:hover{background:rgba(74,222,128,.12)}
-.write-all-btn:disabled{opacity:.3;cursor:not-allowed}
-</style>
-</head>
-<body>
-<div class="hdr">
-  <a class="back" href="index.html">← BAKER</a>
-  <span class="logo">🕸</span>
-  <span class="hdr-sub" id="hdr-sub">vault graph</span>
-  <div class="hdr-right">
-    <button class="hbtn" id="vault-btn" onclick="handleVaultBtn()">⬡ Connect Vault</button>
-    <button class="hbtn danger" id="write-btn" onclick="writeAllLinks()" disabled>⬡ Write links to vault</button>
-  </div>
-</div>
+// ═══════════════════════════════════════════════════════════
+// ══  VAULT GRAPH  ══════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+var graphNodes=[],graphEdges=[],graphAnim=null;
+var graphTransform={x:0,y:0,scale:1};
+var graphPanning=false,graphPanStart={x:0,y:0};
+var hoveredNode=null,simTick=0;
+var pinnedNodes={};
+var typeColors={
+  conversation:'#c084fc',
+  project:'#38bdf8',
+  lecture:'#facc15',
+  daily:'#4ade80',
+  general:'#fb923c'
+};
+var ORPHAN_COLOR='#00e5cc';
 
-<div class="main">
-  <div class="sidebar">
-    <div class="s-section">
-      <div class="s-title">Vault stats</div>
-      <div class="stat-grid">
-        <div class="stat"><div class="stat-val" id="stat-notes">—</div><div class="stat-lbl">notes</div></div>
-        <div class="stat"><div class="stat-val" id="stat-links">—</div><div class="stat-lbl">connections</div></div>
-        <div class="stat"><div class="stat-val" id="stat-written">—</div><div class="stat-lbl">links written</div></div>
-        <div class="stat"><div class="stat-val" id="stat-orphans">—</div><div class="stat-lbl">unlinked</div></div>
-      </div>
-    </div>
-    <div class="s-section">
-      <div class="s-title">Auto-link settings</div>
-      <div class="threshold-row">
-        <span class="threshold-lbl">Min strength</span>
-        <input type="range" id="threshold" min="1" max="3" step="1" value="2">
-        <span class="threshold-val" id="threshold-val">moderate</span>
-      </div>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:10px;line-height:1.7">BAKER scores every note pair using keyword matching. Only pairs above this threshold get sent to Claude for confirmation — keeping API calls minimal.</div>
-      <button class="run-btn" id="run-btn" onclick="runSweep()" disabled>▶ Sweep vault</button>
-      <div class="progress-wrap" id="progress-wrap">
-        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-        <div class="progress-txt" id="progress-txt">Preparing...</div>
-      </div>
-    </div>
-    <div class="s-section">
-      <div class="s-title">Note types</div>
-      <div class="legend">
-        <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div><span class="legend-lbl">Conversation</span></div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div><span class="legend-lbl">Project</span></div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div><span class="legend-lbl">Lecture</span></div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div><span class="legend-lbl">Analyze / Scan</span></div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div><span class="legend-lbl">Daily log</span></div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div><span class="legend-lbl">General / Other</span></div>
-      </div>
-    </div>
-    <div class="s-section">
-      <div class="s-title">Filter by type</div>
-      <div class="filter-chips">
-        <span class="fchip conversation active" onclick="toggleFilter('conversation',this)">Conversations</span>
-        <span class="fchip project active" onclick="toggleFilter('project',this)">Projects</span>
-        <span class="fchip lecture active" onclick="toggleFilter('lecture',this)">Lectures</span>
-        <span class="fchip analyze active" onclick="toggleFilter('analyze',this)">Analyze</span>
-        <span class="fchip general active" onclick="toggleFilter('general',this)">General</span>
-      </div>
-    </div>
-    <div class="s-section" style="flex:1">
-      <div class="s-title">Notes <span id="note-list-count" style="color:var(--accent)"></span></div>
-      <div class="note-list" id="note-list">
-        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);opacity:.5">Connect vault to see notes</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="content">
-    <div class="content-hdr">
-      <span class="ch-lbl" id="content-lbl">Connections</span>
-      <span class="pill" id="content-pill">—</span>
-      <span style="flex:1"></span>
-      <button class="write-all-btn" id="write-all-btn" onclick="writeAllLinks()" disabled>⬡ Write all to vault</button>
-    </div>
-    <div class="conn-view" id="conn-view">
-      <div class="ph">
-        <div class="ph-icon">🕸</div>
-        <div class="ph-title" id="ph-title">Vault not connected, sir.</div>
-        <div class="ph-sub">Connect your vault and run a sweep. BAKER will score every note pair, identify strong connections, and let you write them back as wikilinks automatically.</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-function getTimeGreeting(){var h=new Date().getHours();if(h>=5&&h<12)return 'Good morning, sir.';if(h>=12&&h<17)return 'Good afternoon, sir.';if(h>=17&&h<21)return 'Good evening, sir.';return "You're up late, sir.";}
-
-var vaultHandle=null,vaultIndex=[],vaultConnected=false;
-var hasFS=('showDirectoryPicker' in window);
-var allConnections=[];
-var writtenPairs=new Set();
-var activeFilters=new Set(['conversation','project','lecture','analyze','general']);
-var selectedNote=null;
-var sweepRunning=false;
-var thresholdMap={1:'weak',2:'moderate',3:'strong'};
-
-document.addEventListener('DOMContentLoaded',function(){
-  document.getElementById('ph-title').textContent=getTimeGreeting().replace(',','')+' Vault not connected.';
-  if(!hasFS){document.getElementById('vault-btn').textContent='⬡ Vault (Chrome only)';document.getElementById('vault-btn').disabled=true;}
-  document.getElementById('threshold').addEventListener('input',function(){document.getElementById('threshold-val').textContent=thresholdMap[this.value];});
-  tryReconnectVault();
-});
-
-function openDB(){return new Promise(function(res,rej){var r=indexedDB.open('baker-vault',1);r.onupgradeneeded=function(e){e.target.result.createObjectStore('handles',{keyPath:'id'});};r.onsuccess=function(e){res(e.target.result);};r.onerror=function(){rej(r.error);};});}
-async function storeHandle(h){try{var db=await openDB();db.transaction('handles','readwrite').objectStore('handles').put({id:'vault',handle:h});}catch(e){}}
-async function getStoredHandle(){try{var db=await openDB();return new Promise(function(res){var r=db.transaction('handles','readonly').objectStore('handles').get('vault');r.onsuccess=function(){res(r.result?r.result.handle:null);};r.onerror=function(){res(null);};});}catch(e){return null;}}
-async function clearHandle(){try{var db=await openDB();db.transaction('handles','readwrite').objectStore('handles').delete('vault');}catch(e){}}
-
-async function tryReconnectVault(){var stored=await getStoredHandle();if(!stored)return;setVaultBtn('scanning');try{var perm=await stored.requestPermission({mode:'readwrite'});if(perm==='granted'){await doConnect(stored);}else{await clearHandle();setVaultBtn('off');}}catch(e){await clearHandle();setVaultBtn('off');}}
-async function handleVaultBtn(){if(!hasFS){alert('Requires Chrome on desktop.');return;}if(vaultConnected){vaultHandle=null;vaultIndex=[];vaultConnected=false;allConnections=[];setVaultBtn('off');updateStats();renderNoteList();document.getElementById('run-btn').disabled=true;document.getElementById('conn-view').innerHTML='<div class="ph"><div class="ph-icon">🕸</div><div class="ph-title">Vault disconnected.</div></div>';}else{try{var handle=await window.showDirectoryPicker({mode:'readwrite'});await doConnect(handle);}catch(e){if(e.name!=='AbortError')alert('Connection failed: '+e.message);setVaultBtn('off');}}}
-async function doConnect(handle){vaultHandle=handle;await storeHandle(handle);setVaultBtn('scanning');vaultIndex=[];await scanDir(handle,'');vaultConnected=true;setVaultBtn('on');updateStats();renderNoteList();document.getElementById('run-btn').disabled=false;document.getElementById('conn-view').innerHTML='<div class="ph"><div class="ph-icon">🕸</div><div class="ph-title">'+vaultIndex.length+' notes indexed.</div><div class="ph-sub">Set your strength threshold and click Sweep vault to find connections. BAKER scores every note pair and only sends strong candidates to Claude.</div></div>';document.getElementById('hdr-sub').textContent='vault graph · '+vaultIndex.length+' notes';}
-function setVaultBtn(s){var b=document.getElementById('vault-btn');b.className='hbtn'+(s==='on'?' vault-on':s==='scanning'?' vault-scanning':'');b.textContent=s==='on'?'⬡ Vault on':s==='scanning'?'⟳ Scanning...':'⬡ Connect Vault';}
-async function scanDir(dir,path){try{for await(var entry of dir.values()){if(entry.name.startsWith('.'))continue;if(entry.kind==='file'&&entry.name.endsWith('.md')){try{var f=await entry.getFile();var content=await f.text();vaultIndex.push({name:entry.name,path:path?path+'/'+entry.name:entry.name,content:content,type:detectType(path,entry.name,content)});}catch(e){}}else if(entry.kind==='directory'){await scanDir(entry,path?path+'/'+entry.name:entry.name);}}}catch(e){}}
-async function writeNoteToVault(relPath,content){if(!vaultHandle)return false;try{var parts=relPath.replace(/^\/+/,'').split('/');var fileName=parts.pop();var dir=vaultHandle;for(var i=0;i<parts.length;i++)dir=await dir.getDirectoryHandle(parts[i],{create:true});var fh=await dir.getFileHandle(fileName,{create:true});var w=await fh.createWritable();await w.write(content);await w.close();return true;}catch(e){return false;}}
-
-function detectType(path,name,content){var p=(path||'').toLowerCase();var c=(content||'').toLowerCase();if(p.includes('conversation')||c.includes('type: conversation'))return 'conversation';if(p.includes('01-projects')||p.includes('project')||c.includes('type: project'))return 'project';if(p.includes('lecture')||c.includes('type: lecture'))return 'lecture';if(p.includes('analysis')||c.includes('type: analysis')||c.includes('type: analyze'))return 'analyze';return 'general';}
-function typeColor(type){var colors={conversation:'var(--purple)',project:'var(--blue)',lecture:'var(--yellow)',analyze:'var(--orange)',general:'var(--accent)'};return colors[type]||'var(--accent)';}
-
-function updateStats(){document.getElementById('stat-notes').textContent=vaultIndex.length||'—';document.getElementById('stat-links').textContent=allConnections.length||'—';document.getElementById('stat-written').textContent=writtenPairs.size||'—';var withLinks=new Set();allConnections.forEach(function(c){withLinks.add(c.noteA);withLinks.add(c.noteB);});document.getElementById('stat-orphans').textContent=vaultConnected?(vaultIndex.length-withLinks.size)||'0':'—';}
-
-function renderNoteList(){var list=document.getElementById('note-list');list.innerHTML='';if(!vaultIndex.length){list.innerHTML='<div style="font-family:var(--mono);font-size:10px;color:var(--muted);opacity:.5">No notes found</div>';return;}document.getElementById('note-list-count').textContent='('+vaultIndex.length+')';vaultIndex.forEach(function(note){var item=document.createElement('div');item.className='note-item';var connCount=allConnections.filter(function(c){return c.noteA===note.name||c.noteB===note.name;}).length;item.innerHTML='<div class="ni-dot" style="background:'+typeColor(note.type)+'"></div><span class="ni-name">'+note.name.replace('.md','')+'</span>'+(connCount?'<span class="ni-count">'+connCount+'</span>':'');item.addEventListener('click',function(){document.querySelectorAll('.note-item').forEach(function(i){i.classList.remove('selected');});item.classList.add('selected');selectedNote=note.name;showNoteConnections(note.name);});list.appendChild(item);});}
-
-var STOP=new Set(['the','and','for','are','but','not','you','all','can','had','was','one','our','out','get','has','how','its','may','now','see','who','did','too','use','that','this','with','have','from','they','will','been','were','said','each','into','than','your','more','then','some','them','what','when','also','just','know','take','after','could','think','about','would','these','those','other','well','want','much','still','while','even','back','come','made','only','over','here','down','does','like','time','most','date','type','tags','status']);
-function getKeywords(text){return new Set(text.toLowerCase().split(/\W+/).filter(function(w){return w.length>3&&!STOP.has(w);}));}
-function jaccardScore(setA,setB){if(!setA.size||!setB.size)return 0;var intersection=0;setA.forEach(function(w){if(setB.has(w))intersection++;});var union=new Set([...setA,...setB]).size;return union>0?intersection/union:0;}
-
-// ── PARALLEL SWEEP (Jarvis V5 upgrade — 3x faster) ────────
-async function runSweep(){
-  if(!vaultConnected){alert('Connect vault first, sir.');return;}
-  if(sweepRunning)return;
-  var key=localStorage.getItem('baker_api_key');
-  if(!key){alert('No API key — go to BAKER Settings first.');return;}
-  var minStrength=thresholdMap[document.getElementById('threshold').value];
-  var strengthOrder={strong:3,moderate:2,weak:1};
-  var minScore=strengthOrder[minStrength]||2;
-  sweepRunning=true;allConnections=[];writtenPairs=new Set();
-  var btn=document.getElementById('run-btn');
-  btn.disabled=true;btn.textContent='⟳ Sweeping...';
-  document.getElementById('progress-wrap').style.display='block';
-  document.getElementById('write-all-btn').disabled=true;
-  document.getElementById('conn-view').innerHTML='';
-  var notes=vaultIndex;
-  var totalPairs=(notes.length*(notes.length-1))/2;
-  var candidates=[];
-  setProgress(0,'Scoring '+totalPairs.toLocaleString()+' note pairs...');
-  for(var i=0;i<notes.length;i++){
-    for(var j=i+1;j<notes.length;j++){
-      var kwA=getKeywords(notes[i].name+' '+notes[i].content);
-      var kwB=getKeywords(notes[j].name+' '+notes[j].content);
-      var score=jaccardScore(kwA,kwB);
-      var thresholds={3:0.15,2:0.08,1:0.04};
-      if(score>=thresholds[minScore])candidates.push({noteA:notes[i],noteB:notes[j],score:score});
+// ── Sap flow particle system ──────────────────────────────
+var sapParticles=[];
+function _initSapParticles(){
+  sapParticles=[];
+  if(!GraphSettings.treeMode&&!GraphSettings.yggdrasilMode)return;
+  graphEdges.forEach(function(e){
+    if(Math.random()<0.6){
+      sapParticles.push({
+        edgeA:e.a,edgeB:e.b,
+        t:Math.random(),       // 0..1 position along edge
+        speed:(0.003+Math.random()*0.005)*(Math.random()<0.5?1:-1),
+        size:1.5+Math.random()*1.5,
+        alpha:0.4+Math.random()*0.4
+      });
     }
-  }
-  candidates.sort(function(a,b){return b.score-a.score;});
-  var topCandidates=candidates.slice(0,30);
-  if(!topCandidates.length){
-    setProgress(100,'No strong candidates found — try lowering the threshold.');
-    btn.disabled=false;btn.textContent='▶ Sweep vault';sweepRunning=false;
-    document.getElementById('conn-view').innerHTML='<div class="ph"><div class="ph-icon">◈</div><div class="ph-title">No connections found above threshold.</div><div class="ph-sub">Try lowering the strength threshold and sweeping again.</div></div>';
-    return;
-  }
-  setProgress(20,'Found '+topCandidates.length+' candidates — confirming in parallel...');
-  // ── Run up to 3 batches concurrently ──
-  var batchSize=5;
-  var batches=[];
-  for(var b=0;b<topCandidates.length;b+=batchSize)batches.push(topCandidates.slice(b,b+batchSize));
-  var CONCURRENCY=3;
-  var confirmed=[];
-  for(var start=0;start<batches.length;start+=CONCURRENCY){
-    var chunk=batches.slice(start,start+CONCURRENCY);
-    var pct=20+Math.round((start/batches.length)*70);
-    setProgress(pct,'Confirming batches '+(start+1)+'-'+Math.min(start+CONCURRENCY,batches.length)+' of '+batches.length+' (parallel)...');
-    var chunkResults=await Promise.all(chunk.map(function(batch){return confirmBatch(batch,key,minStrength);}));
-    chunkResults.forEach(function(r){confirmed=confirmed.concat(r);});
-    if(start+CONCURRENCY<batches.length)await new Promise(function(r){setTimeout(r,300);});
-  }
-  allConnections=confirmed;
-  setProgress(100,'Done — found '+confirmed.length+' connection'+(confirmed.length!==1?'s':'')+' in '+batches.length+' batch'+(batches.length!==1?'es':'')+'.');
-  renderNoteList();updateStats();renderAllConnections();
-  if(confirmed.length)document.getElementById('write-all-btn').disabled=false;
-  btn.disabled=false;btn.textContent='▶ Sweep vault';sweepRunning=false;
+  });
 }
 
-async function confirmBatch(batch,key,minStrength){
-  var results=[];
-  var prompt='You are BAKER analyzing note pairs for a knowledge vault. For each pair below, determine if there is a genuine meaningful connection worth linking.\n\nFor each pair respond with EXACTLY this format:\nPAIR: [number]\nCONNECT: yes|no\nTYPE: extends|supports|related|contradicts|example|prereq\nSTRENGTH: strong|moderate|weak\nREASON: [one specific sentence]\n---\n\nOnly return yes if there is a real connection. Be selective. Minimum strength should be '+minStrength+'.\n\n';
-  batch.forEach(function(c,idx){var previewA=c.noteA.content.replace(/---[\s\S]*?---/,'').trim().slice(0,200);var previewB=c.noteB.content.replace(/---[\s\S]*?---/,'').trim().slice(0,200);prompt+='PAIR '+(idx+1)+':\nNote A: '+c.noteA.name+'\n'+previewA+'\n\nNote B: '+c.noteB.name+'\n'+previewB+'\n\n---\n\n';});
-  try{
-    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:'You are a knowledge graph analyst. Be concise and precise.',messages:[{role:'user',content:prompt}]})});
-    var data=await resp.json();
-    if(data.error)throw new Error(data.error.message);
-    var raw=data.content.map(function(b){return b.text||'';}).join('');
-    var blocks=raw.split('---').map(function(b){return b.trim();}).filter(Boolean);
-    blocks.forEach(function(block){
-      var pairMatch=block.match(/PAIR:\s*(\d+)/);
-      var connectMatch=block.match(/CONNECT:\s*(yes|no)/i);
-      var typeMatch=block.match(/TYPE:\s*(\w+)/i);
-      var strengthMatch=block.match(/STRENGTH:\s*(\w+)/i);
-      var reasonMatch=block.match(/REASON:\s*(.+)/i);
-      if(pairMatch&&connectMatch&&connectMatch[1].toLowerCase()==='yes'){
-        var idx=parseInt(pairMatch[1])-1;
-        if(batch[idx]){
-          results.push({
-            noteA:batch[idx].noteA.name,noteAPath:batch[idx].noteA.path,noteAType:batch[idx].noteA.type,
-            noteB:batch[idx].noteB.name,noteBPath:batch[idx].noteB.path,noteBType:batch[idx].noteB.type,
-            type:(typeMatch?typeMatch[1]:'related').toLowerCase(),
-            strength:(strengthMatch?strengthMatch[1]:'moderate').toLowerCase(),
-            reason:reasonMatch?reasonMatch[1].trim():'Related concepts',
-            wikilinkA:'[['+batch[idx].noteA.name.replace('.md','')+']]',
-            wikilinkB:'[['+batch[idx].noteB.name.replace('.md','')+']]',
-            writtenA:false,writtenB:false
-          });
+// ── Leaf sway state ───────────────────────────────────────
+var swayTime=0;
+
+function getPreviewLines(content,n){
+  if(!content)return'';
+  var stripped=content.replace(/^---[\s\S]*?---\s*/,'').trim();
+  return stripped.split('\n').filter(function(l){return l.trim().length>0;}).slice(0,n).join('\n');
+}
+
+function initGraphCanvas(){
+  var canvas=document.getElementById('vault-graph-canvas');
+  canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+  window.addEventListener('resize',function(){
+    canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+  });
+
+  // Pan
+  canvas.addEventListener('mousedown',function(e){
+    if(e.target!==canvas)return;
+    graphPanning=true;
+    graphPanStart={x:e.clientX-graphTransform.x,y:e.clientY-graphTransform.y};
+  });
+
+  // Pinch-to-zoom (touch)
+  var lastPinchDist=null;
+  canvas.addEventListener('touchstart',function(e){
+    if(e.touches.length===2){
+      lastPinchDist=Math.hypot(
+        e.touches[0].clientX-e.touches[1].clientX,
+        e.touches[0].clientY-e.touches[1].clientY
+      );
+    }
+  },{passive:true});
+  canvas.addEventListener('touchmove',function(e){
+    if(e.touches.length===2&&lastPinchDist!==null){
+      e.preventDefault();
+      var dist=Math.hypot(
+        e.touches[0].clientX-e.touches[1].clientX,
+        e.touches[0].clientY-e.touches[1].clientY
+      );
+      var factor=dist/lastPinchDist;
+      var mx=(e.touches[0].clientX+e.touches[1].clientX)/2;
+      var my=(e.touches[0].clientY+e.touches[1].clientY)/2;
+      graphTransform.x=mx-(mx-graphTransform.x)*factor;
+      graphTransform.y=my-(my-graphTransform.y)*factor;
+      graphTransform.scale=Math.max(0.1,Math.min(5,graphTransform.scale*factor));
+      lastPinchDist=dist;
+    }
+  },{passive:false});
+  canvas.addEventListener('touchend',function(){lastPinchDist=null;});
+
+  // Hover + tooltip
+  window.addEventListener('mousemove',function(e){
+    if(graphPanning){
+      graphTransform.x=e.clientX-graphPanStart.x;
+      graphTransform.y=e.clientY-graphPanStart.y;
+    }
+    if(graphNodes.length){
+      var mx=(e.clientX-graphTransform.x)/graphTransform.scale;
+      var my=(e.clientY-graphTransform.y)/graphTransform.scale;
+      hoveredNode=null;
+      for(var i=0;i<graphNodes.length;i++){
+        var n=graphNodes[i];var dx=mx-n.x,dy=my-n.y;
+        if(Math.sqrt(dx*dx+dy*dy)<n.radius+6){hoveredNode=n;break;}
+      }
+      var tip=document.getElementById('graph-tooltip');
+      if(hoveredNode){
+        document.getElementById('tt-name').textContent=hoveredNode.name;
+        document.getElementById('tt-path').textContent=hoveredNode.path;
+        var typeEl=document.getElementById('tt-type');
+        var linkCount=graphEdges.filter(function(e){return e.a===hoveredNode.id||e.b===hoveredNode.id;}).length;
+        typeEl.textContent=hoveredNode.type+(hoveredNode.orphan?' · orphan':'')+(pinnedNodes[hoveredNode.id]?' · pinned':'')+' · '+linkCount+' links';
+        var col=hoveredNode.orphan?ORPHAN_COLOR:(typeColors[hoveredNode.type]||'#7c6af7');
+        typeEl.style.background=col+'22';typeEl.style.color=col;
+        typeEl.style.border='1px solid '+col+'44';
+        // Preview + last modified
+        var previewEl=document.getElementById('tt-preview');
+        if(previewEl){
+          var note=vaultIndex[hoveredNode.srcIdx];
+          var preview=getPreviewLines(hoveredNode.content,3);
+          var modLine='';
+          if(note&&note.mtime){
+            var d=new Date(note.mtime);
+            modLine='\n— '+d.toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'});
+          }
+          previewEl.textContent=preview+(modLine?'\n'+modLine:'');
         }
+        tip.style.display='block';
+        tip.style.left=Math.min(e.clientX+14,window.innerWidth-270)+'px';
+        tip.style.top=Math.min(e.clientY-10,window.innerHeight-130)+'px';
+        canvas.style.cursor='pointer';
+      }else{
+        tip.style.display='none';
+        canvas.style.cursor=graphPanning?'grabbing':'grab';
+      }
+    }
+  });
+
+  window.addEventListener('mouseup',function(){graphPanning=false;});
+
+  // Scroll zoom
+  canvas.addEventListener('wheel',function(e){
+    e.preventDefault();
+    var factor=e.deltaY>0?0.9:1.1;
+    var mx=e.clientX,my=e.clientY;
+    graphTransform.x=mx-(mx-graphTransform.x)*factor;
+    graphTransform.y=my-(my-graphTransform.y)*factor;
+    graphTransform.scale=Math.max(0.1,Math.min(5,graphTransform.scale*factor));
+  },{passive:false});
+
+  // Click → open note
+  canvas.addEventListener('click',function(e){
+    if(!hoveredNode)return;
+    var note=vaultIndex[hoveredNode.srcIdx!==undefined?hoveredNode.srcIdx:hoveredNode.id];
+    if(!note)return;
+    if(typeof VAULTUI!=='undefined'&&VAULTUI.showPanel){
+      VAULTUI.showPanel();
+      setTimeout(function(){
+        var idx=vaultIndex.indexOf(note);
+        if(idx>=0&&VAULTUI._openNoteByIdx)VAULTUI._openNoteByIdx(idx);
+      },80);
+    }
+  });
+
+  // Double-click → pin/unpin
+  canvas.addEventListener('dblclick',function(e){
+    if(!hoveredNode)return;
+    var id=hoveredNode.id;
+    if(pinnedNodes[id]){delete pinnedNodes[id];hoveredNode.pinned=false;}
+    else{pinnedNodes[id]=true;hoveredNode.pinned=true;}
+  });
+}
+
+function buildGraph(){
+  document.getElementById('graph-overlay').classList.add('hidden');
+  document.getElementById('graph-stats').style.display='flex';
+
+  var candidates=vaultIndex.slice(0,150).map(function(note,i){
+    return{srcIdx:i,name:note.name.replace('.md',''),path:note.path,
+           type:detectType(note.path,note.content),content:note.content};
+  });
+  var filtered=candidates.filter(function(c){return GraphSettings.typeFilter[c.type]!==false;});
+
+  graphNodes=filtered.map(function(c,i){
+    return{id:i,srcIdx:c.srcIdx,name:c.name,path:c.path,type:c.type,
+           content:c.content,x:0,y:0,vx:0,vy:0,
+           radius:(4+Math.min(c.content.length/600,7))*(GraphSettings.nodeSizeScale||1),
+           connCount:0,orphan:false,pinned:!!pinnedNodes[i],
+           swayOffset:Math.random()*Math.PI*2};
+  });
+
+  var edgeMap={};graphEdges=[];
+  var nameMap={};graphNodes.forEach(function(n){nameMap[n.name.toLowerCase()]=n.id;});
+  graphNodes.forEach(function(n){
+    var note=vaultIndex[n.srcIdx];
+    var links=note.content.match(/\[\[([^\]|]+)/g)||[];
+    links.forEach(function(l){
+      var target=l.replace('[[','').toLowerCase();
+      if(nameMap[target]!==undefined&&nameMap[target]!==n.id){
+        var a=Math.min(n.id,nameMap[target]),b=Math.max(n.id,nameMap[target]);
+        var key=a+'-'+b;
+        if(edgeMap[key]){edgeMap[key].weight++;}
+        else{edgeMap[key]={a:n.id,b:nameMap[target],weight:1};graphEdges.push(edgeMap[key]);}
       }
     });
-  }catch(e){console.error('Batch error:',e);}
-  return results;
+  });
+
+  graphEdges.forEach(function(e){
+    if(graphNodes[e.a])graphNodes[e.a].connCount++;
+    if(graphNodes[e.b])graphNodes[e.b].connCount++;
+  });
+  graphNodes.forEach(function(n){n.orphan=n.connCount===0;});
+
+  if(GraphSettings.sizeByConnections){
+    var maxConn=Math.max(1,Math.max.apply(null,graphNodes.map(function(n){return n.connCount;})));
+    graphNodes.forEach(function(n){
+      n.radius=(3+Math.min((n.connCount/maxConn)*10,10))*(GraphSettings.nodeSizeScale||1);
+    });
+  }
+
+  document.getElementById('stat-notes').textContent=graphNodes.length;
+  document.getElementById('stat-links').textContent=graphEdges.length;
+  _updateModeLabel();
+
+  var W=window.innerWidth,H=window.innerHeight;
+
+  if(GraphSettings.yggdrasilMode){_layoutYggdrasil(W,H);}
+  else if(GraphSettings.treeMode){_layoutForest(W,H);}
+  else if(GraphSettings.gridMode){_layoutGrid(W,H);}
+  else if(GraphSettings.clusterMode){_layoutCluster(W,H);}
+  else{
+    var spread=Math.min(0.95,0.7*(GraphSettings.graphArea||1));
+    var margin=(1-spread)/2;
+    graphNodes.forEach(function(n){
+      n.x=W*margin+Math.random()*(W*spread);
+      n.y=H*margin+Math.random()*(H*spread);
+    });
+  }
+
+  _initSapParticles();
+  simTick=0;if(graphAnim)cancelAnimationFrame(graphAnim);runGraphSim();
 }
 
-function setProgress(pct,txt){document.getElementById('progress-fill').style.width=pct+'%';document.getElementById('progress-txt').textContent=txt;}
-
-function renderAllConnections(){
-  var view=document.getElementById('conn-view');view.innerHTML='';
-  document.getElementById('content-lbl').textContent='All connections';
-  document.getElementById('content-pill').textContent=allConnections.length+' found';
-  document.getElementById('content-pill').className='pill ok';
-  if(!allConnections.length){view.innerHTML='<div class="ph"><div class="ph-icon">◈</div><div class="ph-title">No connections found.</div><div class="ph-sub">Try lowering the strength threshold.</div></div>';return;}
-  var sorted=[...allConnections].sort(function(a,b){var o={strong:0,moderate:1,weak:2};return(o[a.strength]||1)-(o[b.strength]||1);});
-  sorted.forEach(function(conn){if(!passesFilter(conn))return;view.appendChild(makeConnCard(conn));});
+function _updateModeLabel(){
+  var el=document.getElementById('stat-mode');
+  if(!el)return;
+  var mode=GraphSettings.yggdrasilMode?'🌳 Yggdrasil':
+            GraphSettings.treeMode?'🌲 Forest':
+            GraphSettings.gridMode?'⊞ Grid':
+            GraphSettings.clusterMode?'⬡ Cluster':'◎ Default';
+  el.textContent=mode;
 }
 
-function showNoteConnections(noteName){
-  var view=document.getElementById('conn-view');view.innerHTML='';
-  var noteName2=noteName.replace('.md','');
-  document.getElementById('content-lbl').textContent=noteName2;
-  var conns=allConnections.filter(function(c){return c.noteA===noteName||c.noteB===noteName;});
-  document.getElementById('content-pill').textContent=conns.length+' connections';
-  document.getElementById('content-pill').className=conns.length?'pill ok':'pill';
-  if(!conns.length){view.innerHTML='<div class="ph"><div class="ph-icon">◈</div><div class="ph-title">No connections for this note.</div><div class="ph-sub">Run a sweep to find connections, or lower the threshold.</div></div>';return;}
-  conns.forEach(function(conn){view.appendChild(makeConnCard(conn,noteName));});
+// ── GRID LAYOUT ───────────────────────────────────────────
+function _layoutGrid(W,H){
+  var sorted=graphNodes.slice().sort(function(a,b){return b.connCount-a.connCount;});
+  var cols=Math.ceil(Math.sqrt(sorted.length*1.6));
+  var spread=Math.min(0.90,0.7*(GraphSettings.graphArea||1));
+  sorted.forEach(function(n,i){
+    var col=i%cols,row=Math.floor(i/cols);
+    n.x=W*(0.05+spread*(col/(cols-1||1)));
+    n.y=H*(0.10+0.80*(row/Math.max(1,Math.ceil(sorted.length/cols)-1)));
+  });
 }
 
-function passesFilter(conn){return activeFilters.has(conn.noteAType)||activeFilters.has(conn.noteBType);}
+// ── FOREST LAYOUT ─────────────────────────────────────────
+function _layoutForest(W,H){
+  var TYPE_ORDER=['conversation','project','lecture','daily','general'];
+  var USABLE_LEFT=0.06,USABLE_RIGHT=0.94;
+  var USABLE_TOP=0.08,USABLE_BOTTOM=0.86;
+  var GAP_FRAC=0.04;
 
-function makeConnCard(conn){
-  var card=document.createElement('div');card.className='conn-card';
-  var strengthColors={strong:'var(--accent)',moderate:'var(--amber)',weak:'var(--muted)'};
-  var strengthPct={strong:'100%',moderate:'60%',weak:'30%'};
-  var typeLabel={extends:'↑ extends',supports:'✓ supports',related:'~ related',contradicts:'✗ contradicts',example:'eg example',prereq:'← prereq'};
-  var pairId=conn.noteA+'||'+conn.noteB;
-  var isWritten=writtenPairs.has(pairId);
-  var nameA=conn.noteA.replace('.md','');
-  var nameB=conn.noteB.replace('.md','');
-  var top=document.createElement('div');top.style.cssText='display:flex;align-items:flex-start;gap:10px';
-  var dots=document.createElement('div');dots.className='cc-dots';
-  dots.innerHTML='<div class="cc-dot" style="background:'+typeColor(conn.noteAType)+'"></div><div class="cc-line"></div><div class="cc-dot" style="background:'+typeColor(conn.noteBType)+'"></div>';
-  var body=document.createElement('div');body.className='cc-body';
-  var names=document.createElement('div');names.className='cc-names';
-  names.innerHTML='<span class="cc-note">'+nameA+'</span><span class="cc-arrow">↔</span><span class="cc-note">'+nameB+'</span><span class="cc-type">'+(typeLabel[conn.type]||conn.type)+'</span>';
-  var bar=document.createElement('div');bar.className='cc-strength';
-  bar.innerHTML='<div class="cc-strength-fill" style="width:'+strengthPct[conn.strength]+';background:'+strengthColors[conn.strength]+'"></div>';
-  var reason=document.createElement('div');reason.className='cc-reason';reason.textContent=conn.reason;
-  var actions=document.createElement('div');actions.className='cc-action';
-  var writeBtn=document.createElement('button');
-  writeBtn.className='cc-btn'+(isWritten?' written':'');
-  writeBtn.id='write-btn-'+sanitizeId(pairId);
-  writeBtn.textContent=isWritten?'✓ Written':'⬡ Write links';
-  writeBtn.addEventListener('click',function(){writeLink(pairId);});
-  var previewBtn=document.createElement('button');
-  previewBtn.className='cc-btn';previewBtn.textContent='Preview';
-  previewBtn.addEventListener('click',function(){previewLink(nameA,nameB);});
-  actions.appendChild(writeBtn);actions.appendChild(previewBtn);
-  body.appendChild(names);body.appendChild(bar);body.appendChild(reason);body.appendChild(actions);
-  top.appendChild(dots);top.appendChild(body);card.appendChild(top);
-  return card;
+  var groups={};
+  TYPE_ORDER.forEach(function(t){groups[t]=[];});
+  var orphans=[];
+  graphNodes.forEach(function(n){
+    if(n.orphan)orphans.push(n);
+    else groups[n.type].push(n);
+  });
+
+  var activeGroups=TYPE_ORDER.filter(function(t){return groups[t].length>0;});
+  activeGroups.sort(function(a,b){return groups[b].length-groups[a].length;});
+  var ordered=_centerLargest(activeGroups);
+
+  var numSlots=ordered.length+(orphans.length>0?1:0);
+  var totalGap=GAP_FRAC*(numSlots-1);
+  var usableW=(USABLE_RIGHT-USABLE_LEFT)-totalGap;
+  var slotW=usableW/Math.max(numSlots,1);
+  var treeH=H*(USABLE_BOTTOM-USABLE_TOP);
+  var baseY=H*USABLE_BOTTOM;
+
+  ordered.forEach(function(type,treeIdx){
+    var members=groups[type];
+    var treeCX=W*(USABLE_LEFT+(treeIdx*(slotW+GAP_FRAC)+slotW*0.5));
+    if(members.length===1){members[0].x=treeCX;members[0].y=baseY-treeH*0.3;return;}
+    members.sort(function(a,b){return b.connCount-a.connCount;});
+    var layers=_buildLayers(members);
+    var numLayers=layers.length;
+    layers.forEach(function(layer,li){
+      var yFrac=li/(Math.max(numLayers-1,1));
+      var y=baseY-yFrac*treeH*0.85;
+      var spreadFrac=0.12+yFrac*0.42;
+      var maxSpread=(slotW*W)*spreadFrac*0.5;
+      layer.forEach(function(node,ni){
+        var xFrac=layer.length===1?0.5:(ni/(layer.length-1));
+        node.x=treeCX-maxSpread+xFrac*(maxSpread*2)+(Math.random()-0.5)*8;
+        node.y=y+(Math.random()-0.5)*10;
+        // Tag leaf nodes for sway
+        node.isLeaf=(li===numLayers-1);
+      });
+    });
+  });
+
+  if(orphans.length>0){
+    var groveCX=W*(USABLE_LEFT+(ordered.length*(slotW+GAP_FRAC)+slotW*0.5));
+    orphans.forEach(function(n,i){
+      var angle=(i/Math.max(orphans.length,1))*Math.PI*2;
+      var r=25+Math.random()*35;
+      n.x=groveCX+Math.cos(angle)*r;
+      n.y=baseY-treeH*0.22+Math.sin(angle)*r*0.5;
+      n.isLeaf=true;
+    });
+  }
 }
 
-function sanitizeId(str){return str.replace(/[^a-zA-Z0-9]/g,'_');}
+// ── YGGDRASIL LAYOUT ──────────────────────────────────────
+function _layoutYggdrasil(W,H){
+  var CX=W*0.5;
+  var TRUNK_Y=H*0.78;
+  var CANOPY_TOP=H*0.06;
+  var ROOT_BOT=H*0.95;
 
-async function writeLink(pairId){
-  var conn=allConnections.find(function(c){return c.noteA+'||'+c.noteB===pairId;});
-  if(!conn)return;
-  var btn=document.getElementById('write-btn-'+sanitizeId(pairId));
-  if(btn){btn.textContent='Writing...';btn.disabled=true;}
-  var noteA=vaultIndex.find(function(n){return n.name===conn.noteA;});
-  var noteB=vaultIndex.find(function(n){return n.name===conn.noteB;});
-  var ok=true;
-  if(noteA&&!noteA.content.includes(conn.wikilinkB)){var newContent=noteA.content.trimEnd()+'\n\n'+conn.wikilinkB+'\n';var written=await writeNoteToVault(noteA.path,newContent);if(written)noteA.content=newContent;else ok=false;}
-  if(noteB&&!noteB.content.includes(conn.wikilinkA)){var newContent2=noteB.content.trimEnd()+'\n\n'+conn.wikilinkA+'\n';var written2=await writeNoteToVault(noteB.path,newContent2);if(written2)noteB.content=newContent2;else ok=false;}
-  if(ok){writtenPairs.add(pairId);if(btn){btn.textContent='✓ Written';btn.className='cc-btn written';btn.disabled=false;}updateStats();}
-  else{if(btn){btn.textContent='✗ Failed';btn.disabled=false;}}
+  var orphans=graphNodes.filter(function(n){return n.orphan;});
+  var nonOrphans=graphNodes.filter(function(n){return!n.orphan;});
+  nonOrphans.sort(function(a,b){return b.connCount-a.connCount;});
+
+  if(nonOrphans.length>0){
+    nonOrphans[0].x=CX;nonOrphans[0].y=TRUNK_Y;
+    nonOrphans[0].isLeaf=false;
+  }
+
+  var TYPE_ORDER=['conversation','project','lecture','daily','general'];
+  var typeGroups={};
+  TYPE_ORDER.forEach(function(t){typeGroups[t]=[];});
+  nonOrphans.slice(1).forEach(function(n){typeGroups[n.type].push(n);});
+
+  var activeTypes=TYPE_ORDER.filter(function(t){return typeGroups[t].length>0;});
+  var numBranches=activeTypes.length;
+  var angleStart=-Math.PI*0.88,angleEnd=-Math.PI*0.12;
+  var trunkTreeH=TRUNK_Y-CANOPY_TOP;
+
+  activeTypes.forEach(function(type,bi){
+    var members=typeGroups[type];if(!members.length)return;
+    var t=numBranches===1?0.5:(bi/(numBranches-1));
+    var branchAngle=angleStart+(angleEnd-angleStart)*t;
+    members.sort(function(a,b){return b.connCount-a.connCount;});
+    var layers=_buildLayers(members);
+    var numLayers=layers.length;
+    layers.forEach(function(layer,li){
+      var distFrac=(li+1)/(numLayers+1);
+      var dist=distFrac*trunkTreeH*0.88;
+      var spreadW=dist*0.28*(1+distFrac*0.5);
+      var bx=CX+Math.cos(branchAngle)*dist;
+      var by=TRUNK_Y+Math.sin(branchAngle)*dist;
+      layer.forEach(function(node,ni){
+        var xFrac=layer.length===1?0:(ni/(layer.length-1)-0.5);
+        var perpAngle=branchAngle+Math.PI/2;
+        node.x=bx+Math.cos(perpAngle)*xFrac*spreadW*2+(Math.random()-0.5)*10;
+        node.y=by+Math.sin(perpAngle)*xFrac*spreadW*2+(Math.random()-0.5)*8;
+        node.isLeaf=(li===numLayers-1);
+      });
+    });
+  });
+
+  // Roots
+  orphans.forEach(function(n,i){
+    var angle=Math.PI*0.3+((i/(Math.max(orphans.length-1,1)))*Math.PI*0.4);
+    var dist=(0.15+Math.random()*0.55)*(ROOT_BOT-TRUNK_Y);
+    n.x=CX+Math.cos(angle)*dist*0.7+(Math.random()-0.5)*40;
+    n.y=TRUNK_Y+Math.sin(angle)*dist;
+    n.isLeaf=false;
+  });
 }
 
-async function writeAllLinks(){
-  if(!allConnections.length)return;
-  var unwritten=allConnections.filter(function(c){return !writtenPairs.has(c.noteA+'||'+c.noteB);});
-  if(!unwritten.length){alert('All connections already written, sir.');return;}
-  if(!confirm('Write '+unwritten.length+' wikilinks to your vault? This modifies your actual note files.'))return;
-  var btn=document.getElementById('write-all-btn');btn.disabled=true;btn.textContent='Writing...';
-  var done=0;
-  for(var i=0;i<unwritten.length;i++){await writeLink(unwritten[i].noteA+'||'+unwritten[i].noteB);done++;btn.textContent='Writing '+done+'/'+unwritten.length+'...';}
-  btn.textContent='✓ All written';btn.style.color='var(--green)';updateStats();
+// ── CLUSTER LAYOUT ────────────────────────────────────────
+function _layoutCluster(W,H){
+  var typeOrder=['conversation','project','lecture','daily','general'];
+  var groupCenters={};
+  var activeTypes=typeOrder.filter(function(t){
+    return graphNodes.some(function(n){return n.type===t&&!n.orphan;});
+  });
+  activeTypes.forEach(function(t,gi){
+    var angle=(gi/activeTypes.length)*Math.PI*2-Math.PI/2;
+    groupCenters[t]={x:W/2+Math.cos(angle)*W*0.28,y:H/2+Math.sin(angle)*H*0.28};
+  });
+  graphNodes.forEach(function(n){
+    if(n.orphan){
+      var angle=(graphNodes.indexOf(n)/Math.max(1,graphNodes.filter(function(x){return x.orphan;}).length))*Math.PI*2;
+      n.x=W*0.12+Math.cos(angle)*45;n.y=H*0.82+Math.sin(angle)*45;
+    }else{
+      var center=groupCenters[n.type]||{x:W/2,y:H/2};
+      n.x=center.x+(Math.random()-0.5)*160;
+      n.y=center.y+(Math.random()-0.5)*160;
+    }
+  });
 }
 
-function previewLink(nameA,nameB){
-  var lines=['Would add to "'+nameA+'":','  [['+nameB+']]','','Would add to "'+nameB+'":','  [['+nameA+']]'];
-  alert(lines.join('\n'));
+// ── Helpers ───────────────────────────────────────────────
+function _centerLargest(arr){
+  if(arr.length<=1)return arr;
+  var mid=Math.floor(arr.length/2);
+  var result=arr.slice();
+  var biggest=result.splice(0,1)[0];
+  result.splice(mid,0,biggest);
+  return result;
+}
+function _buildLayers(members){
+  var layers=[];var i=0;var layerSize=1;
+  while(i<members.length){
+    layers.push(members.slice(i,i+layerSize));
+    i+=layerSize;layerSize=Math.min(Math.ceil(layerSize*1.6),6);
+  }
+  return layers;
 }
 
-function toggleFilter(type,el){
-  if(activeFilters.has(type)){activeFilters.delete(type);el.classList.remove('active');}
-  else{activeFilters.add(type);el.classList.add('active');}
-  if(selectedNote)showNoteConnections(selectedNote);else renderAllConnections();
+function detectType(path,content){
+  var p=(path||'').toLowerCase();var c=(content||'').toLowerCase();
+  if(p.includes('conversation')||c.includes('type: conversation'))return'conversation';
+  if(p.includes('01-projects')||c.includes('type: project'))return'project';
+  if(p.includes('lecture')||c.includes('type: lecture'))return'lecture';
+  if(p.includes('07-system/daily'))return'daily';
+  return'general';
 }
-</script>
-</body>
-</html>
+
+// ── SIMULATION + DRAW LOOP ────────────────────────────────
+var GRAPH_FPS=1000/30,lastGraphFrame=0;
+function runGraphSim(){
+  graphAnim=requestAnimationFrame(function(now){
+    runGraphSim();if(now-lastGraphFrame<GRAPH_FPS)return;lastGraphFrame=now;
+    var dt=1/30;
+    swayTime+=dt;
+
+    var canvas=document.getElementById('vault-graph-canvas');
+    var ctx=canvas.getContext('2d');
+    var W=canvas.width,H=canvas.height;
+    var linkDist=GraphSettings.linkDistance||90;
+    var repulsion=(GraphSettings.repulsion||100)/100;
+    var query=GraphSettings.searchQuery||'';
+    var treeMode=GraphSettings.treeMode||false;
+    var clusterMode=GraphSettings.clusterMode||false;
+    var gridMode=GraphSettings.gridMode||false;
+    var yggMode=GraphSettings.yggdrasilMode||false;
+    var brightness=GraphSettings.nodeBrightness!==undefined?GraphSettings.nodeBrightness:1.0;
+    var staticLayout=treeMode||gridMode||yggMode;
+
+    // Physics sim (default + cluster only)
+    if(simTick<300&&!staticLayout){
+      var k=Math.sqrt((W*H)/Math.max(graphNodes.length,1))*0.9*repulsion;
+      for(var i=0;i<graphNodes.length;i++){
+        graphNodes[i].vx=0;graphNodes[i].vy=0;
+        for(var j=0;j<graphNodes.length;j++){
+          if(i===j)continue;
+          var dx=graphNodes[i].x-graphNodes[j].x;
+          var dy=graphNodes[i].y-graphNodes[j].y;
+          var dist=Math.sqrt(dx*dx+dy*dy)||1;
+          var f=(k*k)/dist;
+          graphNodes[i].vx+=dx/dist*f*0.008;
+          graphNodes[i].vy+=dy/dist*f*0.008;
+        }
+      }
+      graphEdges.forEach(function(e){
+        var a=graphNodes[e.a],b=graphNodes[e.b];if(!a||!b)return;
+        var dx=b.x-a.x,dy=b.y-a.y;
+        var dist=Math.sqrt(dx*dx+dy*dy)||1;
+        var diff=(dist-linkDist)/dist;
+        var w=0.04*(1+Math.min(e.weight-1,3)*0.15);
+        a.vx+=dx*w*diff;a.vy+=dy*w*diff;
+        b.vx-=dx*w*diff;b.vy-=dy*w*diff;
+      });
+      if(clusterMode){
+        var typeOrder=['conversation','project','lecture','daily','general'];
+        var activeCenters={};
+        typeOrder.forEach(function(t){
+          var m=graphNodes.filter(function(n){return n.type===t&&!n.orphan;});
+          if(!m.length)return;
+          activeCenters[t]={
+            x:m.reduce(function(s,n){return s+n.x;},0)/m.length,
+            y:m.reduce(function(s,n){return s+n.y;},0)/m.length
+          };
+        });
+        graphNodes.forEach(function(n){
+          if(n.orphan){n.vx+=(W*0.12-n.x)*0.002;n.vy+=(H*0.82-n.y)*0.002;}
+          else if(activeCenters[n.type]){
+            var tc=activeCenters[n.type];
+            n.vx+=(tc.x-n.x)*0.0008;n.vy+=(tc.y-n.y)*0.0008;
+          }
+        });
+      }
+      graphNodes.forEach(function(n){
+        if(n.pinned)return;
+        n.x+=Math.max(-8,Math.min(8,n.vx));
+        n.y+=Math.max(-8,Math.min(8,n.vy));
+        n.x=Math.max(30,Math.min(W/graphTransform.scale-30,n.x));
+        n.y=Math.max(30,Math.min(H/graphTransform.scale-30,n.y));
+      });
+      simTick++;
+    }
+
+    // Advance sap particles
+    sapParticles.forEach(function(p){
+      p.t+=p.speed;
+      if(p.t>1)p.t=0;
+      if(p.t<0)p.t=1;
+    });
+
+    // ── DRAW ──────────────────────────────────────────────
+    ctx.clearRect(0,0,W,H);
+    ctx.save();
+    ctx.translate(graphTransform.x,graphTransform.y);
+    ctx.scale(graphTransform.scale,graphTransform.scale);
+
+    if(treeMode)_drawForest(ctx,W,H);
+    if(yggMode)_drawYggdrasil(ctx,W,H);
+    if(clusterMode&&!treeMode&&!yggMode)_drawClusterHalos(ctx);
+
+    var matchedNodes=null;
+    if(query){
+      matchedNodes={};
+      graphNodes.forEach(function(n){if(n.name.toLowerCase().includes(query))matchedNodes[n.id]=true;});
+    }
+
+    // Cross-type edges arc over in tree/ygg modes
+    graphEdges.forEach(function(e){
+      var a=graphNodes[e.a],b=graphNodes[e.b];if(!a||!b)return;
+      var isHL=hoveredNode&&(e.a===hoveredNode.id||e.b===hoveredNode.id);
+      var baseW=0.5+Math.min(e.weight-1,4)*0.6;
+      var col=typeColors[a.type]||'#7c6af7';
+      var sameType=a.type===b.type;
+
+      if((treeMode||yggMode)&&sameType){
+        _drawBranchEdge(ctx,a,b,col,isHL,baseW);
+      }else if((treeMode||yggMode)&&!sameType){
+        // Cross-type: arc gracefully over the scene
+        _drawArcEdge(ctx,a,b,isHL,baseW);
+      }else{
+        ctx.beginPath();
+        ctx.strokeStyle=isHL?(col+'cc'):'rgba(124,106,247,0.08)';
+        ctx.lineWidth=isHL?Math.max(baseW,1.5):baseW;
+        if(isHL){ctx.shadowColor=col+'66';ctx.shadowBlur=4;}else{ctx.shadowBlur=0;}
+        ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+      }
+    });
+    ctx.shadowBlur=0;
+
+    // Sap flow particles (tree + ygg modes)
+    if(treeMode||yggMode){
+      sapParticles.forEach(function(p){
+        var a=graphNodes[p.edgeA],b=graphNodes[p.edgeB];
+        if(!a||!b)return;
+        var px=a.x+(b.x-a.x)*p.t;
+        var py=a.y+(b.y-a.y)*p.t;
+        var col=typeColors[a.type]||'#7c6af7';
+        ctx.beginPath();ctx.arc(px,py,p.size,0,Math.PI*2);
+        ctx.fillStyle=col+(Math.round(p.alpha*255).toString(16).padStart(2,'0'));
+        ctx.shadowColor=col;ctx.shadowBlur=4;
+        ctx.fill();ctx.shadowBlur=0;
+      });
+    }
+
+    // Nodes with leaf sway
+    graphNodes.forEach(function(n){_drawNode(ctx,n,matchedNodes,brightness);});
+
+    ctx.restore();
+  });
+}
+
+// ── Draw curved branch edge ───────────────────────────────
+function _drawBranchEdge(ctx,a,b,col,isHL,baseW){
+  var mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+  var trunkY=Math.max(a.y,b.y);
+  var cpx=mx+(Math.random()-0.5)*18;
+  var cpy=my+(trunkY-my)*0.3;
+  ctx.beginPath();ctx.moveTo(a.x,a.y);
+  ctx.quadraticCurveTo(cpx,cpy,b.x,b.y);
+  ctx.strokeStyle=isHL?(col+'dd'):(col+'28');
+  ctx.lineWidth=isHL?Math.max(baseW,1.8):Math.max(baseW,0.8);
+  if(isHL){ctx.shadowColor=col+'88';ctx.shadowBlur=6;}else{ctx.shadowBlur=0;}
+  ctx.stroke();ctx.shadowBlur=0;
+}
+
+// ── Draw arcing cross-type edge ───────────────────────────
+function _drawArcEdge(ctx,a,b,isHL,baseW){
+  var mx=(a.x+b.x)/2;
+  var my=(a.y+b.y)/2;
+  // Arc rises above both nodes
+  var rise=Math.min(Math.abs(b.x-a.x)*0.4,120);
+  var cpx=mx;
+  var cpy=Math.min(a.y,b.y)-rise;
+  ctx.beginPath();ctx.moveTo(a.x,a.y);
+  ctx.quadraticCurveTo(cpx,cpy,b.x,b.y);
+  ctx.strokeStyle=isHL?'rgba(124,106,247,0.5)':'rgba(124,106,247,0.05)';
+  ctx.lineWidth=isHL?1.5:0.6;
+  ctx.setLineDash([4,6]);
+  ctx.stroke();ctx.setLineDash([]);
+}
+
+// ── Draw forest decorations + species silhouettes ────────
+function _drawForest(ctx,W,H){
+  var TYPE_ORDER=['conversation','project','lecture','daily','general'];
+  var USABLE_LEFT=0.06,USABLE_RIGHT=0.94,GAP_FRAC=0.04;
+  var orphans=graphNodes.filter(function(n){return n.orphan;});
+  var activeGroups=TYPE_ORDER.filter(function(t){
+    return graphNodes.some(function(n){return n.type===t&&!n.orphan;});
+  });
+  var orderedTypes=activeGroups.slice().sort(function(a,b){
+    return graphNodes.filter(function(n){return n.type===b;}).length-
+           graphNodes.filter(function(n){return n.type===a;}).length;
+  });
+  orderedTypes=_centerLargest(orderedTypes);
+  var numSlots=orderedTypes.length+(orphans.length>0?1:0);
+  var totalGap=GAP_FRAC*(numSlots-1);
+  var usableW=(USABLE_RIGHT-USABLE_LEFT)-totalGap;
+  var slotW=usableW/Math.max(numSlots,1);
+  var baseY=H*0.86;
+  var slotPx=slotW*W; // slot width in pixels
+
+  orderedTypes.forEach(function(type,treeIdx){
+    var members=graphNodes.filter(function(n){return n.type===type&&!n.orphan;});
+    if(!members.length)return;
+    var col=typeColors[type]||'#7c6af7';
+    var treeCX=W*(USABLE_LEFT+(treeIdx*(slotW+GAP_FRAC)+slotW*0.5));
+    var xs=members.map(function(n){return n.x;});
+    var ys=members.map(function(n){return n.y;});
+    var minY=Math.min.apply(null,ys)-20;
+    var treeH=baseY-minY; // actual height this tree uses
+
+    // ── Draw species silhouette (faded, behind everything) ──
+    ctx.save();
+    ctx.globalAlpha=0.13;
+    _drawTreeSpecies(ctx,type,treeCX,baseY,slotPx,treeH,col);
+    ctx.globalAlpha=1;
+    ctx.restore();
+
+    // Halo
+    var minX=Math.min.apply(null,xs)-20,maxX=Math.max.apply(null,xs)+20;
+    var maxY=Math.max.apply(null,ys)+20;
+    var haloGrd=ctx.createRadialGradient(treeCX,(minY+maxY)/2,0,treeCX,(minY+maxY)/2,
+      Math.max((maxX-minX),(maxY-minY))*0.65+40);
+    haloGrd.addColorStop(0,col+'0e');haloGrd.addColorStop(1,col+'00');
+    ctx.beginPath();
+    ctx.ellipse(treeCX,(minY+maxY)/2,(maxX-minX)/2+30,(maxY-minY)/2+30,0,0,Math.PI*2);
+    ctx.fillStyle=haloGrd;ctx.fill();
+
+    // Ground line
+    ctx.beginPath();
+    ctx.moveTo(treeCX-slotPx*0.38,baseY+2);ctx.lineTo(treeCX+slotPx*0.38,baseY+2);
+    ctx.strokeStyle=col+'44';ctx.lineWidth=1.5;ctx.stroke();
+
+    // Root line from trunk to ground
+    var trunk=members[0];
+    ctx.beginPath();
+    ctx.moveTo(trunk.x,trunk.y+trunk.radius);ctx.lineTo(trunk.x,baseY+2);
+    ctx.strokeStyle=col+'30';ctx.lineWidth=2;ctx.stroke();
+
+    // Labels
+    ctx.font='bold 10px IBM Plex Mono, monospace';
+    ctx.fillStyle=col+'cc';ctx.textAlign='center';
+    ctx.fillText(type.toUpperCase(),treeCX,baseY+16);
+    ctx.fillStyle=col+'60';ctx.font='9px IBM Plex Mono, monospace';
+    ctx.fillText(members.length+' notes',treeCX,baseY+28);
+    ctx.textAlign='left';
+  });
+
+  // Orphan walnut grove
+  if(orphans.length>0){
+    var groveCX=W*(USABLE_LEFT+(orderedTypes.length*(slotW+GAP_FRAC)+slotW*0.5));
+    var groveH=H*0.25;
+    ctx.save();ctx.globalAlpha=0.13;
+    _drawWalnut(ctx,groveCX,baseY,slotPx,groveH,ORPHAN_COLOR);
+    ctx.globalAlpha=1;ctx.restore();
+    ctx.font='bold 10px IBM Plex Mono, monospace';
+    ctx.fillStyle=ORPHAN_COLOR+'80';ctx.textAlign='center';
+    ctx.fillText('ORPHANS',groveCX,baseY+16);
+    ctx.fillStyle=ORPHAN_COLOR+'50';ctx.font='9px IBM Plex Mono, monospace';
+    ctx.fillText(orphans.length+' notes',groveCX,baseY+28);
+    ctx.textAlign='left';
+  }
+}
+
+// ── Species dispatcher ────────────────────────────────────
+function _drawTreeSpecies(ctx,type,cx,baseY,slotW,treeH,col){
+  if(type==='lecture')   _drawBirch(ctx,cx,baseY,slotW,treeH,col);
+  else if(type==='general')   _drawOak(ctx,cx,baseY,slotW,treeH,col);
+  else if(type==='daily')     _drawPine(ctx,cx,baseY,slotW,treeH,col);
+  else if(type==='conversation') _drawHickory(ctx,cx,baseY,slotW,treeH,col);
+  else if(type==='project')   _drawGinkgo(ctx,cx,baseY,slotW,treeH,col);
+}
+
+// ── BIRCH (lecture) ── tall, slender, elegant white bark
+// Slim trunk, delicate drooping branches, oval-ish light canopy
+function _drawBirch(ctx,cx,baseY,slotW,treeH,col){
+  var trunkW=slotW*0.04;
+  var trunkTop=baseY-treeH*0.88;
+  // Slender trunk
+  ctx.beginPath();
+  ctx.moveTo(cx-trunkW,baseY);ctx.lineTo(cx-trunkW*0.5,trunkTop);
+  ctx.lineTo(cx+trunkW*0.5,trunkTop);ctx.lineTo(cx+trunkW,baseY);
+  ctx.closePath();ctx.fillStyle=col;ctx.fill();
+  // Bark marks — horizontal dashes
+  for(var i=0;i<5;i++){
+    var by=baseY-treeH*(0.15+i*0.14);
+    ctx.beginPath();ctx.moveTo(cx-trunkW*0.8,by);ctx.lineTo(cx+trunkW*0.8,by);
+    ctx.strokeStyle=col;ctx.lineWidth=trunkW*0.5;ctx.stroke();
+  }
+  // Main canopy — elongated oval, slightly off-center drooping clusters
+  var cW=slotW*0.38,cH=treeH*0.55;
+  var cY=trunkTop+cH*0.3;
+  ctx.beginPath();ctx.ellipse(cx,cY,cW,cH,0,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+  // Drooping side tufts
+  for(var s=-1;s<=1;s+=2){
+    ctx.beginPath();
+    ctx.ellipse(cx+s*cW*0.5,cY+cH*0.2,cW*0.28,cH*0.35,s*0.3,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.fill();
+  }
+}
+
+// ── OAK (general) ── wide spreading crown, gnarled trunk, massive presence
+function _drawOak(ctx,cx,baseY,slotW,treeH,col){
+  var trunkW=slotW*0.09;
+  var trunkH=treeH*0.42;
+  var trunkTop=baseY-trunkH;
+  // Thick gnarled trunk — slight curve
+  ctx.beginPath();
+  ctx.moveTo(cx-trunkW,baseY);
+  ctx.quadraticCurveTo(cx-trunkW*1.2,baseY-trunkH*0.5,cx-trunkW*0.4,trunkTop);
+  ctx.lineTo(cx+trunkW*0.4,trunkTop);
+  ctx.quadraticCurveTo(cx+trunkW*1.2,baseY-trunkH*0.5,cx+trunkW,baseY);
+  ctx.closePath();ctx.fillStyle=col;ctx.fill();
+  // Main wide canopy — layered blobs for oak bulk
+  var cR=slotW*0.46;
+  var cY=trunkTop-cR*0.55;
+  ctx.beginPath();ctx.arc(cx,cY,cR,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+  // Side lobes
+  ctx.beginPath();ctx.arc(cx-cR*0.55,cY+cR*0.1,cR*0.65,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+  ctx.beginPath();ctx.arc(cx+cR*0.55,cY+cR*0.1,cR*0.65,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+  // Top lobe
+  ctx.beginPath();ctx.arc(cx,cY-cR*0.45,cR*0.5,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+  // Low branches poking out
+  for(var s=-1;s<=1;s+=2){
+    ctx.beginPath();ctx.moveTo(cx+s*trunkW*0.3,trunkTop+trunkH*0.15);
+    ctx.lineTo(cx+s*cR*0.85,trunkTop-treeH*0.05);
+    ctx.strokeStyle=col;ctx.lineWidth=trunkW*0.5;ctx.stroke();
+  }
+}
+
+// ── PINE (daily) ── classic layered triangle, strong and symmetric
+function _drawPine(ctx,cx,baseY,slotW,treeH,col){
+  var trunkW=slotW*0.055;
+  var trunkH=treeH*0.2;
+  // Trunk
+  ctx.beginPath();
+  ctx.rect(cx-trunkW,baseY-trunkH,trunkW*2,trunkH);
+  ctx.fillStyle=col;ctx.fill();
+  // Layered triangles — 4 tiers, each one slightly narrower and higher
+  var tiers=4;
+  for(var i=0;i<tiers;i++){
+    var frac=i/tiers;
+    var tierW=slotW*(0.46-frac*0.12);
+    var tierTop=baseY-trunkH-(treeH-trunkH)*(0.18+frac*0.72);
+    var tierBase=baseY-trunkH-(treeH-trunkH)*(frac*0.55);
+    ctx.beginPath();
+    ctx.moveTo(cx,tierTop);
+    ctx.lineTo(cx-tierW,tierBase);
+    ctx.lineTo(cx+tierW,tierBase);
+    ctx.closePath();ctx.fillStyle=col;ctx.fill();
+  }
+  // Pointed top cap
+  ctx.beginPath();
+  ctx.moveTo(cx,baseY-treeH);
+  ctx.lineTo(cx-slotW*0.06,baseY-treeH*0.82);
+  ctx.lineTo(cx+slotW*0.06,baseY-treeH*0.82);
+  ctx.closePath();ctx.fillStyle=col;ctx.fill();
+}
+
+// ── HICKORY (conversation) ── tall straight trunk, irregular asymmetric crown
+// Hickory is a tall hardwood with a high crown and slightly zigzag branching
+function _drawHickory(ctx,cx,baseY,slotW,treeH,col){
+  var trunkW=slotW*0.06;
+  var trunkH=treeH*0.52; // tall straight trunk
+  var trunkTop=baseY-trunkH;
+  // Tall straight trunk
+  ctx.beginPath();
+  ctx.rect(cx-trunkW*0.5,baseY-trunkH,trunkW,trunkH);
+  ctx.fillStyle=col;ctx.fill();
+  // Irregular crown — 5 offset blobs at different heights/angles
+  var blobs=[
+    {ox:0,        oy:-0.30, r:0.30},
+    {ox:-0.28,    oy:-0.18, r:0.22},
+    {ox: 0.32,    oy:-0.20, r:0.24},
+    {ox:-0.18,    oy:-0.48, r:0.18},
+    {ox: 0.14,    oy:-0.55, r:0.16},
+  ];
+  blobs.forEach(function(b){
+    ctx.beginPath();
+    ctx.arc(cx+b.ox*slotW,trunkTop+b.oy*treeH,b.r*slotW,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.fill();
+  });
+  // Zigzag branch lines
+  var branches=[[0,-0.08,-0.35,-0.22],[0,-0.08,0.38,-0.25],[0,-0.22,-0.20,-0.44],[0,-0.22,0.22,-0.50]];
+  branches.forEach(function(b){
+    ctx.beginPath();
+    ctx.moveTo(cx+b[0]*slotW,trunkTop+b[1]*treeH);
+    ctx.lineTo(cx+b[2]*slotW,trunkTop+b[3]*treeH);
+    ctx.strokeStyle=col;ctx.lineWidth=trunkW*0.6;ctx.stroke();
+  });
+}
+
+// ── GINKGO (project) ── surprise! fan-shaped leaves, ancient, distinctive
+// The ginkgo biloba — one of the oldest living tree species.
+// Fan-shaped lobes, straight trunk, spreading tiered crown.
+function _drawGinkgo(ctx,cx,baseY,slotW,treeH,col){
+  var trunkW=slotW*0.055;
+  var trunkH=treeH*0.38;
+  var trunkTop=baseY-trunkH;
+  // Trunk
+  ctx.beginPath();
+  ctx.rect(cx-trunkW*0.5,baseY-trunkH,trunkW,trunkH);
+  ctx.fillStyle=col;ctx.fill();
+  // Ginkgo fan clusters — characteristic bilobed fans arranged in tiers
+  // Each "fan" is a wide semicircle with a notch
+  function drawFan(fx,fy,r,angle){
+    ctx.save();ctx.translate(fx,fy);ctx.rotate(angle);
+    // Fan shape: semicircle
+    ctx.beginPath();ctx.arc(0,0,r,-Math.PI*0.05,-Math.PI,true);ctx.closePath();
+    ctx.fillStyle=col;ctx.fill();
+    // Central notch (ginkgo leaf characteristic)
+    ctx.beginPath();ctx.arc(0,0,r*0.38,Math.PI*0.2,-Math.PI*1.2,false);ctx.closePath();
+    ctx.fillStyle='rgba(0,0,0,0.0)'; // transparent — just clip visually via globalAlpha
+    ctx.restore();
+  }
+  // 3 tiers of fans
+  var tiers=[
+    [{ox:0,oy:-0.55,r:0.30,a:0},{ox:-0.22,oy:-0.42,r:0.22,a:-0.4},{ox:0.22,oy:-0.42,r:0.22,a:0.4}],
+    [{ox:-0.30,oy:-0.20,r:0.24,a:-0.6},{ox:0.30,oy:-0.20,r:0.24,a:0.6},{ox:0,oy:-0.28,r:0.20,a:0}],
+    [{ox:-0.26,oy:-0.04,r:0.18,a:-0.8},{ox:0.26,oy:-0.04,r:0.18,a:0.8}],
+  ];
+  tiers.forEach(function(tier){
+    tier.forEach(function(b){
+      drawFan(cx+b.ox*slotW,trunkTop+b.oy*treeH,b.r*slotW,b.a);
+    });
+  });
+  // Thin branch lines to each fan cluster
+  var blines=[
+    [0,0,-0.30,-0.44],[0,0,0.30,-0.44],[0,0,0,-0.52],
+    [0,-0.44,-0.30,-0.20],[0,-0.44,0.30,-0.20]
+  ];
+  blines.forEach(function(b){
+    ctx.beginPath();
+    ctx.moveTo(cx+b[0]*slotW,trunkTop+b[1]*treeH);
+    ctx.lineTo(cx+b[2]*slotW,trunkTop+b[3]*treeH);
+    ctx.strokeStyle=col;ctx.lineWidth=trunkW*0.45;ctx.stroke();
+  });
+}
+
+// ── WALNUT (orphan grove) ── broad rounded crown, divided trunk
+function _drawWalnut(ctx,cx,baseY,slotW,treeH,col){
+  var trunkW=slotW*0.08;
+  var trunkH=treeH*0.35;
+  var trunkTop=baseY-trunkH;
+  // Divided trunk (walnut splits low)
+  ctx.beginPath();
+  ctx.moveTo(cx-trunkW,baseY);
+  ctx.lineTo(cx-trunkW*0.8,trunkTop+trunkH*0.3);
+  ctx.lineTo(cx-trunkW*1.4,trunkTop);
+  ctx.strokeStyle=col;ctx.lineWidth=trunkW*0.9;ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx+trunkW,baseY);
+  ctx.lineTo(cx+trunkW*0.8,trunkTop+trunkH*0.3);
+  ctx.lineTo(cx+trunkW*1.4,trunkTop);
+  ctx.strokeStyle=col;ctx.lineWidth=trunkW*0.9;ctx.stroke();
+  // Short joining trunk section
+  ctx.beginPath();ctx.rect(cx-trunkW*0.5,baseY-trunkH*0.35,trunkW,trunkH*0.35);
+  ctx.fillStyle=col;ctx.fill();
+  // Wide rounded canopy — two overlapping blobs (one per split trunk)
+  ctx.beginPath();ctx.arc(cx-slotW*0.12,trunkTop-treeH*0.18,slotW*0.30,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+  ctx.beginPath();ctx.arc(cx+slotW*0.12,trunkTop-treeH*0.18,slotW*0.30,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+  // Top blob joining them
+  ctx.beginPath();ctx.arc(cx,trunkTop-treeH*0.28,slotW*0.24,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+}
+
+// ── Draw Yggdrasil decorations ────────────────────────────
+function _drawYggdrasil(ctx,W,H){
+  var CX=W*0.5,TRUNK_Y=H*0.78;
+  var grad=ctx.createLinearGradient(CX,H*0.95,CX,H*0.06);
+  grad.addColorStop(0,'rgba(74,222,128,0.08)');
+  grad.addColorStop(0.4,'rgba(124,106,247,0.15)');
+  grad.addColorStop(1,'rgba(124,106,247,0.04)');
+  ctx.beginPath();ctx.moveTo(CX,H*0.95);ctx.lineTo(CX,H*0.06);
+  ctx.strokeStyle=grad;ctx.lineWidth=3;ctx.stroke();
+  ctx.beginPath();ctx.arc(CX,TRUNK_Y,22,0,Math.PI*2);
+  ctx.strokeStyle='rgba(124,106,247,0.35)';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.beginPath();ctx.arc(CX,TRUNK_Y,8,0,Math.PI*2);
+  ctx.fillStyle='rgba(124,106,247,0.2)';ctx.fill();
+  ctx.font='bold 9px IBM Plex Mono, monospace';
+  ctx.fillStyle='rgba(232,230,240,0.25)';ctx.textAlign='center';
+  ctx.fillText('YGGDRASIL',CX,H*0.06-8);
+  var TYPE_ORDER=['conversation','project','lecture','daily','general'];
+  var activeTypes=TYPE_ORDER.filter(function(t){
+    return graphNodes.some(function(n){return n.type===t&&!n.orphan;});
+  });
+  var numBranches=activeTypes.length;
+  var angleStart=-Math.PI*0.88,angleEnd=-Math.PI*0.12;
+  var branchLabelDist=(TRUNK_Y-H*0.06)*0.45;
+  activeTypes.forEach(function(type,bi){
+    var t=numBranches===1?0.5:(bi/(numBranches-1));
+    var angle=angleStart+(angleEnd-angleStart)*t;
+    var lx=CX+Math.cos(angle)*branchLabelDist;
+    var ly=TRUNK_Y+Math.sin(angle)*branchLabelDist;
+    var col=typeColors[type]||'#7c6af7';
+    ctx.font='bold 9px IBM Plex Mono, monospace';
+    ctx.fillStyle=col+'99';ctx.textAlign='center';
+    ctx.fillText(type.toUpperCase(),lx,ly-14);
+  });
+  var orphanCount=graphNodes.filter(function(n){return n.orphan;}).length;
+  ctx.font='9px IBM Plex Mono, monospace';
+  ctx.fillStyle=ORPHAN_COLOR+'60';ctx.textAlign='center';
+  if(orphanCount>0)ctx.fillText('roots ('+orphanCount+')',CX,H*0.97);
+  ctx.textAlign='left';
+}
+
+// ── Draw cluster halos ────────────────────────────────────
+function _drawClusterHalos(ctx){
+  var typeOrder=['conversation','project','lecture','daily','general'];
+  typeOrder.forEach(function(t){
+    var members=graphNodes.filter(function(n){return n.type===t&&!n.orphan;});
+    if(members.length<2)return;
+    var cx=members.reduce(function(s,n){return s+n.x;},0)/members.length;
+    var cy=members.reduce(function(s,n){return s+n.y;},0)/members.length;
+    var maxR=members.reduce(function(m,n){
+      return Math.max(m,Math.sqrt((n.x-cx)*(n.x-cx)+(n.y-cy)*(n.y-cy)));
+    },0)+30;
+    ctx.beginPath();ctx.arc(cx,cy,maxR,0,Math.PI*2);
+    ctx.fillStyle=(typeColors[t]||'#7c6af7')+'0d';
+    ctx.strokeStyle=(typeColors[t]||'#7c6af7')+'28';
+    ctx.lineWidth=1;ctx.fill();ctx.stroke();
+  });
+  var orphans=graphNodes.filter(function(n){return n.orphan;});
+  if(orphans.length>0){
+    var ocx=orphans.reduce(function(s,n){return s+n.x;},0)/orphans.length;
+    var ocy=orphans.reduce(function(s,n){return s+n.y;},0)/orphans.length;
+    var omaxR=orphans.reduce(function(m,n){
+      return Math.max(m,Math.sqrt((n.x-ocx)*(n.x-ocx)+(n.y-ocy)*(n.y-ocy)));
+    },0)+30;
+    ctx.beginPath();ctx.arc(ocx,ocy,omaxR,0,Math.PI*2);
+    ctx.fillStyle=ORPHAN_COLOR+'08';ctx.strokeStyle=ORPHAN_COLOR+'28';
+    ctx.lineWidth=1;ctx.fill();ctx.stroke();
+    ctx.font='10px IBM Plex Mono, monospace';
+    ctx.fillStyle=ORPHAN_COLOR+'80';ctx.textAlign='center';
+    ctx.fillText('orphans',ocx,ocy-omaxR-6);ctx.textAlign='left';
+  }
+}
+
+// ── Draw a single node (with leaf sway) ──────────────────
+function _drawNode(ctx,n,matchedNodes,brightness){
+  var isPinned=!!pinnedNodes[n.id];
+  var isOrphan=n.orphan;
+  var color=isOrphan?ORPHAN_COLOR:(typeColors[n.type]||'#7c6af7');
+  var isHv=hoveredNode&&hoveredNode.id===n.id;
+  var isCn=hoveredNode&&graphEdges.some(function(e){
+    return(e.a===hoveredNode.id&&e.b===n.id)||(e.b===hoveredNode.id&&e.a===n.id);
+  });
+  var isMatch=matchedNodes&&matchedNodes[n.id];
+  var r=isHv?n.radius*2.2:isCn?n.radius*1.4:isMatch?n.radius*1.8:n.radius;
+
+  // Leaf sway — only in tree/ygg modes and for leaf nodes
+  var drawX=n.x,drawY=n.y;
+  var isStaticLeafMode=(GraphSettings.treeMode||GraphSettings.yggdrasilMode);
+  if(isStaticLeafMode&&n.isLeaf&&!isPinned){
+    var swayAmt=2.5;
+    var freq=0.6+((n.swayOffset||0)*0.3);
+    drawX=n.x+Math.sin(swayTime*freq+(n.swayOffset||0))*swayAmt;
+    drawY=n.y+Math.cos(swayTime*freq*0.7+(n.swayOffset||0))*swayAmt*0.4;
+  }
+
+  if(isPinned){ctx.shadowColor='#f87171';ctx.shadowBlur=12;}
+  else if(isHv){ctx.shadowColor=color;ctx.shadowBlur=16;}
+  else if(isMatch){ctx.shadowColor='#fde047';ctx.shadowBlur=16;}
+  else if(isCn){ctx.shadowColor=color;ctx.shadowBlur=8;}
+  else if(isOrphan){ctx.shadowColor=ORPHAN_COLOR;ctx.shadowBlur=6;}
+  else{ctx.shadowBlur=0;}
+
+  var baseAlpha=Math.round((0.30+brightness*0.70)*255).toString(16).padStart(2,'0');
+  var query=GraphSettings.searchQuery||'';
+
+  ctx.beginPath();ctx.arc(drawX,drawY,r,0,Math.PI*2);
+  var fillColor;
+  if(isPinned){fillColor='#f87171';}
+  else if(isHv){fillColor=color;}
+  else if(query){fillColor=isMatch?color:(color+'22');}
+  else if(isCn){fillColor=color+'cc';}
+  else{fillColor=color+baseAlpha;}
+  ctx.fillStyle=fillColor;ctx.fill();
+
+  if(isPinned){
+    ctx.shadowBlur=0;ctx.strokeStyle='#f87171';ctx.lineWidth=1.5;
+    var boxS=r*2+6;ctx.strokeRect(drawX-boxS/2,drawY-boxS/2,boxS,boxS);
+  }
+
+  var showLabel=isHv||isMatch||isPinned||GraphSettings.showLabels||(graphTransform.scale>1.8);
+  if(showLabel){
+    ctx.shadowBlur=0;
+    ctx.font=(isHv||isMatch?'bold ':'')+'10px IBM Plex Mono, monospace';
+    ctx.fillStyle=isPinned?'#f87171':(isHv||isMatch)?'rgba(232,230,240,1)':'rgba(232,230,240,0.6)';
+    ctx.fillText(n.name,drawX+r+3,drawY+3);
+  }
+  ctx.shadowBlur=0;
+}
