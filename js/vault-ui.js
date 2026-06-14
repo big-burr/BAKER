@@ -380,7 +380,11 @@ var VAULTUI=(function(){
   }
 
   // ── Edit mode ─────────────────────────────────────────────
-  function enterEditMode(){
+function enterEditMode(){
+    if(!editBtn)editBtn=document.getElementById('vp-edit-btn');
+    if(!saveBtn)saveBtn=document.getElementById('vp-save-btn');
+    if(!cancelEditBtn)cancelEditBtn=document.getElementById('vp-cancel-edit-btn');
+    if(!viewerEditArea)viewerEditArea=document.getElementById('vp-viewer-edit');
     if(currentNoteIdx===null)return;
     var note=vaultIndex[currentNoteIdx];
     if(!note)return;
@@ -393,8 +397,12 @@ var VAULTUI=(function(){
     if(cancelEditBtn)cancelEditBtn.style.display='inline-flex';
     setTimeout(function(){viewerEditArea.focus();},30);
   }
-  function exitEditMode(refreshView){
+function exitEditMode(refreshView){
     editing=false;
+    if(!editBtn)editBtn=document.getElementById('vp-edit-btn');
+    if(!saveBtn)saveBtn=document.getElementById('vp-save-btn');
+    if(!cancelEditBtn)cancelEditBtn=document.getElementById('vp-cancel-edit-btn');
+    if(!viewerEditArea)viewerEditArea=document.getElementById('vp-viewer-edit');
     if(viewerEditArea)viewerEditArea.style.display='none';
     if(viewerContentEl)viewerContentEl.style.display='block';
     if(editBtn)editBtn.style.display='inline-flex';
