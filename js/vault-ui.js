@@ -737,11 +737,15 @@ var VAULTUI=(function(){
     treeMode:false,clusterMode:false,gridMode:false,yggdrasilMode:false,
     nodeBrightness:1.0
   };
-  if(typeof GraphSettings==='undefined'){window.GraphSettings={};}
-  Object.keys(defaults).forEach(function(k){
-    if(GraphSettings[k]===undefined)GraphSettings[k]=defaults[k];
-  });
-  window.DEFAULT_GRAPH_SETTINGS=JSON.parse(JSON.stringify(GraphSettings));
+  if(typeof GraphSettings==='undefined'){
+    GraphSettings=defaults;
+  }else{
+    // Fill in any keys that hud.html's version is missing
+    Object.keys(defaults).forEach(function(k){
+      if(GraphSettings[k]===undefined)GraphSettings[k]=defaults[k];
+    });
+  }
+  DEFAULT_GRAPH_SETTINGS=JSON.parse(JSON.stringify(GraphSettings));
 })();
 
 // ═══════════════════════════════════════════════════════════
@@ -1020,7 +1024,7 @@ var VAULTCHAT=(function(){
   }
   function removeThinking(){var t=document.getElementById('vc-thinking');if(t)t.remove();}
 
-  async function send(){
+  function send(){
     if(busy)return;
     var input=_input();if(!input)return;
     var txt=input.value.trim();if(!txt)return;
@@ -1028,9 +1032,7 @@ var VAULTCHAT=(function(){
     if(!key){appendMsg('baker','No API key set, sir. Open Settings.');return;}
     input.value='';
     appendMsg('user',txt);
-    // Remove welcome if present
     var welcome=document.getElementById('vc-welcome');if(welcome)welcome.remove();
-
     var meta=modeMeta[currentMode];
     var relevant=findRelevant(txt,meta.topN,meta.minScore);
     history.push({role:'user',content:txt});
@@ -1038,27 +1040,26 @@ var VAULTCHAT=(function(){
     var sendBtn=document.getElementById('vc-send-btn');
     if(sendBtn)sendBtn.disabled=true;
     showThinking();
-
-    try{
-      var resp=await fetch('https://api.anthropic.com/v1/messages',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-        body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:buildSystem(relevant,txt),messages:history.slice(-20)})
-      });
-      var data=await resp.json();
+    fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:buildSystem(relevant,txt),messages:history.slice(-20)})
+    }).then(function(resp){return resp.json();})
+    .then(function(data){
       if(data.error)throw new Error(data.error.message);
       var raw=data.content.map(function(b){return b.text||'';}).join('').trim();
       removeThinking();
       appendMsg('baker',raw,relevant);
       history.push({role:'assistant',content:raw});
       if(history.length>30)history=history.slice(-30);
-    }catch(err){
+    }).catch(function(err){
       removeThinking();
       appendMsg('baker','I encountered a fault, sir: '+err.message);
-    }
-    busy=false;
-    if(sendBtn)sendBtn.disabled=false;
-    if(input)input.focus();
+    }).finally(function(){
+      busy=false;
+      if(sendBtn)sendBtn.disabled=false;
+      var inp=_input();if(inp)inp.focus();
+    });
   }
 
   function setMode(mode){
