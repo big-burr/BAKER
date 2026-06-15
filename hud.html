@@ -21,7 +21,6 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--sans);width:1
 @keyframes fadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
 @keyframes listening-pulse{0%,100%{box-shadow:0 0 0 0 rgba(124,106,247,.5)}50%{box-shadow:0 0 28px 8px rgba(124,106,247,.2)}}
 @keyframes sp-pulse{0%,100%{opacity:1}50%{opacity:.3}}
-/* ── Record mode ── */
 #orb-panel.music-mode .fp-hdr{border-bottom-color:rgba(29,185,84,.25)}
 #orb-panel.music-mode .fp-icon{color:#1db954}
 #orb-panel.music-mode{border-color:rgba(29,185,84,.3)}
@@ -44,7 +43,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
 .fp{position:fixed;z-index:30;border:1px solid var(--border);border-radius:10px;background:rgba(26,26,29,.92);backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.5);display:flex;flex-direction:column;animation:fadeIn .2s ease both;min-width:180px;min-height:80px;overflow:visible}
 .fp-hdr{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);cursor:move;flex-shrink:0;user-select:none;border-radius:10px 10px 0 0}
 .fp-hdr:hover{background:rgba(124,106,247,.04)}
-/* ── RESIZE HANDLES ── */
 .rh{position:absolute;z-index:10;user-select:none;pointer-events:all}
 .rh-n{top:-4px;left:8px;right:8px;height:8px;cursor:n-resize}
 .rh-s{bottom:-4px;left:8px;right:8px;height:8px;cursor:s-resize}
@@ -97,13 +95,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
 .sb-pill.speaking{color:var(--green);border-color:rgba(74,222,128,.35)}
 .sb-pill.thinking{color:var(--amber);border-color:rgba(251,191,36,.35)}
 .sb-txt{font-family:var(--mono);font-size:10px;color:var(--muted);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* ── GRAPH TOOLTIP — now includes preview ── */
 #graph-tooltip{position:fixed;z-index:60;background:rgba(26,26,29,.95);border:1px solid var(--border);border-radius:6px;padding:8px 12px;pointer-events:none;display:none;max-width:260px}
 .tt-name{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--text);margin-bottom:3px}
 .tt-path{font-family:var(--mono);font-size:9px;color:var(--muted)}
 .tt-type{font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:3px;margin-top:4px;display:inline-block}
 .tt-preview{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:6px;line-height:1.6;white-space:pre-wrap;word-break:break-word;opacity:.8;max-height:48px;overflow:hidden}
-/* ── GRAPH SETTINGS panel taller for new toggles ── */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;padding:24px}
 .overlay.open{display:flex}
 .modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
@@ -134,7 +130,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
 .toggle-thumb{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--muted);top:3px;left:3px;transition:all .25s}
 .toggle input:checked~.toggle-thumb{left:23px;background:var(--accent)}
 .toggle-lbl{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.06em;text-align:right;min-width:24px}
-/* ─── CONFIRM POPUP ── */
 #confirm-popup{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:300;background:rgba(26,26,29,.97);border:1px solid var(--accent-dim);border-radius:10px;padding:14px 18px;backdrop-filter:blur(20px);box-shadow:0 12px 32px rgba(0,0,0,.6);display:none;flex-direction:column;gap:10px;max-width:320px;text-align:center}
 #confirm-popup.vis{display:flex}
 #confirm-popup-text{font-family:var(--sans);font-size:13px;color:var(--text);line-height:1.5}
@@ -143,7 +138,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:cent
 #confirm-popup-btns button:hover{border-color:var(--accent);color:var(--text)}
 #confirm-popup-btns button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 #confirm-popup-btns button.primary:hover{background:#9585ff}
-/* ─── SPOTIFY FULL PANEL ── */
 #spotify-panel{position:fixed;bottom:40px;right:24px;width:340px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:280px;min-height:120px}
 #spotify-panel.sp-vis{display:flex}
 #spotify-panel>div:not(.rh){overflow:hidden;border-radius:14px}
@@ -237,7 +231,6 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .sp-set-gbtn:hover{background:rgba(29,185,84,.1)}
 .sp-disc{background:transparent;border:1px solid rgba(248,113,113,.35);border-radius:4px;padding:7px 12px;font-family:var(--mono);font-size:11px;color:var(--red);cursor:pointer;transition:all .15s;width:100%;margin-top:4px}
 .sp-disc:hover{background:rgba(248,113,113,.08)}
-/* ─── CALENDAR / TASKS PANEL ── */
 #calendar-panel{position:fixed;top:64px;right:380px;width:340px;height:440px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:280px;min-height:200px}
 #calendar-panel.cal-vis{display:flex}
 #calendar-panel>div:not(.rh){overflow:hidden;border-radius:14px}
@@ -279,7 +272,6 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .cal-empty{padding:32px 16px;text-align:center;color:var(--muted);font-size:12px;line-height:1.6}
 .cal-footer{padding:6px 12px;border-top:1px solid var(--border);font-family:var(--mono);font-size:9px;color:#484650;text-align:center;flex-shrink:0;letter-spacing:.04em}
 .cal-footer.synced{color:#4ade80}
-/* ─── MONTH CALENDAR PANEL ── */
 #month-panel{position:fixed;top:120px;right:60px;width:380px;height:420px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:320px;min-height:360px}
 #month-panel.mcal-vis{display:flex}
 #month-panel>div:not(.rh){overflow:hidden;border-radius:14px}
@@ -327,8 +319,7 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .mcal-detail-list::-webkit-scrollbar{width:3px}
 .mcal-detail-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 .mcal-detail-empty{padding:32px 16px;text-align:center;color:var(--muted);font-size:12px;line-height:1.6}
-/* ─── GRAPH SETTINGS PANEL ── */
-#graphui-panel{position:fixed;top:120px;right:460px;width:300px;height:520px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:260px;min-height:360px}
+#graphui-panel{position:fixed;top:120px;right:460px;width:300px;height:580px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:260px;min-height:400px}
 #graphui-panel.gui-vis{display:flex}
 #graphui-panel>div:not(.rh){overflow:hidden;border-radius:14px}
 .gui-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--border);cursor:move;user-select:none;border-radius:14px 14px 0 0;flex-shrink:0}
@@ -355,7 +346,6 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
 .gui-search-input::placeholder{color:#484650}
 .gui-reset-btn{background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;font-family:var(--mono);font-size:10px;padding:7px 10px;transition:all .15s}
 .gui-reset-btn:hover{border-color:var(--accent);color:var(--text)}
-/* ─── VAULT NOTES PANEL ── */
 #vault-panel{position:fixed;top:120px;left:60px;width:380px;height:460px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:300px;min-height:300px}
 #vault-panel.vp-vis{display:flex}
 #vault-panel>div:not(.rh){overflow:hidden;border-radius:14px}
@@ -408,10 +398,9 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
 .vp-edit-btn.vp-cancel{border-color:rgba(248,113,113,.35);color:var(--red)}
 .vp-edit-btn.vp-cancel:hover{background:rgba(248,113,113,.08)}
 .vp-viewer-edit{flex:1;width:100%;border:none;outline:none;resize:none;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:11px;line-height:1.8;padding:14px 16px;white-space:pre-wrap}
-/* Scrollbars */
 .spp-res::-webkit-scrollbar,.spp-li::-webkit-scrollbar{width:3px}
 .spp-res::-webkit-scrollbar-thumb,.spp-li::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-  .vc-msg{display:flex;flex-direction:column;max-width:88%}
+.vc-msg{display:flex;flex-direction:column;max-width:88%}
 .vc-msg-user{align-self:flex-end;align-items:flex-end}
 .vc-msg-baker{align-self:flex-start;align-items:flex-start}
 .vc-bubble{padding:9px 13px;border-radius:10px;font-size:12px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
@@ -431,36 +420,24 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
 </style>
 </head>
 <body>
-
-<!-- GRAPH BACKGROUND -->
-<div id="graph-bg">
-  <canvas id="vault-graph-canvas"></canvas>
-</div>
-
-<!-- GRAPH PLACEHOLDER -->
+<div id="graph-bg"><canvas id="vault-graph-canvas"></canvas></div>
 <div id="graph-overlay">
   <div class="graph-ph-icon">🕸</div>
   <div class="graph-ph-title">No vault connected</div>
   <div class="graph-ph-sub">Connect your vault to see your knowledge graph. Notes become nodes, wikilinks become edges.</div>
   <button class="graph-connect-btn" onclick="handleVaultBtn()">⬡ Connect Vault</button>
 </div>
-
-<!-- GRAPH TOOLTIP — now includes preview -->
 <div id="graph-tooltip">
   <div class="tt-name" id="tt-name"></div>
   <div class="tt-path" id="tt-path"></div>
   <div class="tt-type" id="tt-type"></div>
   <div class="tt-preview" id="tt-preview"></div>
 </div>
-
-<!-- GRAPH STATS -->
 <div id="graph-stats">
   <div class="graph-stat">Notes <span id="stat-notes">0</span></div>
   <div class="graph-stat">Links <span id="stat-links">0</span></div>
-  <div class="graph-stat">Mode <span id="stat-mode">◎ Default</span></div>
+  <div class="graph-stat">Mode <span id="stat-mode">&#9675; Default</span></div>
 </div>
-
-<!-- NAV -->
 <nav>
   <span class="nav-logo">BAKER</span>
   <div class="nav-status">
@@ -468,41 +445,27 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
     <span id="nav-status-txt">standby</span>
   </div>
   <div class="nav-right">
-    <button class="hbtn" id="vault-btn" onclick="handleVaultBtn()">⬡ Connect Vault</button>
-    <a class="hbtn" href="conversation.html">💬 Conversation</a>
-    <a class="hbtn" href="index.html">⊞ Tools</a>
-    <button class="hbtn" id="web-search-btn" onclick="toggleWebSearch()">🌐 Web</button>
+    <button class="hbtn" id="vault-btn" onclick="handleVaultBtn()">&#11041; Connect Vault</button>
+    <a class="hbtn" href="conversation.html">&#128172; Conversation</a>
+    <a class="hbtn" href="index.html">&#8862; Tools</a>
+    <button class="hbtn" id="web-search-btn" onclick="toggleWebSearch()">&#127760; Web</button>
     <button class="hbtn" id="sp-nav-btn" onclick="SP.togglePanel()" title="Spotify">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
       <span id="sp-nav-lbl">Music</span>
     </button>
-    <button class="hbtn" id="cal-nav-btn" onclick="CAL.togglePanel()" title="Tasks">
-      📅 <span id="cal-nav-lbl">Tasks</span>
-    </button>
-    <button class="hbtn" id="month-nav-btn" onclick="MCAL.togglePanel()" title="Calendar">
-      🗓 Calendar
-    </button>
-   <button class="hbtn" id="vault-notes-btn" onclick="VAULTUI.togglePanel()" title="Vault Notes">
-  🗂 Notes
-</button>
-<button class="hbtn" id="vaultchat-nav-btn" onclick="VAULTCHAT.togglePanel()" title="Vault Chat">
-  🧠 Chat
-</button>
-    <button class="hbtn" id="graphui-nav-btn" onclick="GRAPHUI.togglePanel()" title="Graph Settings">
-      🕸 Graph
-    </button>
-    <button class="hbtn" onclick="openSettings()">⚙ Settings</button>
+    <button class="hbtn" id="cal-nav-btn" onclick="CAL.togglePanel()" title="Tasks">&#128197; <span id="cal-nav-lbl">Tasks</span></button>
+    <button class="hbtn" id="month-nav-btn" onclick="MCAL.togglePanel()" title="Calendar">&#128467; Calendar</button>
+    <button class="hbtn" id="vault-notes-btn" onclick="VAULTUI.togglePanel()" title="Vault Notes">&#128194; Notes</button>
+    <button class="hbtn" id="vaultchat-nav-btn" onclick="VAULTCHAT.togglePanel()" title="Vault Chat">&#129504; Chat</button>
+    <button class="hbtn" id="graphui-nav-btn" onclick="GRAPHUI.togglePanel()" title="Graph Settings">&#128375; Graph</button>
+    <button class="hbtn" onclick="openSettings()">&#9881; Settings</button>
   </div>
 </nav>
-
-<!-- ORB PANEL -->
 <div class="fp" id="orb-panel">
   <div class="fp-hdr" id="orb-panel-hdr">
-    <span class="fp-icon" id="orb-mode-icon">◈</span>
+    <span class="fp-icon" id="orb-mode-icon">&#9672;</span>
     <span class="fp-title" id="orb-panel-label">BAKER</span>
-    <div class="fp-btns">
-      <button class="fp-btn" onclick="toggleMinimize('orb-panel')" title="Minimize">−</button>
-    </div>
+    <div class="fp-btns"><button class="fp-btn" onclick="toggleMinimize('orb-panel')" title="Minimize">&#8722;</button></div>
   </div>
   <div class="fp-body" style="display:flex;flex-direction:column;position:relative">
     <canvas id="orb-canvas" style="flex:1;display:block;cursor:pointer;min-height:160px;position:relative;z-index:1"></canvas>
@@ -511,143 +474,116 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
       <div id="orb-foot-normal">
         <div class="orb-status-txt" id="orb-status-txt">Say "Baker" to begin</div>
         <div class="orb-live" id="orb-live"></div>
-        <div class="wake-indicator" id="wake-status">👂 listening for wake word</div>
+        <div class="wake-indicator" id="wake-status">&#128066; listening for wake word</div>
       </div>
       <div id="orb-foot-music" style="display:none">
         <div id="orb-track-name" style="font-family:var(--mono);font-size:10px;color:var(--text);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px;padding:0 4px"></div>
         <div id="orb-artist-name" style="font-family:var(--mono);font-size:9px;color:var(--muted);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px;padding:0 4px"></div>
         <div style="display:flex;align-items:center;justify-content:center;gap:6px">
-          <button onclick="SP.prev()" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;width:26px;height:26px;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">⏮</button>
-          <button id="orb-music-pp" onclick="orbMusicTogglePlay()" style="background:var(--accent);border:none;border-radius:50%;color:#fff;cursor:pointer;width:30px;height:30px;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .15s">⏸</button>
-          <button onclick="SP.next()" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;width:26px;height:26px;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">⏭</button>
+          <button onclick="SP.prev()" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;width:26px;height:26px;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">&#9198;</button>
+          <button id="orb-music-pp" onclick="orbMusicTogglePlay()" style="background:var(--accent);border:none;border-radius:50%;color:#fff;cursor:pointer;width:30px;height:30px;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .15s">&#9208;</button>
+          <button onclick="SP.next()" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;width:26px;height:26px;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">&#9197;</button>
         </div>
         <div style="font-family:var(--mono);font-size:8px;color:var(--accent);text-align:center;margin-top:5px;opacity:.5;letter-spacing:.06em">double-click to exit</div>
       </div>
     </div>
   </div>
 </div>
-
-<!-- NOTE PANEL -->
 <div class="fp" id="note-panel">
   <div class="fp-hdr" id="note-panel-hdr">
-    <span class="fp-icon">📄</span>
+    <span class="fp-icon">&#128196;</span>
     <span class="fp-title" id="note-panel-title">Note</span>
     <div class="fp-btns">
-      <button class="fp-btn" onclick="toggleMinimize('note-panel')" title="Minimize">−</button>
-      <button class="fp-btn close" onclick="closePanel('note-panel')" title="Close">×</button>
+      <button class="fp-btn" onclick="toggleMinimize('note-panel')" title="Minimize">&#8722;</button>
+      <button class="fp-btn close" onclick="closePanel('note-panel')" title="Close">&#215;</button>
     </div>
   </div>
-  <div class="fp-body">
-    <div class="note-content" id="note-content"></div>
-  </div>
+  <div class="fp-body"><div class="note-content" id="note-content"></div></div>
 </div>
-
-<!-- WIDGET PANEL -->
 <div class="fp" id="widget-panel">
   <div class="fp-hdr" id="widget-panel-hdr">
-    <span class="fp-icon" id="widget-icon">⬡</span>
+    <span class="fp-icon" id="widget-icon">&#11041;</span>
     <span class="fp-title" id="widget-title">Widget</span>
     <div class="fp-btns">
-      <button class="fp-btn" onclick="toggleMinimize('widget-panel')" title="Minimize">−</button>
-      <button class="fp-btn close" onclick="closePanel('widget-panel')" title="Close">×</button>
+      <button class="fp-btn" onclick="toggleMinimize('widget-panel')" title="Minimize">&#8722;</button>
+      <button class="fp-btn close" onclick="closePanel('widget-panel')" title="Close">&#215;</button>
     </div>
   </div>
   <div class="fp-body" id="widget-body"></div>
 </div>
-
-<!-- SPOTIFY PANEL -->
 <div id="spotify-panel">
   <div class="spp-hdr">
     <div class="spp-left">
       <svg class="spp-logo" width="16" height="16" viewBox="0 0 24 24"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
       <span class="spp-title">Spotify</span>
     </div>
-    <button class="spp-close" onclick="SP.hidePanel()">×</button>
+    <button class="spp-close" onclick="SP.hidePanel()">&#215;</button>
   </div>
   <div id="spp-body"></div>
 </div>
-
-<!-- CALENDAR / TASKS PANEL -->
 <div id="calendar-panel">
   <div class="cal-hdr">
-    <div class="cal-left">
-      <span style="font-size:14px">📅</span>
-      <span class="cal-title">Tasks</span>
-    </div>
-    <button class="cal-close" onclick="CAL.hidePanel()">×</button>
+    <div class="cal-left"><span style="font-size:14px">&#128197;</span><span class="cal-title">Tasks</span></div>
+    <button class="cal-close" onclick="CAL.hidePanel()">&#215;</button>
   </div>
   <div id="cal-body">
     <div class="cal-add-row">
-      <input class="cal-add-input" id="cal-add-input" type="text" placeholder="Add a task…">
+      <input class="cal-add-input" id="cal-add-input" type="text" placeholder="Add a task&hellip;">
       <input class="cal-add-date" id="cal-add-date" type="date">
       <button class="cal-add-btn" id="cal-add-btn">+</button>
     </div>
     <div class="cal-list" id="cal-list"></div>
-    <div class="cal-footer" id="cal-footer">Local only — connect vault to sync</div>
+    <div class="cal-footer" id="cal-footer">Local only &mdash; connect vault to sync</div>
   </div>
 </div>
-
-<!-- MONTH CALENDAR PANEL -->
 <div id="month-panel">
   <div class="mcal-hdr">
-    <div class="mcal-left">
-      <span style="font-size:14px">🗓</span>
-      <span class="mcal-title">Calendar</span>
-    </div>
-    <button class="mcal-close" onclick="MCAL.hidePanel()">×</button>
+    <div class="mcal-left"><span style="font-size:14px">&#128467;</span><span class="mcal-title">Calendar</span></div>
+    <button class="mcal-close" onclick="MCAL.hidePanel()">&#215;</button>
   </div>
   <div id="mcal-body">
     <div class="mcal-nav">
-      <button class="mcal-navbtn" id="mcal-prev">‹</button>
+      <button class="mcal-navbtn" id="mcal-prev">&#8249;</button>
       <div class="mcal-navgroup">
         <span class="mcal-monthlbl" id="mcal-monthlbl"></span>
         <button class="mcal-today-btn" id="mcal-today">Today</button>
       </div>
-      <button class="mcal-navbtn" id="mcal-next">›</button>
+      <button class="mcal-navbtn" id="mcal-next">&#8250;</button>
     </div>
     <div class="mcal-grid">
-      <div class="mcal-dow">
-        <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
-      </div>
+      <div class="mcal-dow"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
       <div class="mcal-days" id="mcal-days"></div>
     </div>
     <div id="mcal-detail">
       <div class="mcal-detail-hdr">
-        <button class="mcal-back" id="mcal-back">‹</button>
+        <button class="mcal-back" id="mcal-back">&#8249;</button>
         <span class="mcal-detail-date" id="mcal-detail-date"></span>
       </div>
       <div class="mcal-detail-add">
-        <input class="mcal-detail-input" id="mcal-detail-input" type="text" placeholder="Add a task for this day…">
+        <input class="mcal-detail-input" id="mcal-detail-input" type="text" placeholder="Add a task for this day&hellip;">
         <button class="mcal-detail-addbtn" id="mcal-detail-addbtn">+</button>
       </div>
       <div class="mcal-detail-list" id="mcal-detail-list"></div>
     </div>
   </div>
 </div>
-
-<!-- GRAPH SETTINGS PANEL — now includes Cluster and Tree toggles -->
 <div id="graphui-panel">
   <div class="gui-hdr">
-    <div class="gui-left">
-      <span style="font-size:14px">🕸</span>
-      <span class="gui-title">Graph Settings</span>
-    </div>
-    <button class="gui-close" onclick="GRAPHUI.hidePanel()">×</button>
+    <div class="gui-left"><span style="font-size:14px">&#128375;</span><span class="gui-title">Graph Settings</span></div>
+    <button class="gui-close" onclick="GRAPHUI.hidePanel()">&#215;</button>
   </div>
   <div id="gui-body">
     <div class="gui-section">
       <div class="gui-section-lbl">Search &amp; highlight</div>
-      <div class="gui-search-row">
-        <input class="gui-search-input" id="gui-search-input" type="text" placeholder="Highlight notes by name…">
-      </div>
+      <div class="gui-search-row"><input class="gui-search-input" id="gui-search-input" type="text" placeholder="Highlight notes by name&hellip;"></div>
     </div>
     <div class="gui-section">
       <div class="gui-section-lbl">Filter by type</div>
       <label class="gui-filter-row"><input type="checkbox" data-gui-type="conversation" checked><span class="gui-dot" style="background:#c084fc"></span>Conversation</label>
       <label class="gui-filter-row"><input type="checkbox" data-gui-type="project" checked><span class="gui-dot" style="background:#38bdf8"></span>Project</label>
-      <label class="gui-filter-row"><input type="checkbox" data-gui-type="lecture" checked><span class="gui-dot" style="background:#fde047"></span>Lecture</label>
+      <label class="gui-filter-row"><input type="checkbox" data-gui-type="lecture" checked><span class="gui-dot" style="background:#facc15"></span>Lecture</label>
       <label class="gui-filter-row"><input type="checkbox" data-gui-type="daily" checked><span class="gui-dot" style="background:#4ade80"></span>Daily log</label>
-      <label class="gui-filter-row"><input type="checkbox" data-gui-type="general" checked><span class="gui-dot" style="background:#7c6af7"></span>General</label>
+      <label class="gui-filter-row"><input type="checkbox" data-gui-type="general" checked><span class="gui-dot" style="background:#fb923c"></span>General</label>
     </div>
     <div class="gui-section">
       <div class="gui-section-lbl">Forces</div>
@@ -670,93 +606,46 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
     </div>
     <div class="gui-section">
       <div class="gui-section-lbl">Display</div>
-      <div class="gui-toggle-row">
-        <span>Size nodes by connections</span>
-        <label class="toggle" style="transform:scale(.8)">
-          <input type="checkbox" id="gui-sizebyconn">
-          <div class="toggle-track"></div>
-          <div class="toggle-thumb"></div>
-        </label>
-      </div>
-      <div class="gui-toggle-row">
-        <span>Always show labels</span>
-        <label class="toggle" style="transform:scale(.8)">
-          <input type="checkbox" id="gui-showlabels">
-          <div class="toggle-track"></div>
-          <div class="toggle-thumb"></div>
-        </label>
-      </div>
-      <div class="gui-toggle-row">
-        <span>Cluster by type</span>
-        <label class="toggle" style="transform:scale(.8)">
-          <input type="checkbox" id="gui-clustermode">
-          <div class="toggle-track"></div>
-          <div class="toggle-thumb"></div>
-        </label>
-      </div>
-<div class="gui-toggle-row">
-        <span>Tree mode</span>
-        <label class="toggle" style="transform:scale(.8)">
-          <input type="checkbox" id="gui-treemode">
-          <div class="toggle-track"></div>
-          <div class="toggle-thumb"></div>
-        </label>
-      </div>
-      <div class="gui-toggle-row">
-        <span>Grid mode</span>
-        <label class="toggle" style="transform:scale(.8)">
-          <input type="checkbox" id="gui-gridmode">
-          <div class="toggle-track"></div>
-          <div class="toggle-thumb"></div>
-        </label>
-      </div>
-      <div class="gui-toggle-row">
-        <span>🌳 Yggdrasil</span>
-        <label class="toggle" style="transform:scale(.8)">
-          <input type="checkbox" id="gui-yggmode">
-          <div class="toggle-track"></div>
-          <div class="toggle-thumb"></div>
-        </label>
-      </div>
+      <div class="gui-toggle-row"><span>Size nodes by connections</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-sizebyconn"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+      <div class="gui-toggle-row"><span>Always show labels</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-showlabels"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+      <div class="gui-toggle-row"><span>Cluster by type</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-clustermode"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+      <div class="gui-toggle-row"><span>Tree mode</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-treemode"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+      <div class="gui-toggle-row"><span>Grid mode</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-gridmode"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+      <div class="gui-toggle-row"><span>&#127795; Yggdrasil</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-yggmode"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
       <div class="gui-slider-row" style="margin-top:6px">
         <div class="gui-slider-lbl"><span>Node brightness</span><span id="gui-brightness-val">100</span></div>
         <input type="range" class="gui-slider" id="gui-brightness" min="10" max="100" value="100">
       </div>
     </div>
-    <button class="gui-reset-btn" id="gui-reset-btn">↺ Reset to defaults</button>
+    <button class="gui-reset-btn" id="gui-reset-btn">&#8634; Reset to defaults</button>
   </div>
 </div>
-
-<!-- VAULT NOTES PANEL -->
 <div id="vault-panel">
   <div class="vp-hdr">
-    <div class="vp-left">
-      <span style="font-size:14px">🗂</span>
-      <span class="vp-title">Vault Notes</span>
-    </div>
-    <button class="vp-close" onclick="VAULTUI.hidePanel()">×</button>
+    <div class="vp-left"><span style="font-size:14px">&#128194;</span><span class="vp-title">Vault Notes</span></div>
+    <button class="vp-close" onclick="VAULTUI.hidePanel()">&#215;</button>
   </div>
   <div id="vp-body">
     <div class="vp-search-row">
-      <input class="vp-search-input" id="vp-search-input" type="text" placeholder="Search… (try type:lecture or #project)">
+      <input class="vp-search-input" id="vp-search-input" type="text" placeholder="Search&hellip; (try type:lecture or #project)">
       <button class="vp-new-btn" id="vp-new-btn" title="New note from template">+ New</button>
     </div>
     <div class="vp-filter-bar" id="vp-filter-bar"></div>
     <div class="vp-list" id="vp-list"></div>
     <div id="vp-viewer">
       <div class="vp-viewer-hdr">
-        <button class="vp-back" id="vp-back">‹</button>
+        <button class="vp-back" id="vp-back">&#8249;</button>
         <span class="vp-viewer-title" id="vp-viewer-title"></span>
-        <button class="vp-edit-btn" id="vp-edit-btn" title="Edit note">✎</button>
-        <button class="vp-edit-btn vp-save" id="vp-save-btn" title="Save" style="display:none">✓ Save</button>
-        <button class="vp-edit-btn vp-cancel" id="vp-cancel-edit-btn" title="Cancel" style="display:none">✕</button>
+        <button class="vp-edit-btn" id="vp-edit-btn" title="Edit note">&#9998;</button>
+        <button class="vp-edit-btn vp-save" id="vp-save-btn" title="Save" style="display:none">&#10003; Save</button>
+        <button class="vp-edit-btn vp-cancel" id="vp-cancel-edit-btn" title="Cancel" style="display:none">&#10005;</button>
       </div>
       <div class="vp-viewer-content" id="vp-viewer-content"></div>
       <textarea class="vp-viewer-edit" id="vp-viewer-edit" style="display:none"></textarea>
     </div>
     <div id="vp-create">
       <div class="vp-viewer-hdr">
-        <button class="vp-back" id="vp-create-back">‹</button>
+        <button class="vp-back" id="vp-create-back">&#8249;</button>
         <span class="vp-viewer-title" id="vp-create-title">New Note</span>
       </div>
       <div class="vp-create-list" id="vp-create-list"></div>
@@ -768,38 +657,36 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
     </div>
   </div>
 </div>
-<!-- VAULT CHAT PANEL -->
 <div id="vaultchat-panel" style="position:fixed;top:64px;left:460px;width:420px;height:520px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:320px;min-height:300px">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--border);cursor:move;user-select:none;border-radius:14px 14px 0 0;flex-shrink:0">
+  <div id="vc-hdr" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--border);cursor:move;user-select:none;border-radius:14px 14px 0 0;flex-shrink:0">
     <div style="display:flex;align-items:center;gap:7px">
-      <span style="font-size:14px">🧠</span>
+      <span style="font-size:14px">&#129504;</span>
       <span style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase">Vault Chat</span>
       <span style="font-family:var(--mono);font-size:9px;color:var(--accent)" id="vc-status"></span>
     </div>
     <div style="display:flex;gap:6px;align-items:center">
       <button id="vc-clear-btn" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;font-family:var(--mono);font-size:10px;padding:2px 8px;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">Clear</button>
-      <button onclick="VAULTCHAT.hidePanel()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0 2px;line-height:1">×</button>
+      <button onclick="VAULTCHAT.hidePanel()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0 2px;line-height:1">&#215;</button>
     </div>
   </div>
   <div id="vc-messages" style="flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-height:0">
     <div class="vc-welcome" id="vc-welcome" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:24px;flex:1">
-      <div style="font-size:32px;opacity:.15">🧠</div>
+      <div style="font-size:32px;opacity:.15">&#129504;</div>
       <div style="font-family:var(--mono);font-size:12px;color:var(--text)">Vault Chat</div>
       <div style="font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.8;max-width:280px">Ask anything about your notes. I'll find the most relevant ones and answer from your own knowledge.</div>
     </div>
   </div>
   <div style="padding:4px 14px 6px;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-shrink:0">
     <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Mode:</span>
-    <button id="vc-mode-smart" class="vc-mode-pill vc-mode-active" onclick="VAULTCHAT&&VAULTCHAT.init&&void 0">🧠 Smart</button>
-    <button id="vc-mode-broad" class="vc-mode-pill">🌐 Broad</button>
-    <button id="vc-mode-exact" class="vc-mode-pill">🎯 Exact</button>
+    <button id="vc-mode-smart" class="vc-mode-pill vc-mode-active">&#129504; Smart</button>
+    <button id="vc-mode-broad" class="vc-mode-pill">&#127760; Broad</button>
+    <button id="vc-mode-exact" class="vc-mode-pill">&#127919; Exact</button>
   </div>
   <div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-shrink:0;background:rgba(22,22,25,.97);border-radius:0 0 14px 14px">
-    <textarea id="vc-input" placeholder="Ask anything about your vault…" rows="1" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:12px;color:var(--text);outline:none;resize:none;max-height:100px;line-height:1.5;transition:border-color .2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
-    <button id="vc-send-btn" style="background:var(--accent);border:none;border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;flex-shrink:0;color:#fff">↑</button>
+    <textarea id="vc-input" placeholder="Ask anything about your vault&hellip;" rows="1" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:12px;color:var(--text);outline:none;resize:none;max-height:100px;line-height:1.5;transition:border-color .2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+    <button id="vc-send-btn" style="background:var(--accent);border:none;border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;flex-shrink:0;color:#fff">&#8593;</button>
   </div>
 </div>
-<!-- CONFIRM POPUP -->
 <div class="fp" id="confirm-popup" style="border-radius:10px">
   <div id="confirm-popup-text"></div>
   <div id="confirm-popup-btns">
@@ -807,23 +694,19 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
     <button class="primary" id="confirm-yes">Yes, save it</button>
   </div>
 </div>
-
-<!-- STATUS BAR -->
 <div id="status-bar">
   <span class="sb-pill standby" id="sb-mode">standby</span>
-  <span class="sb-txt" id="sb-txt">HUD ready — connect vault or say "Baker" to begin</span>
+  <span class="sb-txt" id="sb-txt">HUD ready &mdash; connect vault or say "Baker" to begin</span>
 </div>
-
-<!-- SETTINGS MODAL -->
 <div class="overlay" id="overlay" onclick="closeIfOutside(event)">
   <div class="modal">
-    <div class="modal-title">⚙ Settings</div>
+    <div class="modal-title">&#9881; Settings</div>
     <div class="modal-sub">Stored only in this browser. Never leaves your device.</div>
     <div class="field">
       <label>Anthropic API Key</label>
       <div class="key-wrap">
         <input type="password" id="key-input" placeholder="sk-ant-...">
-        <button class="show-btn" onclick="toggleShow()">👁</button>
+        <button class="show-btn" onclick="toggleShow()">&#128065;</button>
       </div>
     </div>
     <div class="field">
@@ -831,25 +714,21 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
       <div class="toggle-row">
         <div>
           <div class="toggle-desc">Baker searches the web for real-time results.</div>
-          <div class="toggle-cost">⚡ High API cost — disabled by default</div>
+          <div class="toggle-cost">&#9889; High API cost &mdash; disabled by default</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
           <span class="toggle-lbl" id="search-lbl">OFF</span>
-          <label class="toggle">
-            <input type="checkbox" id="search-toggle" onchange="updateSearchToggle()">
-            <div class="toggle-track"></div>
-            <div class="toggle-thumb"></div>
-          </label>
+          <label class="toggle"><input type="checkbox" id="search-toggle" onchange="updateSearchToggle()"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
         </div>
       </div>
     </div>
     <div class="field">
       <label>Conversation Effort</label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:2px">
-        <button class="depth-btn" id="effort-deep" onclick="setEffort('deep')">🔬 Deep</button>
-        <button class="depth-btn" id="effort-standard" onclick="setEffort('standard')">💬 Standard</button>
-        <button class="depth-btn" id="effort-quick" onclick="setEffort('quick')">⚡ Quick</button>
-        <button class="depth-btn" id="effort-minimal" onclick="setEffort('minimal')">🔹 Minimal</button>
+        <button class="depth-btn" id="effort-deep" onclick="setEffort('deep')">&#128302; Deep</button>
+        <button class="depth-btn" id="effort-standard" onclick="setEffort('standard')">&#128172; Standard</button>
+        <button class="depth-btn" id="effort-quick" onclick="setEffort('quick')">&#9889; Quick</button>
+        <button class="depth-btn" id="effort-minimal" onclick="setEffort('minimal')">&#128312; Minimal</button>
       </div>
     </div>
     <div class="field">
@@ -875,7 +754,7 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
         Add <code style="color:var(--accent)">https://big-burr.github.io/BAKER/hud.html</code> as a Redirect URI.
       </div>
     </div>
-    <div class="modal-note">Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key.</div>
+    <div class="modal-note">Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> &rarr; API Keys &rarr; Create Key.</div>
     <div class="modal-actions">
       <button class="cancel-btn" onclick="closeSettings()">Cancel</button>
       <button class="clear-btn" onclick="clearKey()">Clear key</button>
@@ -883,11 +762,7 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
     </div>
   </div>
 </div>
-
 <script>
-// ═══════════════════════════════════════════════════════════
-// ORB — WebGL 30 FPS
-// ═══════════════════════════════════════════════════════════
 (function(){
 var canvas=document.getElementById('orb-canvas');
 var gl=canvas&&canvas.getContext('webgl');
@@ -918,37 +793,8 @@ var start=performance.now(),FPS_INTERVAL=1000/30,lastFrame=0,lastW=0,lastH=0;
 function draw(now){requestAnimationFrame(draw);if(now-lastFrame<FPS_INTERVAL)return;lastFrame=now;var cW=canvas.offsetWidth,cH=canvas.offsetHeight;if(cW!==lastW||cH!==lastH){W=canvas.width=cW;H=canvas.height=cH;resizeFBO(orbA);resizeFBO(orbB);resizeFBO(compFBO);lastW=cW;lastH=cH;}if(!W||!H)return;var t=(now-start)/1000,s=window.orbState||'idle',a=0;if(s==='listening'){a=getMicLevel();if(a<0.02)a=0.04+0.03*Math.abs(Math.sin(t*2.1));}else if(s==='speaking'){a=0.12+0.10*Math.abs(Math.sin(t*4.5))+0.06*Math.abs(Math.sin(t*7.3));}else if(s==='thinking'){a=0.06+0.04*Math.abs(Math.sin(t*3.0));}else{a=0.03+0.02*Math.abs(Math.sin(t*1.3));}audioLevel=audioLevel*0.75+a*0.25;var spd=s==='thinking'?3.0:s==='speaking'?1.8:s==='listening'?1.2:0.5;gl.useProgram(orbProg);bindQ(orbProg);gl.bindFramebuffer(gl.FRAMEBUFFER,orbB.fb);gl.viewport(0,0,W,H);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,orbA.tex);gl.uniform1i(oU.C0,0);gl.uniform2f(oU.R,W,H);gl.uniform1f(oU.T,t);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);var tmp=orbA;orbA=orbB;orbB=tmp;gl.useProgram(compProg);bindQ(compProg);gl.bindFramebuffer(gl.FRAMEBUFFER,compFBO.fb);gl.viewport(0,0,W,H);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,orbA.tex);gl.uniform1i(cU.C0,0);gl.uniform2f(cU.R,W,H);gl.uniform1f(cU.T,t);gl.uniform1f(cU.AU,audioLevel);gl.uniform1f(cU.SPD,spd);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);gl.useProgram(blitProg);bindQ(blitProg);gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,W,H);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,compFBO.tex);gl.uniform1i(bU.uT,0);gl.uniform2f(bU.R,W,H);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);}
 requestAnimationFrame(draw);
 })();
-
-function setOrbState(s){
-  window.orbState=s;
-  var dot=document.getElementById('nav-dot');
-  var pill=document.getElementById('sb-mode');
-  var panel=document.getElementById('orb-panel');
-  dot.className='status-dot '+s;
-  pill.textContent=s;pill.className='sb-pill '+s;
-  panel.className='fp'+(s==='listening'?' listening':'');
-  document.getElementById('nav-status-txt').textContent=s;
-}
-
-// ═══════════════════════════════════════════════════════════
-// DRAGGABLE PANELS
-// ═══════════════════════════════════════════════════════════
-function makeWindowBehavior(panelEl,hdrEl,opts){
-  opts=opts||{};var MIN_W=opts.minW||180;var MIN_H=opts.minH||80;var NAV_H=44;
-  function normalise(){if(panelEl.offsetParent===null&&panelEl.style.display==='none')return;var r=panelEl.getBoundingClientRect();if(!r.width||!r.height)return;panelEl.style.left=r.left+'px';panelEl.style.top=r.top+'px';panelEl.style.bottom='auto';panelEl.style.right='auto';panelEl.style.width=r.width+'px';panelEl.style.height=r.height+'px';}
-  if(panelEl.style.display!=='none')normalise();
-  panelEl._wbNormalise=normalise;
-  ['nw','n','ne','e','se','s','sw','w'].forEach(function(dir){var h=document.createElement('div');h.className='rh rh-'+dir;h.dataset.dir=dir;panelEl.appendChild(h);});
-  var dragging=false,dox=0,doy=0;
-  hdrEl.addEventListener('mousedown',function(e){if(e.button!==0)return;if(e.target.closest('.fp-btns,.spp-close,.spp-tabs,.spp-tab'))return;e.preventDefault();normalise();dragging=true;var r=panelEl.getBoundingClientRect();dox=e.clientX-r.left;doy=e.clientY-r.top;panelEl.style.transition='none';bringToFront(panelEl);document.addEventListener('mousemove',onDragMove);document.addEventListener('mouseup',onDragUp);});
-  function onDragMove(e){if(!dragging)return;var x=e.clientX-dox;var y=e.clientY-doy;x=Math.max(0,Math.min(window.innerWidth-panelEl.offsetWidth,x));y=Math.max(NAV_H,Math.min(window.innerHeight-panelEl.offsetHeight-30,y));panelEl.style.left=x+'px';panelEl.style.top=y+'px';}
-  function onDragUp(){dragging=false;panelEl.style.transition='';document.removeEventListener('mousemove',onDragMove);document.removeEventListener('mouseup',onDragUp);}
-  var resizing=false,rdir='',rsx=0,rsy=0,rx=0,ry=0,rw=0,rh=0;
-  panelEl.addEventListener('mousedown',function(e){var handle=e.target.closest('.rh');if(!handle)return;if(e.button!==0)return;e.preventDefault();e.stopPropagation();normalise();resizing=true;rdir=handle.dataset.dir;rsx=e.clientX;rsy=e.clientY;var r=panelEl.getBoundingClientRect();rx=r.left;ry=r.top;rw=r.width;rh=r.height;panelEl.style.transition='none';bringToFront(panelEl);document.addEventListener('mousemove',onResizeMove);document.addEventListener('mouseup',onResizeUp);});
-  function onResizeMove(e){if(!resizing)return;var dx=e.clientX-rsx;var dy=e.clientY-rsy;var nx=rx,ny=ry,nw=rw,nh=rh;if(rdir.includes('e'))nw=Math.max(MIN_W,rw+dx);if(rdir.includes('w')){nw=Math.max(MIN_W,rw-dx);nx=rx+rw-nw;}if(rdir.includes('s'))nh=Math.max(MIN_H,rh+dy);if(rdir.includes('n')){nh=Math.max(MIN_H,rh-dy);ny=ry+rh-nh;}nx=Math.max(0,Math.min(window.innerWidth-MIN_W,nx));ny=Math.max(NAV_H,Math.min(window.innerHeight-MIN_H-30,ny));panelEl.style.left=nx+'px';panelEl.style.top=ny+'px';panelEl.style.width=nw+'px';panelEl.style.height=nh+'px';}
-  function onResizeUp(){resizing=false;panelEl.style.transition='';document.removeEventListener('mousemove',onResizeMove);document.removeEventListener('mouseup',onResizeUp);}
-  panelEl.addEventListener('mousedown',function(e){if(!e.target.closest('.rh'))bringToFront(panelEl);});
-}
+function setOrbState(s){window.orbState=s;var dot=document.getElementById('nav-dot');var pill=document.getElementById('sb-mode');var panel=document.getElementById('orb-panel');dot.className='status-dot '+s;pill.textContent=s;pill.className='sb-pill '+s;panel.className='fp'+(s==='listening'?' listening':'');document.getElementById('nav-status-txt').textContent=s;}
+function makeWindowBehavior(panelEl,hdrEl,opts){opts=opts||{};var MIN_W=opts.minW||180;var MIN_H=opts.minH||80;var NAV_H=44;function normalise(){if(panelEl.offsetParent===null&&panelEl.style.display==='none')return;var r=panelEl.getBoundingClientRect();if(!r.width||!r.height)return;panelEl.style.left=r.left+'px';panelEl.style.top=r.top+'px';panelEl.style.bottom='auto';panelEl.style.right='auto';panelEl.style.width=r.width+'px';panelEl.style.height=r.height+'px';}if(panelEl.style.display!=='none')normalise();panelEl._wbNormalise=normalise;['nw','n','ne','e','se','s','sw','w'].forEach(function(dir){var h=document.createElement('div');h.className='rh rh-'+dir;h.dataset.dir=dir;panelEl.appendChild(h);});var dragging=false,dox=0,doy=0;hdrEl.addEventListener('mousedown',function(e){if(e.button!==0)return;if(e.target.closest('.fp-btns,.spp-close,.spp-tabs,.spp-tab'))return;e.preventDefault();normalise();dragging=true;var r=panelEl.getBoundingClientRect();dox=e.clientX-r.left;doy=e.clientY-r.top;panelEl.style.transition='none';bringToFront(panelEl);document.addEventListener('mousemove',onDragMove);document.addEventListener('mouseup',onDragUp);});function onDragMove(e){if(!dragging)return;var x=e.clientX-dox;var y=e.clientY-doy;x=Math.max(0,Math.min(window.innerWidth-panelEl.offsetWidth,x));y=Math.max(NAV_H,Math.min(window.innerHeight-panelEl.offsetHeight-30,y));panelEl.style.left=x+'px';panelEl.style.top=y+'px';}function onDragUp(){dragging=false;panelEl.style.transition='';document.removeEventListener('mousemove',onDragMove);document.removeEventListener('mouseup',onDragUp);}var resizing=false,rdir='',rsx=0,rsy=0,rx=0,ry=0,rw=0,rh=0;panelEl.addEventListener('mousedown',function(e){var handle=e.target.closest('.rh');if(!handle)return;if(e.button!==0)return;e.preventDefault();e.stopPropagation();normalise();resizing=true;rdir=handle.dataset.dir;rsx=e.clientX;rsy=e.clientY;var r=panelEl.getBoundingClientRect();rx=r.left;ry=r.top;rw=r.width;rh=r.height;panelEl.style.transition='none';bringToFront(panelEl);document.addEventListener('mousemove',onResizeMove);document.addEventListener('mouseup',onResizeUp);});function onResizeMove(e){if(!resizing)return;var dx=e.clientX-rsx;var dy=e.clientY-rsy;var nx=rx,ny=ry,nw=rw,nh=rh;if(rdir.includes('e'))nw=Math.max(MIN_W,rw+dx);if(rdir.includes('w')){nw=Math.max(MIN_W,rw-dx);nx=rx+rw-nw;}if(rdir.includes('s'))nh=Math.max(MIN_H,rh+dy);if(rdir.includes('n')){nh=Math.max(MIN_H,rh-dy);ny=ry+rh-nh;}nx=Math.max(0,Math.min(window.innerWidth-MIN_W,nx));ny=Math.max(NAV_H,Math.min(window.innerHeight-MIN_H-30,ny));panelEl.style.left=nx+'px';panelEl.style.top=ny+'px';panelEl.style.width=nw+'px';panelEl.style.height=nh+'px';}function onResizeUp(){resizing=false;panelEl.style.transition='';document.removeEventListener('mousemove',onResizeMove);document.removeEventListener('mouseup',onResizeUp);}panelEl.addEventListener('mousedown',function(e){if(!e.target.closest('.rh'))bringToFront(panelEl);});}
 var _zTop=30;
 function bringToFront(el){el.style.zIndex=++_zTop;}
 function makeDraggable(panelId,hdrId){var p=document.getElementById(panelId);var h=document.getElementById(hdrId);if(p&&h)makeWindowBehavior(p,h);}
@@ -959,22 +805,13 @@ function openPanel(id){var p=document.getElementById(id);p.style.display='flex';
 <script src="js/vault-graph.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════
-// VAULT GRAPH SETTINGS — GraphSettings includes treeMode + clusterMode
+// VAULT GRAPH SETTINGS
 // ═══════════════════════════════════════════════════════════
 var GraphSettings={
   typeFilter:{conversation:true,project:true,lecture:true,daily:true,general:true},
-  linkDistance:90,
-  repulsion:100,
-  sizeByConnections:false,
-  showLabels:false,
-  searchQuery:'',
-  nodeSizeScale:1,
-  graphArea:1,
- treeMode:false,
-  clusterMode:false,
-  gridMode:false,
-  yggdrasilMode:false,
-  nodeBrightness:1.0
+  linkDistance:90,repulsion:100,sizeByConnections:false,showLabels:false,
+  searchQuery:'',nodeSizeScale:1,graphArea:1,
+  treeMode:false,clusterMode:false,gridMode:false,yggdrasilMode:false,nodeBrightness:1.0
 };
 var DEFAULT_GRAPH_SETTINGS=JSON.parse(JSON.stringify(GraphSettings));
 
@@ -989,8 +826,15 @@ async function getStoredHandle(){try{var db=await openDB();return new Promise(fu
 async function clearHandle(){try{var db=await openDB();db.transaction('handles','readwrite').objectStore('handles').delete('vault');}catch(e){}}
 async function tryReconnectVault(){var stored=await getStoredHandle();if(!stored)return;setVaultBtn('scanning');try{var perm=await stored.requestPermission({mode:'readwrite'});if(perm==='granted'){await doConnect(stored);}else{await clearHandle();setVaultBtn('off');}}catch(e){await clearHandle();setVaultBtn('off');}}
 async function handleVaultBtn(){if(!hasFS){alert('Requires Chrome on desktop.');return;}if(vaultConnected){vaultHandle=null;vaultIndex=[];vaultConnected=false;graphNodes=[];graphEdges=[];setVaultBtn('off');document.getElementById('graph-overlay').classList.remove('hidden');document.getElementById('graph-stats').style.display='none';if(graphAnim){cancelAnimationFrame(graphAnim);graphAnim=null;}var ctx=document.getElementById('vault-graph-canvas').getContext('2d');ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);}else{try{var handle=await window.showDirectoryPicker({mode:'readwrite'});await doConnect(handle);}catch(e){if(e.name!=='AbortError')alert('Failed: '+e.message);}}}
-async function doConnect(handle){vaultHandle=handle;await storeHandle(handle);setVaultBtn('scanning');vaultIndex=[];await scanDir(handle,'');vaultConnected=true;setVaultBtn('on');buildGraph();setStatus('Vault connected — '+vaultIndex.length+' notes loaded');if(typeof CAL!=='undefined')CAL.onVaultConnected();if(typeof VAULTUI!=='undefined')VAULTUI.refresh();}
+async function doConnect(handle){
+  vaultHandle=handle;await storeHandle(handle);setVaultBtn('scanning');
+  vaultIndex=[];await scanDir(handle,'');
+  vaultConnected=true;setVaultBtn('on');buildGraph();
+  setStatus('Vault connected — '+vaultIndex.length+' notes loaded');
+  if(typeof CAL!=='undefined')CAL.onVaultConnected();
+  if(typeof VAULTUI!=='undefined')VAULTUI.refresh();
   if(typeof VAULTCHAT!=='undefined')VAULTCHAT.onVaultReady();
+}
 function setVaultBtn(s){var b=document.getElementById('vault-btn');b.className='hbtn'+(s==='on'?' on':'');b.textContent=s==='on'?'⬡ Vault on':s==='scanning'?'⟳ Scanning...':'⬡ Connect Vault';}
 async function scanDir(dir,path){try{for await(var entry of dir.values()){if(entry.name.startsWith('.'))continue;if(entry.kind==='file'&&entry.name.endsWith('.md')){try{var f=await entry.getFile();var content=await f.text();vaultIndex.push({name:entry.name,path:path?path+'/'+entry.name:entry.name,content:content,mtime:f.lastModified});}catch(e){}}else if(entry.kind==='directory'){await scanDir(entry,path?path+'/'+entry.name:entry.name);}}}catch(e){}}
 
@@ -1044,9 +888,38 @@ async function sendToConversation(txt,key){conversationHistory.push({role:'user'
 // ═══════════════════════════════════════════════════════════
 // COMMAND PROCESSING
 // ═══════════════════════════════════════════════════════════
+async function processCommand(txt){
+  var key=localStorage.getItem('baker_api_key');
+  if(!key){speakResponse('No API key set, sir. Please open Settings.');return;}
+  var lower=txt.toLowerCase().trim();
+  if(conversationMode&&CONVO_EXIT_PHRASES.test(lower)){endConversationMode('Goodbye, sir.');return;}
+  if(conversationMode&&CONVO_SAVE_PHRASES.test(lower)){setOrbState('thinking');var saved=await saveConversationToVault();setOrbState('idle');if(saved){speakResponse('Saved to today\'s daily log, sir.');}else{speakResponse('I couldn\'t save that — your vault isn\'t connected, sir.');}return;}
+  if(conversationMode){setOrbState('thinking');await sendToConversation(txt,key);return;}
+  if(/\b(let'?s (talk|chat)|start a conversation|talk to me|i (want|need) to talk|have a conversation)\b/.test(lower)){startConversationMode();speakResponse('Of course, sir. What\'s on your mind?');return;}
+  if(/\b(open|go to|pull up|show)\b.*\bsettings\b/.test(lower)||lower==='settings'){openSettings();speakResponse('Opening settings, sir.');return;}
+  if(/\b(open|go to|pull up|show|launch)\b.*\b(tools|index|dashboard)\b/.test(lower)){showWidget('url','⊞ Tools','index.html','⊞');speakResponse('Opening tools, sir.');return;}
+  if(/\b(open|go to|switch to)\b.*\b(conversation page|chat page)\b/.test(lower)){window.location.href='conversation.html';return;}
+  if(/\b(open|pull up|show|launch|let'?s (open|use|check))\b.*\b(spotify|music)\b/.test(lower)&&!/\bplay\b/.test(lower)){SP.showPanel();speakResponse('Opening Spotify, sir.');return;}
   var vcResult=VAULTCHAT.handleVoice(txt);
-if(vcResult!==null){speakResponse(vcResult);return;}
-async function processCommand(txt){var key=localStorage.getItem('baker_api_key');if(!key){speakResponse('No API key set, sir. Please open Settings.');return;}var lower=txt.toLowerCase().trim();if(conversationMode&&CONVO_EXIT_PHRASES.test(lower)){endConversationMode('Goodbye, sir.');return;}if(conversationMode&&CONVO_SAVE_PHRASES.test(lower)){setOrbState('thinking');var saved=await saveConversationToVault();setOrbState('idle');if(saved){speakResponse('Saved to today\'s daily log, sir.');}else{speakResponse('I couldn\'t save that — your vault isn\'t connected, sir.');}return;}if(conversationMode){setOrbState('thinking');await sendToConversation(txt,key);return;}if(/\b(let'?s (talk|chat)|start a conversation|talk to me|i (want|need) to talk|have a conversation)\b/.test(lower)){startConversationMode();speakResponse('Of course, sir. What\'s on your mind?');return;}if(/\b(open|go to|pull up|show)\b.*\bsettings\b/.test(lower)||lower==='settings'){openSettings();speakResponse('Opening settings, sir.');return;}if(/\b(open|go to|pull up|show|launch)\b.*\b(tools|index|dashboard)\b/.test(lower)){showWidget('url','⊞ Tools','index.html','⊞');speakResponse('Opening tools, sir.');return;}if(/\b(open|go to|switch to)\b.*\b(conversation page|chat page)\b/.test(lower)){window.location.href='conversation.html';return;}if(/\b(open|pull up|show|launch|let'?s (open|use|check))\b.*\b(spotify|music)\b/.test(lower)&&!/\bplay\b/.test(lower)){SP.showPanel();speakResponse('Opening Spotify, sir.');return;}var spResult=await SP.handleVoice(txt);if(spResult!==null){speakResponse(spResult);return;}var calResult=await CAL.handleVoice(txt);if(calResult!==null){speakResponse(calResult);return;}var mcalResult=MCAL.handleVoice(txt);if(mcalResult!==null){speakResponse(mcalResult);return;}var vaultResult=VAULTUI.handleVoice(txt);if(vaultResult!==null){speakResponse(vaultResult);return;}var graphUIResult=GRAPHUI.handleVoice(txt);if(graphUIResult!==null){speakResponse(graphUIResult);return;}if(/\b(open|pull up|show|launch|let'?s (open|use|check))\b.*\bmap\b/.test(lower)&&!/\b(fly to|directions to|route to|on (the )?map)\b/.test(lower)){showWidget('url','🗺 Map','map.html','🗺');speakResponse('Opening map, sir.');return;}var flyM=lower.match(/(?:fly to|zoom to|navigate to|pull up|show me)\s+(.+?)(?:\s+on (?:the )?map)?$/);if(flyM&&(lower.includes('fly to')||lower.includes('zoom to')||lower.includes('on the map')||lower.includes('on map'))){var mapQ=flyM[1].replace(/\s+on\s+(the\s+)?map\s*$/i,'').trim();showWidget('url','🗺 Map','map.html','🗺');mapCmd({cmd:'flyTo',query:mapQ});speakResponse('Flying to '+mapQ+', sir.');return;}var dirM=lower.match(/(?:directions to|get directions to|route to|take me to|how do i get to|navigate me to|guide me to)\s+(.+)/);if(dirM){var dirQ=dirM[1].trim();showWidget('url','🗺 Map','map.html','🗺');mapCmd({cmd:'directionsTo',query:dirQ});speakResponse('Routing to '+dirQ+', sir.');return;}if(lower.includes('where am i')||lower.includes('my location')||lower.includes('locate me')||lower.includes('find my location')){showWidget('url','🗺 Map','map.html','🗺');mapCmd({cmd:'locate'});speakResponse('Locating you, sir.');return;}if(lower.includes('clear route')||lower.includes('clear map')){mapCmd({cmd:'clearRoute'});speakResponse('Route cleared, sir.');return;}if(lower.match(/^(?:open|go to|navigate to|show)\s+https?:\/\//)){var urlMatch=txt.match(/https?:\/\/\S+/);if(urlMatch){showWidget('url','🔗 '+urlMatch[0],urlMatch[0],'🔗');speakResponse('Opening page, sir.');return;}}if(lower.includes('datasheet')||lower.includes('find datasheet')){var query=txt.replace(/find datasheet|datasheet for|datasheet/gi,'').trim();await findAndShowDatasheet(query,key);return;}if(lower.startsWith('show note')||lower.startsWith('text note')){var noteText=txt.replace(/^show note|^text note/i,'').trim();showWidget('text','📝 Note',noteText,'📝');speakResponse('Displaying note, sir.');return;}if(lower==='close'||lower==='back to graph'||lower==='close panel'){closePanel('widget-panel');SP.hidePanel();speakResponse('Closing, sir.');return;}await sendToBAKER(txt,key);}
+  if(vcResult!==null){speakResponse(vcResult);return;}
+  var spResult=await SP.handleVoice(txt);if(spResult!==null){speakResponse(spResult);return;}
+  var calResult=await CAL.handleVoice(txt);if(calResult!==null){speakResponse(calResult);return;}
+  var mcalResult=MCAL.handleVoice(txt);if(mcalResult!==null){speakResponse(mcalResult);return;}
+  var vaultResult=VAULTUI.handleVoice(txt);if(vaultResult!==null){speakResponse(vaultResult);return;}
+  var graphUIResult=GRAPHUI.handleVoice(txt);if(graphUIResult!==null){speakResponse(graphUIResult);return;}
+  if(/\b(open|pull up|show|launch|let'?s (open|use|check))\b.*\bmap\b/.test(lower)&&!/\b(fly to|directions to|route to|on (the )?map)\b/.test(lower)){showWidget('url','🗺 Map','map.html','🗺');speakResponse('Opening map, sir.');return;}
+  var flyM=lower.match(/(?:fly to|zoom to|navigate to|pull up|show me)\s+(.+?)(?:\s+on (?:the )?map)?$/);
+  if(flyM&&(lower.includes('fly to')||lower.includes('zoom to')||lower.includes('on the map')||lower.includes('on map'))){var mapQ=flyM[1].replace(/\s+on\s+(the\s+)?map\s*$/i,'').trim();showWidget('url','🗺 Map','map.html','🗺');mapCmd({cmd:'flyTo',query:mapQ});speakResponse('Flying to '+mapQ+', sir.');return;}
+  var dirM=lower.match(/(?:directions to|get directions to|route to|take me to|how do i get to|navigate me to|guide me to)\s+(.+)/);
+  if(dirM){var dirQ=dirM[1].trim();showWidget('url','🗺 Map','map.html','🗺');mapCmd({cmd:'directionsTo',query:dirQ});speakResponse('Routing to '+dirQ+', sir.');return;}
+  if(lower.includes('where am i')||lower.includes('my location')||lower.includes('locate me')||lower.includes('find my location')){showWidget('url','🗺 Map','map.html','🗺');mapCmd({cmd:'locate'});speakResponse('Locating you, sir.');return;}
+  if(lower.includes('clear route')||lower.includes('clear map')){mapCmd({cmd:'clearRoute'});speakResponse('Route cleared, sir.');return;}
+  if(lower.match(/^(?:open|go to|navigate to|show)\s+https?:\/\//)){var urlMatch=txt.match(/https?:\/\/\S+/);if(urlMatch){showWidget('url','🔗 '+urlMatch[0],urlMatch[0],'🔗');speakResponse('Opening page, sir.');return;}}
+  if(lower.includes('datasheet')||lower.includes('find datasheet')){var query=txt.replace(/find datasheet|datasheet for|datasheet/gi,'').trim();await findAndShowDatasheet(query,key);return;}
+  if(lower.startsWith('show note')||lower.startsWith('text note')){var noteText=txt.replace(/^show note|^text note/i,'').trim();showWidget('text','📝 Note',noteText,'📝');speakResponse('Displaying note, sir.');return;}
+  if(lower==='close'||lower==='back to graph'||lower==='close panel'){closePanel('widget-panel');SP.hidePanel();speakResponse('Closing, sir.');return;}
+  await sendToBAKER(txt,key);
+}
 
 // ═══════════════════════════════════════════════════════════
 // WIDGET SYSTEM
@@ -1081,14 +954,12 @@ function toggleWebSearch(){var b=document.getElementById('web-search-btn');var o
 function updateSearchToggle(){var on=document.getElementById('search-toggle').checked;localStorage.setItem('baker_web_search',on);document.getElementById('search-lbl').textContent=on?'ON':'OFF';var b=document.getElementById('web-search-btn');b.className='hbtn'+(on?' on':'');b.textContent=(on?'🌐 Web ✓':'🌐 Web');}
 function setEffort(e,noSave){if(!noSave)localStorage.setItem('baker_effort',e);['deep','standard','quick','minimal'].forEach(function(x){document.getElementById('effort-'+x).classList.toggle('active',x===e);});}
 document.getElementById('speech-rate-slider').addEventListener('input',function(){var v=parseInt(this.value);document.getElementById('speech-rate-display').textContent=v;speechRate=v/100;localStorage.setItem('baker_speech_rate',speechRate);});
+
 </script>
 <script src="js/spotify.js"></script>
 <script src="js/calendar.js"></script>
 <script src="js/vault-ui.js"></script>
 <script>
-// ═══════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════
 makeDraggable('orb-panel','orb-panel-hdr');
 makeDraggable('note-panel','note-panel-hdr');
 makeDraggable('widget-panel','widget-panel-hdr');
@@ -1099,9 +970,9 @@ makeWindowBehavior(document.getElementById('month-panel'),document.getElementByI
 MCAL.init();
 makeWindowBehavior(document.getElementById('vault-panel'),document.getElementById('vault-panel').querySelector('.vp-hdr'),{minW:300,minH:300});
 VAULTUI.init();
-  makeWindowBehavior(document.getElementById('vaultchat-panel'),document.getElementById('vaultchat-panel').querySelector('div'),{minW:320,minH:300});
+makeWindowBehavior(document.getElementById('vaultchat-panel'),document.getElementById('vaultchat-panel').querySelector('#vc-hdr'),{minW:320,minH:300});
 VAULTCHAT.init();
-makeWindowBehavior(document.getElementById('graphui-panel'),document.getElementById('graphui-panel').querySelector('.gui-hdr'),{minW:260,minH:360});
+makeWindowBehavior(document.getElementById('graphui-panel'),document.getElementById('graphui-panel').querySelector('.gui-hdr'),{minW:260,minH:400});
 GRAPHUI.init();
 (function(){
   var oc=document.getElementById('orb-canvas');var rc=document.getElementById('record-canvas');
@@ -1112,7 +983,7 @@ GRAPHUI.init();
 initGraphCanvas();
 if(speechSynthesis.onvoiceschanged!==undefined)speechSynthesis.onvoiceschanged=loadVoices;
 loadVoices();
-var ws=localStorage.getItem('baker_web_search')==='true';var wsBtn=document.getElementById('web-search-btn');if(ws){wsBtn.className='hbtn on';wsBtn.textContent='🌐 Web ✓';}
+var ws=localStorage.getItem('baker_web_search')==='true';var wsBtn=document.getElementById('web-search-btn');if(ws){wsBtn.className='hbtn on';wsBtn.textContent='Web ON';}
 var savedEffort=localStorage.getItem('baker_effort')||'standard';setEffort(savedEffort,true);
 var savedRate=parseFloat(localStorage.getItem('baker_speech_rate')||'0.92');speechRate=savedRate;
 var pct=Math.round(savedRate*100);document.getElementById('speech-rate-slider').value=pct;document.getElementById('speech-rate-display').textContent=pct;
