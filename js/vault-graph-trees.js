@@ -186,7 +186,7 @@ function _drawPine(ctx,cx,baseY,slotW,treeH,col,foliage){
     var py=baseY-trunkH*0.12-p*trunkH*0.17;
     ctx.beginPath();
     ctx.rect(cx-tw*0.5,py,tw,trunkH*0.12);
-    ctx.fillStyle=col;ctx.globalAlpha*=0.7;ctx.fill();ctx.globalAlpha=1;
+    ctx.fillStyle=col;ctx.fill();
   }
 
   // 6 tiers — graduated spacing, wider gaps at bottom like real pine
@@ -378,7 +378,7 @@ function _drawGinkgo(ctx,cx,baseY,slotW,treeH,col,foliage){
     // Fan leaves clustered at branch tips and along branches
     for(var f=0;f<tier.fans;f++){
       var fx=cx-tier.spread*slotW+(f/(Math.max(tier.fans-1,1)))*tier.spread*slotW*2;
-      var fanR=tier.fanR*slotW*(0.8+Math.random()*0.4);
+      var fanR=tier.fanR*slotW*(0.85+((f*7+i*3)%5)*0.07);
       // Small cluster of 2-3 fans at each position
       drawFanLeaf(fx,tier.y-fanR*0.3,fanR,0);
       if(f===0||f===tier.fans-1){
