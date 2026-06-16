@@ -25,8 +25,9 @@ function spawnBirthParticle(type,targetPath){
   // Find target node by path - may not exist yet, retry for 2s
   var attempts=0;
   function trySpawn(){
-    var node=graphNodes.find(function(n){return n.path===targetPath||n.name===targetPath.split('/').pop();});
-    if(!node&&attempts<20){attempts++;setTimeout(trySpawn,100);return;}
+    var fname=targetPath.split('/').pop();
+    var node=graphNodes.find(function(n){return n.path===targetPath||n.name===fname;});
+    if(!node&&attempts<15){attempts++;setTimeout(trySpawn,150);return;}
     var canvas=document.getElementById('vault-graph-canvas');
     if(!canvas)return;
     var W=canvas.width,H=canvas.height;
@@ -67,7 +68,7 @@ function _tickBirthParticles(dt){
     if(p.elapsed>p.life+0.3)birthParticles.splice(i,1);
   }
 }
-var H_REF=600; // updated each frame
+var H_REF=0; // updated each frame from canvas height
 
 
 // ── Sap flow particle system ──────────────────────────────
@@ -484,7 +485,7 @@ function detectType(path,content){
   if(p.includes('01-projects')||c.includes('type: project'))return'project';
   if(p.includes('lecture')||c.includes('type: lecture'))return'lecture';
   // daily: explicit type tag, daily-log folder, 00-capture with date filename, or YYYY-MM-DD.md anywhere
-  if(c.includes('type: daily')||c.includes('type: daily log'))return'daily';
+  if(c.includes('type: daily')||c.includes('type: daily log')||c.includes('type: daily-log'))return'daily';
   if(p.includes('07-system/daily')||p.includes('daily-log')||p.includes('daily log'))return'daily';
   if(p.includes('00-capture')&&/^\d{4}-\d{2}-\d{2}\.md$/.test(fname))return'daily';
   if(/^\d{4}-\d{2}-\d{2}\.md$/.test(fname))return'daily';
