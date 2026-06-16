@@ -99,3 +99,61 @@ function _drawForest(ctx,W,H){
 
 // ── Species dispatcher ────────────────────────────────────
 // Each species gets its own real-world bark/foliage color blended with type color
+
+// ── Birth Particle Renderer ───────────────────────────────
+function _drawBirthParticles(ctx){
+  if(!birthParticles||!birthParticles.length)return;
+  birthParticles.forEach(function(p){
+    if(p.done&&p.popped){
+      // Landing pop — expanding ring that fades
+      var popT=Math.min((p.elapsed-p.life)/0.3,1);
+      var popR=4+popT*12;
+      ctx.save();
+      ctx.globalAlpha=(1-popT)*0.8;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,popR,0,Math.PI*2);
+      ctx.strokeStyle=p.col;
+      ctx.lineWidth=1.5;
+      ctx.shadowColor=p.col;
+      ctx.shadowBlur=8;
+      ctx.stroke();
+      // Inner dot fades out
+      ctx.globalAlpha=(1-popT)*0.6;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,2,0,Math.PI*2);
+      ctx.fillStyle=p.col;
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
+    // In-flight — bright dot with glow trail
+    // Brightness pulses slightly as it flies
+    var pulse=0.85+0.15*Math.sin(p.elapsed*12);
+    var r=3.5;
+    ctx.save();
+    // Glow
+    ctx.globalAlpha=0.35*pulse;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,r*3,0,Math.PI*2);
+    var grd=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*3);
+    grd.addColorStop(0,p.col);
+    grd.addColorStop(1,p.col+'00');
+    ctx.fillStyle=grd;
+    ctx.fill();
+    // Core dot — brighter than normal nodes
+    ctx.globalAlpha=pulse;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,r,0,Math.PI*2);
+    ctx.fillStyle='#ffffff';
+    ctx.shadowColor=p.col;
+    ctx.shadowBlur=10;
+    ctx.fill();
+    // Colored inner ring
+    ctx.globalAlpha=0.9*pulse;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,r*0.6,0,Math.PI*2);
+    ctx.fillStyle=p.col;
+    ctx.fill();
+    ctx.restore();
+  });
+}
