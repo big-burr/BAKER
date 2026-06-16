@@ -1,4 +1,3 @@
-
 // ═══════════════════════════════════════════════════════════
 // ══  VAULT NOTES BROWSER MODULE (VAULTUI)  ══════════════════
 // ═══════════════════════════════════════════════════════════
@@ -75,6 +74,7 @@ var VAULTUI=(function(){
   // ── Templates ─────────────────────────────────────────────
   var TEMPLATES={
     'daily-log':{
+      type:'daily',
       label:'📆 Daily Log',
       desc:'Today\'s log — top 3, notes, done, tomorrow',
       folder:'00-Capture',
@@ -82,7 +82,7 @@ var VAULTUI=(function(){
       filename:function(){return todayStr()+'.md';},
       body:function(){return '---\n'+
         'date: '+todayStr()+'\n'+
-        'type: daily-log\n'+
+        'type: daily\n'+
         'week: \n'+
         'mood: \n'+
         'energy: \n'+
@@ -102,6 +102,7 @@ var VAULTUI=(function(){
       }
     },
     'lecture':{
+      type:'lecture',
       label:'🎓 Lecture',
       desc:'Lecture recording — raw notes, key points, follow-ups',
       folder:'00-Capture/Lectures',
@@ -137,6 +138,7 @@ var VAULTUI=(function(){
       }
     },
     'project':{
+      type:'project',
       label:'🚀 Project',
       desc:'New project — goal, milestones, tasks, log',
       folder:'01-Projects',
@@ -735,8 +737,6 @@ var VAULTUI=(function(){
   // ── Smart Note Linking ────────────────────────────────────
   function _suggestLinks(newPath,newContent){
     if(!vaultIndex||vaultIndex.length<2)return;
-    var key=localStorage.getItem('baker_api_key');
-    if(!key)return;
     // Find up to 5 related notes using TF-IDF
     var words=newContent.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(function(w){return w.length>3;});
     if(words.length<3)return;
@@ -817,6 +817,10 @@ var VAULTUI=(function(){
     .then(function(){
       vaultIndex[idx].content=newContent;
       if(typeof setStatus==='function')setStatus('Link added to '+fname);
+      // Refresh viewer if this note is currently open
+      var viewer=document.getElementById('vp-viewer-content');
+      var viewerTitle=document.getElementById('vp-viewer-title');
+      if(viewer&&viewerTitle&&viewerTitle.textContent===fname.replace('.md',''))viewer.textContent=newContent;
     }).catch(function(){});
   }
 
