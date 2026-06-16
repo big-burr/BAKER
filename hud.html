@@ -417,6 +417,29 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
 .vc-mode-active{background:var(--accent);border-color:var(--accent);color:#fff}
 #vc-messages::-webkit-scrollbar{width:3px}
 #vc-messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* ── Daily Brief Panel ── */
+#daily-brief-panel{position:fixed;top:54px;left:50%;transform:translateX(-50%);z-index:500;background:rgba(22,22,25,.97);border:1px solid var(--accent-dim);border-radius:12px;padding:20px 22px;backdrop-filter:blur(24px);box-shadow:0 12px 40px rgba(0,0,0,.7);display:none;flex-direction:column;gap:10px;max-width:480px;width:90%;cursor:move;user-select:none}
+#daily-brief-panel.vis{display:flex}
+.brief-hdr{display:flex;align-items:center;justify-content:space-between}
+.brief-title{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.12em;text-transform:uppercase}
+.brief-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0;line-height:1}
+.brief-close:hover{color:var(--text)}
+.brief-body{font-family:var(--sans);font-size:13px;color:var(--text);line-height:1.8;white-space:pre-wrap}
+.brief-stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:4px}
+.brief-stat{background:rgba(124,106,247,.08);border:1px solid var(--accent-dim);border-radius:6px;padding:5px 10px;font-family:var(--mono);font-size:10px;color:var(--accent)}
+.brief-stat span{color:var(--text);font-size:12px;display:block;margin-top:1px}
+/* ── Vault Health Panel ── */
+#vault-health-panel{position:fixed;bottom:40px;left:260px;z-index:200;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:10px;padding:14px 16px;backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.5);display:none;flex-direction:column;gap:8px;min-width:220px;cursor:move;user-select:none}
+#vault-health-panel.vis{display:flex}
+.vh-title{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
+.vh-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0}
+.vh-close:hover{color:var(--text)}
+.vh-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.vh-label{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.vh-val{font-family:var(--mono);font-size:13px;color:var(--accent);font-weight:500}
+.vh-streak{color:var(--amber)}
+.vh-divider{border:none;border-top:1px solid var(--border);margin:2px 0}
 #vaultchat-panel.vc-vis{display:flex!important}
 </style>
 </head>
@@ -459,6 +482,8 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
     <button class="hbtn" id="vault-notes-btn" onclick="VAULTUI.togglePanel()" title="Vault Notes">&#128194; Notes</button>
     <button class="hbtn" id="vaultchat-nav-btn" onclick="VAULTCHAT.togglePanel()" title="Vault Chat">&#129504; Chat</button>
     <button class="hbtn" id="graphui-nav-btn" onclick="GRAPHUI.togglePanel()" title="Graph Settings">&#128375; Graph</button>
+    <button class="hbtn" id="brief-nav-btn" onclick="requestBrief()">&#9670; Brief</button>
+    <button class="hbtn" id="health-nav-btn" onclick="toggleVaultHealth()">&#9650; Vault</button>
     <button class="hbtn" onclick="openSettings()">&#9881; Settings</button>
   </div>
 </nav>
@@ -688,6 +713,31 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
     <button id="vc-send-btn" style="background:var(--accent);border:none;border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;flex-shrink:0;color:#fff">&#8593;</button>
   </div>
 </div>
+
+<!-- DAILY BRIEF PANEL -->
+<div id="daily-brief-panel">
+  <div class="brief-hdr">
+    <span class="brief-title">&#9670; Daily Brief</span>
+    <button class="brief-close" onclick="closeBrief()">&#215;</button>
+  </div>
+  <div class="brief-stats" id="brief-stats"></div>
+  <div class="brief-body" id="brief-body">Generating brief...</div>
+</div>
+
+<!-- VAULT HEALTH PANEL -->
+<div id="vault-health-panel">
+  <div class="vh-title">
+    <span>&#9650; Vault Health</span>
+    <button class="vh-close" onclick="toggleVaultHealth()">&#215;</button>
+  </div>
+  <hr class="vh-divider">
+  <div class="vh-row"><span class="vh-label">Total Notes</span><span class="vh-val" id="vh-total">&#8212;</span></div>
+  <div class="vh-row"><span class="vh-label">Daily Logs</span><span class="vh-val" id="vh-daily">&#8212;</span></div>
+  <div class="vh-row"><span class="vh-label">Lectures</span><span class="vh-val" id="vh-lectures">&#8212;</span></div>
+  <hr class="vh-divider">
+  <div class="vh-row"><span class="vh-label">Daily Streak</span><span class="vh-val vh-streak" id="vh-streak">&#8212;</span></div>
+</div>
+
 <div class="fp" id="confirm-popup" style="border-radius:10px">
   <div id="confirm-popup-text"></div>
   <div id="confirm-popup-btns">
@@ -867,22 +917,12 @@ var recordAngle=0,recordImg=null,recordArtUrl='',recordRafId=null,recordLastTime
 var _musicModeDebounce=false;
 function toggleMusicMode(){
   if(_musicModeDebounce)return;
-  _musicModeDebounce=true;
-  setTimeout(function(){_musicModeDebounce=false;},400);
-  if(!SP.isConnected()){
-    if(isSpeaking){stopSpeaking();return;}
-    if(voiceActive){stopVoice();}else{activateListening();}
-    return;
-  }
-  orbMusicMode=!orbMusicMode;
-  _applyMusicMode();
+  _musicModeDebounce=true;setTimeout(function(){_musicModeDebounce=false;},400);
+  if(!SP.isConnected()){if(isSpeaking){stopSpeaking();return;}if(voiceActive){stopVoice();}else{activateListening();}return;}
+  orbMusicMode=!orbMusicMode;_applyMusicMode();
 }
-function _applyMusicMode(){var orbCanvas=document.getElementById('orb-canvas');var recCanvas=document.getElementById('record-canvas');var footNormal=document.getElementById('orb-foot-normal');var footMusic=document.getElementById('orb-foot-music');var panel=document.getElementById('orb-panel');var icon=document.getElementById('orb-mode-icon');var lbl=document.getElementById('orb-panel-label');if(orbMusicMode){orbCanvas.style.display='none';recCanvas.style.display='block';footNormal.style.display='none';footMusic.style.display='block';panel.classList.add('music-mode');icon.textContent='♫';lbl.textContent='Now Playing';
-    // Pause graph sim to free up main thread for record animation
-    if(graphAnim){cancelAnimationFrame(graphAnim);graphAnim=null;}
-    _syncRecordFromState();_startRecordLoop();}else{orbCanvas.style.display='block';recCanvas.style.display='none';footNormal.style.display='block';footMusic.style.display='none';panel.classList.remove('music-mode');icon.textContent='◈';lbl.textContent='BAKER';_stopRecordLoop();
-    // Resume graph sim
-    if(vaultConnected&&graphNodes.length&&!graphAnim)runGraphSim();}}
+function _applyMusicMode(){var orbCanvas=document.getElementById('orb-canvas');var recCanvas=document.getElementById('record-canvas');var footNormal=document.getElementById('orb-foot-normal');var footMusic=document.getElementById('orb-foot-music');var panel=document.getElementById('orb-panel');var icon=document.getElementById('orb-mode-icon');var lbl=document.getElementById('orb-panel-label');if(orbMusicMode){orbCanvas.style.display='none';recCanvas.style.display='block';footNormal.style.display='none';footMusic.style.display='block';panel.classList.add('music-mode');icon.textContent='♫';lbl.textContent='Now Playing';_syncRecordFromState();_startRecordLoop();}else{orbCanvas.style.display='block';recCanvas.style.display='none';footNormal.style.display='block';footMusic.style.display='none';panel.classList.remove('music-mode');icon.textContent='◈';lbl.textContent='BAKER';_stopRecordLoop();
+    if(typeof vaultConnected!=='undefined'&&vaultConnected&&typeof graphNodes!=='undefined'&&graphNodes.length&&!graphAnim)runGraphSim();}}
 function _syncRecordFromState(){var state=SP.getCurrentTrack&&SP.getCurrentTrack();if(!state||!state.item)return;var it=state.item;var tn=document.getElementById('orb-track-name');var an=document.getElementById('orb-artist-name');if(tn)tn.textContent=it.name||'';if(an)an.textContent=(it.artists&&it.artists.map(function(a){return a.name;}).join(', '))||'';var pp=document.getElementById('orb-music-pp');if(pp)pp.textContent=state.is_playing?'⏸':'▶';recordSpinning=!!state.is_playing;var artUrl=(it.album&&it.album.images&&(it.album.images[1]||it.album.images[0]))?((it.album.images[1]||it.album.images[0]).url):'';if(artUrl&&artUrl!==recordArtUrl){recordArtUrl=artUrl;recordImg=new Image();recordImg.crossOrigin='anonymous';recordImg.src=artUrl;}}
 function orbMusicSyncState(state){if(!orbMusicMode)return;if(!state||!state.item)return;var it=state.item;var tn=document.getElementById('orb-track-name');var an=document.getElementById('orb-artist-name');if(tn)tn.textContent=it.name||'';if(an)an.textContent=(it.artists&&it.artists.map(function(a){return a.name;}).join(', '))||'';var pp=document.getElementById('orb-music-pp');if(pp)pp.textContent=state.is_playing?'⏸':'▶';recordSpinning=!!state.is_playing;var artUrl=(it.album&&it.album.images&&(it.album.images[1]||it.album.images[0]))?((it.album.images[1]||it.album.images[0]).url):'';if(artUrl&&artUrl!==recordArtUrl){recordArtUrl=artUrl;recordImg=new Image();recordImg.crossOrigin='anonymous';recordImg.src=artUrl;}}
 function orbMusicTogglePlay(){var state=SP.getCurrentTrack&&SP.getCurrentTrack();if(state&&state.is_playing){SP.pause();}else{SP.resume();}recordSpinning=!recordSpinning;var pp=document.getElementById('orb-music-pp');if(pp)pp.textContent=recordSpinning?'⏸':'▶';}
@@ -917,6 +957,8 @@ async function processCommand(txt){
   if(conversationMode&&CONVO_SAVE_PHRASES.test(lower)){setOrbState('thinking');var saved=await saveConversationToVault();setOrbState('idle');if(saved){speakResponse('Saved to today\'s daily log, sir.');}else{speakResponse('I couldn\'t save that — your vault isn\'t connected, sir.');}return;}
   if(conversationMode){setOrbState('thinking');await sendToConversation(txt,key);return;}
   if(/\b(let'?s (talk|chat)|start a conversation|talk to me|i (want|need) to talk|have a conversation)\b/.test(lower)){startConversationMode();speakResponse('Of course, sir. What\'s on your mind?');return;}
+  if(/\b(daily brief|morning brief|briefing|what's my status|vault status)\b/.test(lower)){requestBrief();return;}
+  if(/\b(vault health|vault stats|how many notes|note count)\b/.test(lower)){toggleVaultHealth();speakResponse('Here are your vault stats, sir.');return;}
   if(/\b(open|go to|pull up|show)\b.*\bsettings\b/.test(lower)||lower==='settings'){openSettings();speakResponse('Opening settings, sir.');return;}
   if(/\b(open|go to|pull up|show|launch)\b.*\b(tools|index|dashboard)\b/.test(lower)){showWidget('url','⊞ Tools','index.html','⊞');speakResponse('Opening tools, sir.');return;}
   if(/\b(open|go to|switch to)\b.*\b(conversation page|chat page)\b/.test(lower)){window.location.href='conversation.html';return;}
@@ -926,6 +968,7 @@ async function processCommand(txt){
   var spResult=await SP.handleVoice(txt);if(spResult!==null){speakResponse(spResult);return;}
   var calResult=await CAL.handleVoice(txt);if(calResult!==null){speakResponse(calResult);return;}
   var mcalResult=MCAL.handleVoice(txt);if(mcalResult!==null){speakResponse(mcalResult);return;}
+  var openMatch=lower.match(/(?:open|find|pull up|show me) (?:note|my note)?\s*(?:about|on|called)?\s*(.+)/);if(openMatch){_voiceOpenNote(openMatch[1].trim());return;}
   var vaultResult=VAULTUI.handleVoice(txt);if(vaultResult!==null){speakResponse(vaultResult);return;}
   var graphUIResult=GRAPHUI.handleVoice(txt);if(graphUIResult!==null){speakResponse(graphUIResult);return;}
   if(/\b(open|pull up|show|launch|let'?s (open|use|check))\b.*\bmap\b/.test(lower)&&!/\b(fly to|directions to|route to|on (the )?map)\b/.test(lower)){showWidget('url','🗺 Map','map.html','🗺');speakResponse('Opening map, sir.');return;}
@@ -981,6 +1024,105 @@ document.getElementById('speech-rate-slider').addEventListener('input',function(
 <script src="js/calendar.js"></script>
 <script src="js/vault-ui.js"></script>
 <script>
+// ═══════════════════════════════════════════════════════════
+// DAILY BRIEF + VAULT HEALTH + VOICE OPEN NOTE
+// ═══════════════════════════════════════════════════════════
+var _briefDragging=false,_briefDX=0,_briefDY=0;
+function _initBriefDrag(){
+  var p=document.getElementById('daily-brief-panel');
+  if(!p||p._dragInit)return;p._dragInit=true;
+  p.addEventListener('mousedown',function(e){
+    if(e.target.tagName==='BUTTON')return;
+    _briefDragging=true;var r=p.getBoundingClientRect();
+    _briefDX=e.clientX-r.left;_briefDY=e.clientY-r.top;
+    p.style.transform='none';p.style.left=r.left+'px';p.style.top=r.top+'px';
+    document.addEventListener('mousemove',_onBriefMove);
+    document.addEventListener('mouseup',function(){_briefDragging=false;document.removeEventListener('mousemove',_onBriefMove);},{once:true});
+  });
+}
+function _onBriefMove(e){if(!_briefDragging)return;var p=document.getElementById('daily-brief-panel');p.style.left=(e.clientX-_briefDX)+'px';p.style.top=(e.clientY-_briefDY)+'px';}
+function closeBrief(){var p=document.getElementById('daily-brief-panel');if(p)p.classList.remove('vis');}
+
+function computeVaultStats(){
+  var total=vaultIndex.length;
+  var today=new Date();
+  var todayStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  var dailyNotes=vaultIndex.filter(function(n){return /\d{4}-\d{2}-\d{2}\.md$/.test(n.name);});
+  var lectures=vaultIndex.filter(function(n){
+    return (n.path&&n.path.toLowerCase().includes('lecture'))||(n.content&&n.content.toLowerCase().includes('type: lecture'));
+  });
+  var streak=0;var checkDate=new Date(today);
+  while(streak<365){
+    var ds=checkDate.getFullYear()+'-'+String(checkDate.getMonth()+1).padStart(2,'0')+'-'+String(checkDate.getDate()).padStart(2,'0');
+    if(!dailyNotes.some(function(n){return n.name===ds+'.md';}))break;
+    streak++;checkDate.setDate(checkDate.getDate()-1);
+  }
+  var sorted=vaultIndex.slice().sort(function(a,b){return(b.mtime||0)-(a.mtime||0);});
+  var lastNote=sorted[0]?sorted[0].name.replace('.md',''):'none';
+  var tasksToday=[];
+  if(typeof CAL!=='undefined'&&CAL.getTasks){tasksToday=CAL.getTasks().filter(function(t){return !t.done&&t.date===todayStr;});}
+  return{total:total,dailyCount:dailyNotes.length,lectureCount:lectures.length,streak:streak,lastNote:lastNote,tasksToday:tasksToday,greeting:today.getHours()<12?'morning':today.getHours()<17?'afternoon':'evening'};
+}
+
+function updateVaultHealthPanel(){
+  var s=computeVaultStats();
+  function el(id){return document.getElementById(id);}
+  if(el('vh-total'))el('vh-total').textContent=s.total;
+  if(el('vh-daily'))el('vh-daily').textContent=s.dailyCount;
+  if(el('vh-lectures'))el('vh-lectures').textContent=s.lectureCount;
+  if(el('vh-streak'))el('vh-streak').textContent=s.streak>0?(s.streak+' day'+(s.streak!==1?'s':'')+' &#128293;'):'None yet';
+}
+
+function toggleVaultHealth(){
+  var p=document.getElementById('vault-health-panel');if(!p)return;
+  p.classList.toggle('vis');
+  if(p.classList.contains('vis')&&vaultConnected)updateVaultHealthPanel();
+}
+
+async function requestBrief(){
+  if(!vaultConnected){speakResponse('Please connect your vault first, sir.');return;}
+  var key=localStorage.getItem('baker_api_key');if(!key){speakResponse('No API key set, sir.');return;}
+  var s=computeVaultStats();
+  var statsEl=document.getElementById('brief-stats');
+  var bodyEl=document.getElementById('brief-body');
+  var panel=document.getElementById('daily-brief-panel');
+  if(!panel)return;
+  if(statsEl)statsEl.innerHTML=[{l:'Total Notes',v:s.total},{l:'Daily Logs',v:s.dailyCount},{l:'Lectures',v:s.lectureCount},{l:'Streak',v:s.streak>0?(s.streak+'d'):'0'}].map(function(c){return '<div class="brief-stat">'+c.l+'<span>'+c.v+'</span></div>';}).join('');
+  if(bodyEl)bodyEl.textContent='Generating brief...';
+  panel.classList.add('vis');_initBriefDrag();
+  var taskTxt=s.tasksToday.length?s.tasksToday.map(function(t){return '- '+t.text;}).join('\n'):'No tasks due.';
+  var prompt='You are BAKER. Write a concise daily brief. Tone: one step below JARVIS. 3-4 sentences covering: (1) a '+s.greeting+' greeting, (2) vault status: '+s.total+' total notes, '+s.dailyCount+' daily logs, '+s.streak+'-day daily log streak, last note was "'+s.lastNote+'", (3) tasks today: '+taskTxt+'. No markdown, no bullets. Plain prose. End with one forward-looking remark.';
+  try{
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:180,messages:[{role:'user',content:prompt}]})});
+    var data=await resp.json();
+    var text=data.content.map(function(b){return b.text||'';}).join('').trim();
+    if(bodyEl)bodyEl.textContent=text;
+    speakResponse(text);
+  }catch(e){if(bodyEl)bodyEl.textContent='Could not generate brief.';}
+}
+
+function _voiceOpenNote(query){
+  if(!vaultConnected||!vaultIndex.length){speakResponse('No vault connected, sir.');return;}
+  var words=query.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(function(w){return w.length>2;});
+  if(!words.length){speakResponse('What note should I find, sir?');return;}
+  var scores=vaultIndex.map(function(note){
+    var ns=words.reduce(function(s,w){return s+(note.name.toLowerCase().includes(w)?3:0);},0);
+    var cs=words.reduce(function(s,w){return s+((note.content||'').toLowerCase().includes(w)?1:0);},0);
+    return{note:note,score:ns+cs};
+  }).filter(function(x){return x.score>0;});
+  scores.sort(function(a,b){return b.score-a.score;});
+  if(!scores.length){speakResponse("I couldn't find a note matching that, sir.");return;}
+  var best=scores[0].note;
+  if(typeof VAULTUI!=='undefined'){
+    VAULTUI.showPanel();
+    setTimeout(function(){var idx=vaultIndex.indexOf(best);if(idx>=0&&VAULTUI._openNoteByIdx)VAULTUI._openNoteByIdx(idx);},100);
+  }
+  speakResponse('Opening '+best.name.replace('.md','')+', sir.');
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
 makeDraggable('orb-panel','orb-panel-hdr');
 makeDraggable('note-panel','note-panel-hdr');
 makeDraggable('widget-panel','widget-panel-hdr');
