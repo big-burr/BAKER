@@ -636,39 +636,22 @@ function _drawForest(ctx,W,H){
     if(!members.length)return;
     var col=typeColors[type]||'#7c6af7';
     var treeCX=W*(USABLE_LEFT+(treeIdx*(slotW+GAP_FRAC)+slotW*0.5));
-    var xs=members.map(function(n){return n.x;});
-    var ys=members.map(function(n){return n.y;});
-    var minY=Math.min.apply(null,ys)-20;
-    // Use full height for silhouette so it always matches the layout area
-    var treeH=fullTreeH;
 
-    // ── Draw species silhouette (faded, behind everything) ──
+    // Cap tree height so it stays proportional to slot width — no more stretching
+    // Trees look best when roughly 1.6-2x taller than wide
+    var treeH=Math.min(fullTreeH, slotPx*2.0);
+
+    // ── Draw species silhouette behind nodes ──
     ctx.save();
-    ctx.globalAlpha=0.12;
+    ctx.globalAlpha=0.13;
     _drawTreeSpecies(ctx,type,treeCX,baseY,slotPx,treeH,col);
     ctx.globalAlpha=1;
     ctx.restore();
 
-    // Halo
-    var minX=Math.min.apply(null,xs)-20,maxX=Math.max.apply(null,xs)+20;
-    var maxY=Math.max.apply(null,ys)+20;
-    var haloGrd=ctx.createRadialGradient(treeCX,(minY+maxY)/2,0,treeCX,(minY+maxY)/2,
-      Math.max((maxX-minX),(maxY-minY))*0.65+40);
-    haloGrd.addColorStop(0,col+'0e');haloGrd.addColorStop(1,col+'00');
+    // Subtle ground line only — no halo oval, no root connector line
     ctx.beginPath();
-    ctx.ellipse(treeCX,(minY+maxY)/2,(maxX-minX)/2+30,(maxY-minY)/2+30,0,0,Math.PI*2);
-    ctx.fillStyle=haloGrd;ctx.fill();
-
-    // Ground line
-    ctx.beginPath();
-    ctx.moveTo(treeCX-slotPx*0.38,baseY+2);ctx.lineTo(treeCX+slotPx*0.38,baseY+2);
-    ctx.strokeStyle=col+'44';ctx.lineWidth=1.5;ctx.stroke();
-
-    // Root line from trunk to ground
-    var trunk=members[0];
-    ctx.beginPath();
-    ctx.moveTo(trunk.x,trunk.y+trunk.radius);ctx.lineTo(trunk.x,baseY+2);
-    ctx.strokeStyle=col+'30';ctx.lineWidth=2;ctx.stroke();
+    ctx.moveTo(treeCX-slotPx*0.42,baseY+2);ctx.lineTo(treeCX+slotPx*0.42,baseY+2);
+    ctx.strokeStyle=col+'55';ctx.lineWidth=1.5;ctx.stroke();
 
     // Labels
     ctx.font='bold 10px IBM Plex Mono, monospace';
@@ -682,7 +665,7 @@ function _drawForest(ctx,W,H){
   // Orphan walnut grove
   if(orphans.length>0){
     var groveCX=W*(USABLE_LEFT+(orderedTypes.length*(slotW+GAP_FRAC)+slotW*0.5));
-    var groveH=H*0.25;
+    var groveH=Math.min(fullTreeH*0.7, slotPx*2.0);
     ctx.save();ctx.globalAlpha=0.13;
     _drawWalnut(ctx,groveCX,baseY,slotPx,groveH,'#5a3a1a','#2d5c1a');
     ctx.globalAlpha=1;ctx.restore();
@@ -727,20 +710,20 @@ function _drawTreeSpecies(ctx,type,cx,baseY,slotW,treeH,col){
 // Delicate drooping branches, multi-stem at base. Very distinctive silhouette.
 function _drawBirch(ctx,cx,baseY,slotW,treeH,col,foliage){
   foliage=foliage||col;
-  var tw=slotW*0.038;
-  var trunkTop=baseY-treeH*0.92;
+  var tw=slotW*0.042;
+  var trunkTop=baseY-treeH*0.82;
 
   // Multi-stem base — birch often grows in clumps of 2-3
   var stems=[
-    {ox:-slotW*0.055, lean:-0.06},
+    {ox:-slotW*0.060, lean:-0.05},
     {ox:0,            lean: 0.00},
-    {ox: slotW*0.048, lean: 0.05}
+    {ox: slotW*0.052, lean: 0.04}
   ];
   stems.forEach(function(s){
     ctx.beginPath();
     ctx.moveTo(cx+s.ox-tw,baseY);
-    ctx.quadraticCurveTo(cx+s.ox*1.3-tw*0.5, baseY-treeH*0.5, cx+s.ox+s.lean*treeH-tw*0.3, trunkTop+treeH*0.15);
-    ctx.quadraticCurveTo(cx+s.ox*1.3+tw*0.5, baseY-treeH*0.5, cx+s.ox+s.lean*treeH+tw*0.3, trunkTop+treeH*0.15);
+    ctx.quadraticCurveTo(cx+s.ox*1.2-tw*0.5, baseY-treeH*0.45, cx+s.ox+s.lean*treeH-tw*0.3, trunkTop+treeH*0.12);
+    ctx.quadraticCurveTo(cx+s.ox*1.2+tw*0.5, baseY-treeH*0.45, cx+s.ox+s.lean*treeH+tw*0.3, trunkTop+treeH*0.12);
     ctx.closePath();
     ctx.fillStyle=col;ctx.fill();
   });
@@ -759,25 +742,25 @@ function _drawBirch(ctx,cx,baseY,slotW,treeH,col,foliage){
   // Canopy — tall narrow oval, slightly asymmetric
   // Main center canopy
   ctx.beginPath();
-  ctx.ellipse(cx,trunkTop+treeH*0.28,slotW*0.22,treeH*0.36,0,0,Math.PI*2);
+  ctx.ellipse(cx,trunkTop+treeH*0.16,slotW*0.24,treeH*0.28,0,0,Math.PI*2);
   ctx.fillStyle=foliage;ctx.fill();
 
   // Right secondary canopy
   ctx.beginPath();
-  ctx.ellipse(cx+slotW*0.12,trunkTop+treeH*0.38,slotW*0.16,treeH*0.26,0.15,0,Math.PI*2);
+  ctx.ellipse(cx+slotW*0.14,trunkTop+treeH*0.24,slotW*0.17,treeH*0.20,0.15,0,Math.PI*2);
   ctx.fillStyle=foliage;ctx.fill();
 
   // Left secondary canopy
   ctx.beginPath();
-  ctx.ellipse(cx-slotW*0.10,trunkTop+treeH*0.42,slotW*0.14,treeH*0.22,-0.12,0,Math.PI*2);
+  ctx.ellipse(cx-slotW*0.12,trunkTop+treeH*0.28,slotW*0.15,treeH*0.17,-0.12,0,Math.PI*2);
   ctx.fillStyle=foliage;ctx.fill();
 
   // Drooping branch sprays — birch has very distinctive pendulous branches
   var branchData=[
-    {bx:cx-slotW*0.18, by:trunkTop+treeH*0.30, dx:-slotW*0.10, dy:treeH*0.18, n:4},
-    {bx:cx+slotW*0.16, by:trunkTop+treeH*0.32, dx: slotW*0.10, dy:treeH*0.16, n:3},
-    {bx:cx-slotW*0.14, by:trunkTop+treeH*0.50, dx:-slotW*0.14, dy:treeH*0.20, n:5},
-    {bx:cx+slotW*0.12, by:trunkTop+treeH*0.52, dx: slotW*0.12, dy:treeH*0.18, n:4},
+    {bx:cx-slotW*0.18, by:trunkTop+treeH*0.18, dx:-slotW*0.12, dy:treeH*0.14, n:4},
+    {bx:cx+slotW*0.16, by:trunkTop+treeH*0.20, dx: slotW*0.12, dy:treeH*0.12, n:3},
+    {bx:cx-slotW*0.14, by:trunkTop+treeH*0.34, dx:-slotW*0.16, dy:treeH*0.15, n:5},
+    {bx:cx+slotW*0.12, by:trunkTop+treeH*0.36, dx: slotW*0.14, dy:treeH*0.13, n:4},
   ];
   branchData.forEach(function(b){
     for(var i=0;i<b.n;i++){
@@ -799,15 +782,23 @@ function _drawOak(ctx,cx,baseY,slotW,treeH,col,foliage){
   var trunkH=treeH*0.38;
   var trunkTop=baseY-trunkH;
 
-  // Thick gnarled trunk — slightly tapered with a hint of buttress roots
-  // Buttress flare at base
+  // Thick gnarled trunk — buttress roots flare dramatically at base
   ctx.beginPath();
-  ctx.moveTo(cx-tw*1.8,baseY);
-  ctx.quadraticCurveTo(cx-tw*1.2,baseY-trunkH*0.15,cx-tw*0.55,trunkTop);
-  ctx.lineTo(cx+tw*0.55,trunkTop);
-  ctx.quadraticCurveTo(cx+tw*1.2,baseY-trunkH*0.15,cx+tw*1.8,baseY);
+  ctx.moveTo(cx-tw*2.2,baseY);
+  ctx.quadraticCurveTo(cx-tw*1.8,baseY-trunkH*0.08,cx-tw*1.0,baseY-trunkH*0.22);
+  ctx.quadraticCurveTo(cx-tw*0.7,baseY-trunkH*0.5,cx-tw*0.52,trunkTop);
+  ctx.lineTo(cx+tw*0.52,trunkTop);
+  ctx.quadraticCurveTo(cx+tw*0.7,baseY-trunkH*0.5,cx+tw*1.0,baseY-trunkH*0.22);
+  ctx.quadraticCurveTo(cx+tw*1.8,baseY-trunkH*0.08,cx+tw*2.2,baseY);
   ctx.closePath();
   ctx.fillStyle=col;ctx.fill();
+  // Extra buttress roots left and right
+  [[-1.6,-2.8,0.04],[ 1.6, 2.8,0.04]].forEach(function(r){
+    ctx.beginPath();
+    ctx.moveTo(cx+r[0]*tw,baseY-trunkH*0.12);
+    ctx.quadraticCurveTo(cx+r[1]*tw,baseY-trunkH*0.04,cx+r[1]*tw*1.1,baseY);
+    ctx.strokeStyle=col;ctx.lineWidth=tw*0.8;ctx.lineCap='round';ctx.stroke();
+  });
 
   // Bark texture — vertical fissures
   for(var i=0;i<4;i++){
@@ -880,42 +871,57 @@ function _drawPine(ctx,cx,baseY,slotW,treeH,col,foliage){
     ctx.fillStyle=col;ctx.globalAlpha*=0.7;ctx.fill();ctx.globalAlpha=1;
   }
 
-  // 5 tiers — each slightly narrower and higher, with upswept branch tips
-  var tiers=5;
+  // 6 tiers — graduated spacing, wider gaps at bottom like real pine
+  var tiers=6;
+  var crownH=treeH-trunkH;
   for(var i=0;i<tiers;i++){
     var frac=i/tiers;
-    // Each tier: flat base that sweeps up at tips
-    var tierW=slotW*(0.46-frac*0.10);
-    var tierBaseY=trunkTop-((treeH-trunkH)*frac*0.82);
-    var tierTopY=tierBaseY-(treeH-trunkH)*0.16*(1-frac*0.3);
+    var tierW=slotW*(0.44-frac*0.09);
+    // Tiers are more evenly spaced — no extreme stretching
+    var tierBaseY=trunkTop-(crownH*frac*0.88);
+    var tierH=crownH*0.17*(1-frac*0.25);
+    var tierTopY=tierBaseY-tierH;
 
-    // Main tier triangle
+    // Slightly curved tier edges for natural look — pine tiers droop slightly
     ctx.beginPath();
     ctx.moveTo(cx,tierTopY);
-    ctx.lineTo(cx-tierW,tierBaseY);
-    ctx.lineTo(cx+tierW,tierBaseY);
-    ctx.closePath();
+    ctx.quadraticCurveTo(cx-tierW*0.5,tierBaseY-tierH*0.3,cx-tierW,tierBaseY);
+    ctx.quadraticCurveTo(cx,tierBaseY+tierH*0.08,cx+tierW,tierBaseY);
+    ctx.quadraticCurveTo(cx+tierW*0.5,tierBaseY-tierH*0.3,cx,tierTopY);
     ctx.fillStyle=foliage;ctx.fill();
 
-    // Upswept branch tips — pine branches angle upward at tips
-    if(i<tiers-1){
+    // Upswept tips with secondary needles
+    [[-1,1],[1,1]].forEach(function(s){
       ctx.beginPath();
-      ctx.moveTo(cx-tierW,tierBaseY);
-      ctx.quadraticCurveTo(cx-tierW*0.85,tierBaseY-treeH*0.03,cx-tierW*0.7,tierBaseY-treeH*0.045);
-      ctx.strokeStyle=col;ctx.lineWidth=tw*0.4;ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(cx+tierW,tierBaseY);
-      ctx.quadraticCurveTo(cx+tierW*0.85,tierBaseY-treeH*0.03,cx+tierW*0.7,tierBaseY-treeH*0.045);
-      ctx.strokeStyle=col;ctx.lineWidth=tw*0.4;ctx.stroke();
-    }
+      ctx.moveTo(cx+s[0]*tierW,tierBaseY);
+      ctx.quadraticCurveTo(cx+s[0]*tierW*0.78,tierBaseY-tierH*0.35,cx+s[0]*tierW*0.62,tierBaseY-tierH*0.5);
+      ctx.strokeStyle=col;ctx.lineWidth=tw*0.38;ctx.lineCap='round';ctx.stroke();
+      // Needle tufts at tip
+      for(var n=0;n<3;n++){
+        var nfrac=n/2;
+        ctx.beginPath();
+        ctx.moveTo(cx+s[0]*(tierW*0.72-nfrac*tierW*0.18),tierBaseY-tierH*(0.18+nfrac*0.22));
+        ctx.lineTo(cx+s[0]*(tierW*0.82-nfrac*tierW*0.10),tierBaseY-tierH*(0.04+nfrac*0.12));
+        ctx.strokeStyle=foliage;ctx.lineWidth=tw*0.22;ctx.stroke();
+      }
+    });
   }
 
-  // Sharp pointed leader at top — very characteristic of pine
-  var topTierY=trunkTop-(treeH-trunkH)*0.82;
+  // Dead branch stubs on lower trunk — very characteristic of pine
+  [0.15,0.28,0.40].forEach(function(yf){
+    [-1,1].forEach(function(s){
+      ctx.beginPath();
+      ctx.moveTo(cx+s*tw*0.5,baseY-trunkH*yf);
+      ctx.lineTo(cx+s*(tw*0.5+slotW*0.06),baseY-trunkH*(yf+0.04));
+      ctx.strokeStyle=col;ctx.lineWidth=tw*0.3;ctx.lineCap='round';ctx.stroke();
+    });
+  });
+
+  // Sharp pointed leader
   ctx.beginPath();
   ctx.moveTo(cx,baseY-treeH);
-  ctx.lineTo(cx-slotW*0.04,topTierY);
-  ctx.lineTo(cx+slotW*0.04,topTierY);
+  ctx.lineTo(cx-slotW*0.035,trunkTop-crownH*0.84);
+  ctx.lineTo(cx+slotW*0.035,trunkTop-crownH*0.84);
   ctx.closePath();
   ctx.fillStyle=foliage;ctx.fill();
 }
@@ -1079,12 +1085,14 @@ function _drawWalnut(ctx,cx,baseY,slotW,treeH,col,foliage){
   var trunkH=treeH*0.38;
   var trunkTop=baseY-trunkH;
 
-  // Main trunk — walnut has very dark deeply furrowed bark
+  // Main trunk — walnut has very dark deeply furrowed bark, slight taper
   ctx.beginPath();
-  ctx.moveTo(cx-tw*1.2,baseY);
-  ctx.quadraticCurveTo(cx-tw*0.9,baseY-trunkH*0.4,cx-tw*0.52,trunkTop);
-  ctx.lineTo(cx+tw*0.52,trunkTop);
-  ctx.quadraticCurveTo(cx+tw*0.9,baseY-trunkH*0.4,cx+tw*1.2,baseY);
+  ctx.moveTo(cx-tw*1.5,baseY);
+  ctx.quadraticCurveTo(cx-tw*1.1,baseY-trunkH*0.2,cx-tw*0.6,baseY-trunkH*0.5);
+  ctx.lineTo(cx-tw*0.48,trunkTop);
+  ctx.lineTo(cx+tw*0.48,trunkTop);
+  ctx.lineTo(cx+tw*0.6,baseY-trunkH*0.5);
+  ctx.quadraticCurveTo(cx+tw*1.1,baseY-trunkH*0.2,cx+tw*1.5,baseY);
   ctx.closePath();
   ctx.fillStyle=col;ctx.fill();
 
@@ -1126,12 +1134,23 @@ function _drawWalnut(ctx,cx,baseY,slotW,treeH,col,foliage){
   // Compound leaf clusters at branch tips — walnut has very large compound leaves
   // Draw as small radiating finger shapes
   function leafCluster(lx,ly,r){
-    for(var i=0;i<7;i++){
-      var a=(i/7)*Math.PI*2;
-      ctx.beginPath();
-      ctx.ellipse(lx+Math.cos(a)*r*0.55,ly+Math.sin(a)*r*0.55,r*0.28,r*0.14,a,0,Math.PI*2);
-      ctx.fillStyle=col;ctx.fill();
+    // Compound leaf — central rachis with paired leaflets
+    ctx.beginPath();
+    ctx.moveTo(lx,ly);ctx.lineTo(lx,ly-r*0.9);
+    ctx.strokeStyle=foliage;ctx.lineWidth=r*0.1;ctx.stroke();
+    for(var i=0;i<5;i++){
+      var lfrac=i/4;
+      var ly2=ly-r*(0.15+lfrac*0.72);
+      [-1,1].forEach(function(s){
+        ctx.beginPath();
+        ctx.ellipse(lx+s*r*0.38,ly2,r*0.30,r*0.13,s*0.4,0,Math.PI*2);
+        ctx.fillStyle=foliage;ctx.fill();
+      });
     }
+    // Terminal leaflet at top
+    ctx.beginPath();
+    ctx.ellipse(lx,ly-r*0.95,r*0.22,r*0.12,0,0,Math.PI*2);
+    ctx.fillStyle=foliage;ctx.fill();
   }
   leafCluster(cx-slotW*0.28,trunkTop-treeH*0.18,slotW*0.08);
   leafCluster(cx+slotW*0.24,trunkTop-treeH*0.17,slotW*0.08);
