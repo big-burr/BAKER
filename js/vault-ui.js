@@ -607,7 +607,17 @@ var VAULTUI=(function(){
       openNoteByPath(fullPath);
 
       if(typeof buildGraph==='function'&&typeof vaultConnected!=='undefined'&&vaultConnected){
-        if(typeof graphNodes!=='undefined'&&graphNodes.length)buildGraph();
+        if(typeof graphNodes!=='undefined'&&graphNodes.length){
+          buildGraph();
+          // Spawn birth particle after graph rebuilds
+          var _bpType=t.type||detectType(fullPath,'');
+          var _bpPath=fullPath;
+          setTimeout(function(){
+            if(typeof spawnBirthParticle==='function')spawnBirthParticle(_bpType,_bpPath);
+          },200);
+          // Smart link suggestions (async, non-blocking)
+          _suggestLinks(fullPath,content||'');
+        }
       }
     }catch(e){
       console.error('[VAULTUI] createNote error:',e);
@@ -718,6 +728,95 @@ var VAULTUI=(function(){
       renderFilterBar();
       renderList(searchInput?searchInput.value:'');
     }
+  }
+
+  
+  // ── Smart Note Linking ────────────────────────────────────
+  function _suggestLinks(newPath,newContent){
+    if(!vaultIndex||vaultIndex.length<2)return;
+    var key=localStorage.getItem('baker_api_key');
+    if(!key)return;
+    // Find up to 5 related notes using TF-IDF
+    var words=newContent.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(function(w){return w.length>3;});
+    if(words.length<3)return;
+    var scores=[];
+    vaultIndex.forEach(function(note){
+      if(note.path===newPath)return;
+      var c=(note.content||'').toLowerCase();
+      var score=words.reduce(function(s,w){return s+(c.includes(w)?1:0);},0);
+      if(score>0)scores.push({note:note,score:score});
+    });
+    scores.sort(function(a,b){return b.score-a.score;});
+    var top=scores.slice(0,5);
+    if(!top.length)return;
+    // Show suggestion popup
+    _showLinkSuggestPopup(newPath,top.map(function(s){return s.note;}));
+  }
+
+  function _showLinkSuggestPopup(targetPath,suggestions){
+    var existing=document.getElementById('baker-link-suggest');
+    if(existing)existing.remove();
+    var pop=document.createElement('div');
+    pop.id='baker-link-suggest';
+    pop.style.cssText='position:fixed;top:54px;right:24px;z-index:500;background:rgba(22,22,25,.97);border:1px solid var(--accent-dim);border-radius:10px;padding:12px 14px;backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.6);max-width:300px;min-width:220px;animation:fadeIn .2s ease both';
+    var hdr=document.createElement('div');
+    hdr.style.cssText='font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center';
+    hdr.innerHTML='&#128279; Link Suggestions<button onclick="document.getElementById('baker-link-suggest').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0">&#215;</button>';
+    pop.appendChild(hdr);
+    var sub=document.createElement('div');
+    sub.style.cssText='font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:8px';
+    sub.textContent='Click to add wikilink to '+targetPath.split('/').pop();
+    pop.appendChild(sub);
+    suggestions.forEach(function(note){
+      var row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;cursor:pointer;transition:background .15s;margin-bottom:2px';
+      row.onmouseover=function(){this.style.background='rgba(124,106,247,.12)';};
+      row.onmouseout=function(){this.style.background='transparent';};
+      var name=document.createElement('span');
+      name.style.cssText='font-family:var(--mono);font-size:11px;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+      name.textContent=note.name.replace('.md','');
+      var add=document.createElement('button');
+      add.style.cssText='background:var(--accent-dim);border:none;border-radius:4px;color:var(--accent);font-family:var(--mono);font-size:9px;padding:2px 7px;cursor:pointer;flex-shrink:0';
+      add.textContent='+ Link';
+      add.onclick=function(){
+        _insertWikilink(targetPath,note.name.replace('.md',''));
+        row.style.opacity='0.4';add.textContent='Added';add.disabled=true;
+      };
+      row.appendChild(name);row.appendChild(add);
+      pop.appendChild(row);
+    });
+    var dismiss=document.createElement('div');
+    dismiss.style.cssText='font-family:var(--mono);font-size:9px;color:var(--muted);text-align:center;margin-top:6px;cursor:pointer';
+    dismiss.textContent='Dismiss';
+    dismiss.onclick=function(){pop.remove();};
+    pop.appendChild(dismiss);
+    document.body.appendChild(pop);
+    // Auto-dismiss after 30s
+    setTimeout(function(){if(pop.parentNode)pop.remove();},30000);
+  }
+
+  function _insertWikilink(targetPath,linkName){
+    // Find the note in vaultIndex and append wikilink
+    var idx=vaultIndex.findIndex(function(n){return n.path===targetPath;});
+    if(idx<0)return;
+    var note=vaultIndex[idx];
+    var link='\n\n## Related\n- [['+linkName+']]';
+    // Check if already has Related section
+    if(note.content&&note.content.includes('[['+linkName+']]'))return;
+    var newContent=note.content+(note.content.includes('## Related')?('\n- [['+linkName+']]'):link);
+    // Write to vault
+    if(typeof vaultHandle==='undefined'||!vaultHandle)return;
+    var parts=targetPath.split('/');
+    var fname=parts.pop();
+    var getDir=Promise.resolve(vaultHandle);
+    parts.forEach(function(p){getDir=getDir.then(function(d){return d.getDirectoryHandle(p,{create:false});});});
+    getDir.then(function(dir){return dir.getFileHandle(fname,{create:false});})
+    .then(function(fh){return fh.createWritable();})
+    .then(function(w){return w.write(newContent).then(function(){return w.close();});})
+    .then(function(){
+      vaultIndex[idx].content=newContent;
+      if(typeof setStatus==='function')setStatus('Link added to '+fname);
+    }).catch(function(){});
   }
 
   return{init,showPanel,hidePanel,togglePanel,handleVoice,refresh,_openNoteByIdx:openNote};
@@ -1051,7 +1150,8 @@ var VAULTCHAT=(function(){
       removeThinking();
       appendMsg('baker',raw,relevant);
       history.push({role:'assistant',content:raw});
-      if(history.length>30)history=history.slice(-30);
+      if(history.length>20)history=history.slice(-20);
+      try{localStorage.setItem(VCHAT_KEY,JSON.stringify(history));}catch(e){}
     }).catch(function(err){
       removeThinking();
       appendMsg('baker','I encountered a fault, sir: '+err.message);
@@ -1072,6 +1172,7 @@ var VAULTCHAT=(function(){
 
   function clearChat(){
     history=[];
+    try{localStorage.removeItem(VCHAT_KEY);}catch(e){}
     var msgs=_msgs();if(!msgs)return;
     msgs.innerHTML='<div class="vc-welcome" id="vc-welcome"><div class="vc-welcome-icon">🧠</div><div class="vc-welcome-title">Vault Chat</div><div class="vc-welcome-sub">Ask anything about your notes.</div></div>';
   }
