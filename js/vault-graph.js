@@ -204,7 +204,11 @@ function buildGraph(){
     if(graphNodes[e.a])graphNodes[e.a].connCount++;
     if(graphNodes[e.b])graphNodes[e.b].connCount++;
   });
-  graphNodes.forEach(function(n){n.orphan=n.connCount===0;});
+  graphNodes.forEach(function(n){
+  // Only send to orphan grove if unlinked AND untyped (general)
+  // Typed notes (daily, lecture, conversation, project) always stay in their tree
+  n.orphan=(n.connCount===0&&n.type==='general');
+});
 
   if(GraphSettings.sizeByConnections){
     var maxConn=Math.max(1,Math.max.apply(null,graphNodes.map(function(n){return n.connCount;})));
