@@ -1047,7 +1047,10 @@ function computeVaultStats(){
   var total=vaultIndex.length;
   var today=new Date();
   var todayStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
-  var dailyNotes=vaultIndex.filter(function(n){return /\d{4}-\d{2}-\d{2}\.md$/.test(n.name);});
+  var dailyNotes=vaultIndex.filter(function(n){
+    return /^\d{4}-\d{2}-\d{2}/.test(n.name)&&n.name.endsWith('.md')&&
+      (n.content&&(n.content.includes('type: daily')||n.content.includes('type: daily-log'))||n.path&&n.path.includes('00-Capture'));
+  });
   var lectures=vaultIndex.filter(function(n){
     return (n.path&&n.path.toLowerCase().includes('lecture'))||(n.content&&n.content.toLowerCase().includes('type: lecture'));
   });
@@ -1077,6 +1080,7 @@ function toggleVaultHealth(){
   var p=document.getElementById('vault-health-panel');if(!p)return;
   p.classList.toggle('vis');
   if(p.classList.contains('vis')&&vaultConnected)updateVaultHealthPanel();
+  if(p.classList.contains('vis')&&!p._dragInit){p._dragInit=true;makeWindowBehavior(p,p.querySelector('.vh-title'),{minW:200,minH:100});}
 }
 
 async function requestBrief(){
@@ -1089,6 +1093,14 @@ async function requestBrief(){
   if(!panel)return;
   if(statsEl)statsEl.innerHTML=[{l:'Total Notes',v:s.total},{l:'Daily Logs',v:s.dailyCount},{l:'Lectures',v:s.lectureCount},{l:'Streak',v:s.streak>0?(s.streak+'d'):'0'}].map(function(c){return '<div class="brief-stat">'+c.l+'<span>'+c.v+'</span></div>';}).join('');
   if(bodyEl)bodyEl.textContent='Generating brief...';
+  // Position panel absolutely so dragging doesn't cause transform jump
+  if(!panel.style.left||panel.style.left===''){
+    var pw=Math.min(480,window.innerWidth*0.9);
+    panel.style.left=Math.round((window.innerWidth-pw)/2)+'px';
+    panel.style.top='54px';
+    panel.style.transform='none';
+    panel.style.width=pw+'px';
+  }
   panel.classList.add('vis');_initBriefDrag();
   var taskTxt=s.tasksToday.length?s.tasksToday.map(function(t){return '- '+t.text;}).join('\n'):'No tasks due.';
   var prompt='You are BAKER. Write a concise daily brief. Tone: one step below JARVIS. 3-4 sentences covering: (1) a '+s.greeting+' greeting, (2) vault status: '+s.total+' total notes, '+s.dailyCount+' daily logs, '+s.streak+'-day daily log streak, last note was "'+s.lastNote+'", (3) tasks today: '+taskTxt+'. No markdown, no bullets. Plain prose. End with one forward-looking remark.';
@@ -1115,7 +1127,7 @@ function _voiceOpenNote(query){
   var best=scores[0].note;
   if(typeof VAULTUI!=='undefined'){
     VAULTUI.showPanel();
-    setTimeout(function(){var idx=vaultIndex.indexOf(best);if(idx>=0&&VAULTUI._openNoteByIdx)VAULTUI._openNoteByIdx(idx);},100);
+    setTimeout(function(){var idx=vaultIndex.indexOf(best);if(idx>=0&&typeof VAULTUI!=='undefined'&&VAULTUI._openNoteByIdx)VAULTUI._openNoteByIdx(idx);},100);
   }
   speakResponse('Opening '+best.name.replace('.md','')+', sir.');
 }
