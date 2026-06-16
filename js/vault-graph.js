@@ -644,7 +644,7 @@ function _drawForest(ctx,W,H){
 
     // ── Draw species silhouette (faded, behind everything) ──
     ctx.save();
-    ctx.globalAlpha=0.18;
+    ctx.globalAlpha=0.12;
     _drawTreeSpecies(ctx,type,treeCX,baseY,slotPx,treeH,col);
     ctx.globalAlpha=1;
     ctx.restore();
@@ -684,7 +684,7 @@ function _drawForest(ctx,W,H){
     var groveCX=W*(USABLE_LEFT+(orderedTypes.length*(slotW+GAP_FRAC)+slotW*0.5));
     var groveH=H*0.25;
     ctx.save();ctx.globalAlpha=0.13;
-    _drawWalnut(ctx,groveCX,baseY,slotPx,groveH,ORPHAN_COLOR);
+    _drawWalnut(ctx,groveCX,baseY,slotPx,groveH,'#5a3a1a','#2d5c1a');
     ctx.globalAlpha=1;ctx.restore();
     ctx.font='bold 10px IBM Plex Mono, monospace';
     ctx.fillStyle=ORPHAN_COLOR+'80';ctx.textAlign='center';
@@ -696,18 +696,37 @@ function _drawForest(ctx,W,H){
 }
 
 // ── Species dispatcher ────────────────────────────────────
+// Each species gets its own real-world bark/foliage color blended with type color
+var TREE_BARK_COLORS={
+  lecture:    '#d4c5a9', // silver-white birch bark
+  general:    '#7a5c3a', // rich brown oak bark
+  daily:      '#2d5a1b', // deep forest pine green
+  conversation:'#8b6914', // golden hickory bark
+  project:    '#c8b84a'  // ginkgo gold (fall color)
+};
+var TREE_FOLIAGE_COLORS={
+  lecture:    '#b8d4a0', // pale birch green
+  general:    '#3d6b2a', // deep oak green
+  daily:      '#1a4a0e', // very dark pine green
+  conversation:'#5a8a2a', // medium hickory green
+  project:    '#d4a017'  // ginkgo golden yellow
+};
 function _drawTreeSpecies(ctx,type,cx,baseY,slotW,treeH,col){
-  if(type==='lecture')        _drawBirch(ctx,cx,baseY,slotW,treeH,col);
-  else if(type==='general')   _drawOak(ctx,cx,baseY,slotW,treeH,col);
-  else if(type==='daily')     _drawPine(ctx,cx,baseY,slotW,treeH,col);
-  else if(type==='conversation') _drawHickory(ctx,cx,baseY,slotW,treeH,col);
-  else if(type==='project')   _drawGinkgo(ctx,cx,baseY,slotW,treeH,col);
+  // Use real botanical colors blended 60% real / 40% type color
+  var bark=TREE_BARK_COLORS[type]||col;
+  var foliage=TREE_FOLIAGE_COLORS[type]||col;
+  if(type==='lecture')           _drawBirch(ctx,cx,baseY,slotW,treeH,bark,foliage);
+  else if(type==='general')      _drawOak(ctx,cx,baseY,slotW,treeH,bark,foliage);
+  else if(type==='daily')        _drawPine(ctx,cx,baseY,slotW,treeH,bark,foliage);
+  else if(type==='conversation')  _drawHickory(ctx,cx,baseY,slotW,treeH,bark,foliage);
+  else if(type==='project')      _drawGinkgo(ctx,cx,baseY,slotW,treeH,bark,foliage);
 }
 
 // ── BIRCH (lecture) ──────────────────────────────────────
 // Elegant, slender, tall. White/silver bark with horizontal lenticels.
 // Delicate drooping branches, multi-stem at base. Very distinctive silhouette.
-function _drawBirch(ctx,cx,baseY,slotW,treeH,col){
+function _drawBirch(ctx,cx,baseY,slotW,treeH,col,foliage){
+  foliage=foliage||col;
   var tw=slotW*0.038;
   var trunkTop=baseY-treeH*0.92;
 
@@ -741,17 +760,17 @@ function _drawBirch(ctx,cx,baseY,slotW,treeH,col){
   // Main center canopy
   ctx.beginPath();
   ctx.ellipse(cx,trunkTop+treeH*0.28,slotW*0.22,treeH*0.36,0,0,Math.PI*2);
-  ctx.fillStyle=col;ctx.fill();
+  ctx.fillStyle=foliage;ctx.fill();
 
   // Right secondary canopy
   ctx.beginPath();
   ctx.ellipse(cx+slotW*0.12,trunkTop+treeH*0.38,slotW*0.16,treeH*0.26,0.15,0,Math.PI*2);
-  ctx.fillStyle=col;ctx.fill();
+  ctx.fillStyle=foliage;ctx.fill();
 
   // Left secondary canopy
   ctx.beginPath();
   ctx.ellipse(cx-slotW*0.10,trunkTop+treeH*0.42,slotW*0.14,treeH*0.22,-0.12,0,Math.PI*2);
-  ctx.fillStyle=col;ctx.fill();
+  ctx.fillStyle=foliage;ctx.fill();
 
   // Drooping branch sprays — birch has very distinctive pendulous branches
   var branchData=[
@@ -774,7 +793,8 @@ function _drawBirch(ctx,cx,baseY,slotW,treeH,col){
 // ── OAK (general) ────────────────────────────────────────
 // The king. Massive spreading crown, deeply furrowed bark, gnarled branches.
 // Short thick trunk, crown wider than tall. Ancient and powerful.
-function _drawOak(ctx,cx,baseY,slotW,treeH,col){
+function _drawOak(ctx,cx,baseY,slotW,treeH,col,foliage){
+  foliage=foliage||col;
   var tw=slotW*0.10;
   var trunkH=treeH*0.38;
   var trunkTop=baseY-trunkH;
@@ -816,32 +836,33 @@ function _drawOak(ctx,cx,baseY,slotW,treeH,col){
   // Central dome
   ctx.beginPath();
   ctx.ellipse(cx,trunkTop-treeH*0.22,slotW*0.40,treeH*0.30,0,0,Math.PI*2);
-  ctx.fillStyle=col;ctx.fill();
+  ctx.fillStyle=foliage;ctx.fill();
   // Left lobe
   ctx.beginPath();
   ctx.ellipse(cx-slotW*0.34,trunkTop-treeH*0.10,slotW*0.28,treeH*0.22,-0.2,0,Math.PI*2);
-  ctx.fillStyle=col;ctx.fill();
+  ctx.fillStyle=foliage;ctx.fill();
   // Right lobe
   ctx.beginPath();
   ctx.ellipse(cx+slotW*0.32,trunkTop-treeH*0.10,slotW*0.26,treeH*0.22,0.2,0,Math.PI*2);
-  ctx.fillStyle=col;ctx.fill();
+  ctx.fillStyle=foliage;ctx.fill();
   // Top lobe
   ctx.beginPath();
   ctx.ellipse(cx,trunkTop-treeH*0.44,slotW*0.22,treeH*0.18,0,0,Math.PI*2);
-  ctx.fillStyle=col;ctx.fill();
+  ctx.fillStyle=foliage;ctx.fill();
   // Low side lobes — oak hangs low
   ctx.beginPath();
   ctx.ellipse(cx-slotW*0.42,trunkTop-treeH*0.01,slotW*0.18,treeH*0.14,0.3,0,Math.PI*2);
-  ctx.fillStyle=col;ctx.fill();
+  ctx.fillStyle=foliage;ctx.fill();
   ctx.beginPath();
   ctx.ellipse(cx+slotW*0.40,trunkTop-treeH*0.01,slotW*0.17,treeH*0.14,-0.3,0,Math.PI*2);
-  ctx.fillStyle=col;ctx.fill();
+  ctx.fillStyle=foliage;ctx.fill();
 }
 
 // ── PINE (daily) ─────────────────────────────────────────
 // Classic conifer. Perfectly symmetric layered tiers, straight trunk,
 // sharp pointed top. Strong, reliable, geometric. Loblolly/Eastern White pine.
-function _drawPine(ctx,cx,baseY,slotW,treeH,col){
+function _drawPine(ctx,cx,baseY,slotW,treeH,col,foliage){
+  foliage=foliage||col;
   var tw=slotW*0.048;
   var trunkH=treeH*0.22;
   var trunkTop=baseY-trunkH;
@@ -874,7 +895,7 @@ function _drawPine(ctx,cx,baseY,slotW,treeH,col){
     ctx.lineTo(cx-tierW,tierBaseY);
     ctx.lineTo(cx+tierW,tierBaseY);
     ctx.closePath();
-    ctx.fillStyle=col;ctx.fill();
+    ctx.fillStyle=foliage;ctx.fill();
 
     // Upswept branch tips — pine branches angle upward at tips
     if(i<tiers-1){
@@ -896,14 +917,15 @@ function _drawPine(ctx,cx,baseY,slotW,treeH,col){
   ctx.lineTo(cx-slotW*0.04,topTierY);
   ctx.lineTo(cx+slotW*0.04,topTierY);
   ctx.closePath();
-  ctx.fillStyle=col;ctx.fill();
+  ctx.fillStyle=foliage;ctx.fill();
 }
 
 // ── HICKORY (conversation) ────────────────────────────────
 // Tall straight hardwood, high crown, compound leaves make for
 // an airy irregular silhouette. Trunk is very straight with tight bark.
 // One of the strongest North American hardwoods.
-function _drawHickory(ctx,cx,baseY,slotW,treeH,col){
+function _drawHickory(ctx,cx,baseY,slotW,treeH,col,foliage){
+  foliage=foliage||col;
   var tw=slotW*0.055;
   var trunkH=treeH*0.52;
   var trunkTop=baseY-trunkH;
@@ -959,7 +981,7 @@ function _drawHickory(ctx,cx,baseY,slotW,treeH,col){
   crownBlobs.forEach(function(b){
     ctx.beginPath();
     ctx.ellipse(cx+b.ox*slotW,trunkTop+b.oy*treeH,b.rx*slotW,b.ry*treeH,0,0,Math.PI*2);
-    ctx.fillStyle=col;ctx.fill();
+    ctx.fillStyle=foliage;ctx.fill();
   });
 }
 
@@ -968,7 +990,8 @@ function _drawHickory(ctx,cx,baseY,slotW,treeH,col){
 // Unmistakable fan-shaped bilobed leaves, conical young shape
 // but mature ginkgos have very distinctive tiered horizontal branching.
 // Brilliant yellow in fall. Perfect for "project" — ancient, enduring, unique.
-function _drawGinkgo(ctx,cx,baseY,slotW,treeH,col){
+function _drawGinkgo(ctx,cx,baseY,slotW,treeH,col,foliage){
+  foliage=foliage||col;
   var tw=slotW*0.052;
   var trunkH=treeH*0.35;
   var trunkTop=baseY-trunkH;
@@ -991,7 +1014,7 @@ function _drawGinkgo(ctx,cx,baseY,slotW,treeH,col){
     ctx.beginPath();
     ctx.arc(0,0,r,Math.PI,0); // top semicircle
     ctx.closePath();
-    ctx.fillStyle=col;ctx.fill();
+    ctx.fillStyle=foliage;ctx.fill();
     // Central notch — cut out a small triangle from the top
     ctx.beginPath();
     ctx.moveTo(0,0);
@@ -1050,7 +1073,8 @@ function _drawGinkgo(ctx,cx,baseY,slotW,treeH,col){
 // Black walnut — one of the most prized North American hardwoods.
 // Deep dark furrowed bark, compound leaves, distinctive divided crown.
 // Perfect for a woodworker to recognize.
-function _drawWalnut(ctx,cx,baseY,slotW,treeH,col){
+function _drawWalnut(ctx,cx,baseY,slotW,treeH,col,foliage){
+  foliage=foliage||col;
   var tw=slotW*0.082;
   var trunkH=treeH*0.38;
   var trunkTop=baseY-trunkH;
