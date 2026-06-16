@@ -15,6 +15,61 @@ var typeColors={
 };
 var ORPHAN_COLOR='#00e5cc';
 
+// ── Note Birth Particle System ────────────────────────────
+var birthParticles=[];
+var BIRTH_FPS=1000/30;
+
+// Called externally when a note is created
+// type: note type string, targetNodeId: the id of the new node in graphNodes
+function spawnBirthParticle(type,targetPath){
+  // Find target node by path - may not exist yet, retry for 2s
+  var attempts=0;
+  function trySpawn(){
+    var node=graphNodes.find(function(n){return n.path===targetPath||n.name===targetPath.split('/').pop();});
+    if(!node&&attempts<20){attempts++;setTimeout(trySpawn,100);return;}
+    var canvas=document.getElementById('vault-graph-canvas');
+    if(!canvas)return;
+    var W=canvas.width,H=canvas.height;
+    // Start from top-center of canvas (screen coords, not graph coords)
+    var sx=W*0.5,sy=20;
+    var tx=node?node.x:W*0.5;
+    var ty=node?node.y:H*0.5;
+    birthParticles.push({
+      sx:sx,sy:sy,          // start
+      tx:tx,ty:ty,          // target
+      x:sx,y:sy,            // current
+      t:0,                  // 0..1 progress
+      col:typeColors[type]||'#7c6af7',
+      life:1.2,             // seconds total
+      elapsed:0,
+      done:false,
+      popped:false
+    });
+  }
+  trySpawn();
+}
+
+function _tickBirthParticles(dt){
+  for(var i=birthParticles.length-1;i>=0;i--){
+    var p=birthParticles[i];
+    p.elapsed+=dt;
+    p.t=Math.min(p.elapsed/p.life,1);
+    // Ease in-out cubic
+    var e=p.t<0.5?4*p.t*p.t*p.t:(1-Math.pow(-2*p.t+2,3)/2);
+    // Arc: add a parabolic lift that rises then falls
+    var arc=Math.sin(p.t*Math.PI)*0.18;
+    var cx=(p.sx+p.tx)/2;
+    var cy=Math.min(p.sy,p.ty)-H_REF*arc;
+    // Quadratic bezier
+    p.x=(1-e)*(1-e)*p.sx+2*(1-e)*e*cx+e*e*p.tx;
+    p.y=(1-e)*(1-e)*p.sy+2*(1-e)*e*cy+e*e*p.ty;
+    if(p.t>=1){p.done=true;p.popped=true;}
+    if(p.elapsed>p.life+0.3)birthParticles.splice(i,1);
+  }
+}
+var H_REF=600; // updated each frame
+
+
 // ── Sap flow particle system ──────────────────────────────
 var sapParticles=[];
 function _initSapParticles(){
@@ -443,6 +498,8 @@ function runGraphSim(){
     runGraphSim();if(now-lastGraphFrame<GRAPH_FPS)return;lastGraphFrame=now;
     var dt=1/30;
     swayTime+=dt;
+    H_REF=H;
+    _tickBirthParticles(dt);
 
     var canvas=document.getElementById('vault-graph-canvas');
     var ctx=canvas.getContext('2d');
@@ -575,6 +632,9 @@ function runGraphSim(){
     graphNodes.forEach(function(n){_drawNode(ctx,n,matchedNodes,brightness);});
 
     ctx.restore();
+
+    // Birth particles drawn in screen space (after restore, ignores transform)
+    _drawBirthParticles(ctx);
   });
 }
 
