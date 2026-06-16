@@ -420,10 +420,15 @@ function _buildLayers(members){
 
 function detectType(path,content){
   var p=(path||'').toLowerCase();var c=(content||'').toLowerCase();
+  var fname=(path||'').split('/').pop().toLowerCase();
   if(p.includes('conversation')||c.includes('type: conversation'))return'conversation';
   if(p.includes('01-projects')||c.includes('type: project'))return'project';
   if(p.includes('lecture')||c.includes('type: lecture'))return'lecture';
-  if(p.includes('07-system/daily'))return'daily';
+  // daily: explicit type tag, daily-log folder, 00-capture with date filename, or YYYY-MM-DD.md anywhere
+  if(c.includes('type: daily')||c.includes('type: daily log'))return'daily';
+  if(p.includes('07-system/daily')||p.includes('daily-log')||p.includes('daily log'))return'daily';
+  if(p.includes('00-capture')&&/^\d{4}-\d{2}-\d{2}\.md$/.test(fname))return'daily';
+  if(/^\d{4}-\d{2}-\d{2}\.md$/.test(fname))return'daily';
   return'general';
 }
 
@@ -603,6 +608,7 @@ function _drawArcEdge(ctx,a,b,isHL,baseW){
 function _drawForest(ctx,W,H){
   var TYPE_ORDER=['conversation','project','lecture','daily','general'];
   var USABLE_LEFT=0.06,USABLE_RIGHT=0.94,GAP_FRAC=0.04;
+  var USABLE_TOP=0.08,USABLE_BOTTOM=0.86;
   var orphans=graphNodes.filter(function(n){return n.orphan;});
   var activeGroups=TYPE_ORDER.filter(function(t){
     return graphNodes.some(function(n){return n.type===t&&!n.orphan;});
@@ -616,8 +622,10 @@ function _drawForest(ctx,W,H){
   var totalGap=GAP_FRAC*(numSlots-1);
   var usableW=(USABLE_RIGHT-USABLE_LEFT)-totalGap;
   var slotW=usableW/Math.max(numSlots,1);
-  var baseY=H*0.86;
-  var slotPx=slotW*W; // slot width in pixels
+  var baseY=H*USABLE_BOTTOM;
+  // Use the full layout height so silhouettes always fill the slot properly
+  var fullTreeH=H*(USABLE_BOTTOM-USABLE_TOP);
+  var slotPx=slotW*W;
 
   orderedTypes.forEach(function(type,treeIdx){
     var members=graphNodes.filter(function(n){return n.type===type&&!n.orphan;});
@@ -627,11 +635,12 @@ function _drawForest(ctx,W,H){
     var xs=members.map(function(n){return n.x;});
     var ys=members.map(function(n){return n.y;});
     var minY=Math.min.apply(null,ys)-20;
-    var treeH=baseY-minY; // actual height this tree uses
+    // Use full height for silhouette so it always matches the layout area
+    var treeH=fullTreeH;
 
     // ── Draw species silhouette (faded, behind everything) ──
     ctx.save();
-    ctx.globalAlpha=0.13;
+    ctx.globalAlpha=0.18;
     _drawTreeSpecies(ctx,type,treeCX,baseY,slotPx,treeH,col);
     ctx.globalAlpha=1;
     ctx.restore();
