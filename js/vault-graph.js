@@ -697,213 +697,422 @@ function _drawForest(ctx,W,H){
 
 // ── Species dispatcher ────────────────────────────────────
 function _drawTreeSpecies(ctx,type,cx,baseY,slotW,treeH,col){
-  if(type==='lecture')   _drawBirch(ctx,cx,baseY,slotW,treeH,col);
+  if(type==='lecture')        _drawBirch(ctx,cx,baseY,slotW,treeH,col);
   else if(type==='general')   _drawOak(ctx,cx,baseY,slotW,treeH,col);
   else if(type==='daily')     _drawPine(ctx,cx,baseY,slotW,treeH,col);
   else if(type==='conversation') _drawHickory(ctx,cx,baseY,slotW,treeH,col);
   else if(type==='project')   _drawGinkgo(ctx,cx,baseY,slotW,treeH,col);
 }
 
-// ── BIRCH (lecture) ── tall, slender, elegant white bark
-// Slim trunk, delicate drooping branches, oval-ish light canopy
+// ── BIRCH (lecture) ──────────────────────────────────────
+// Elegant, slender, tall. White/silver bark with horizontal lenticels.
+// Delicate drooping branches, multi-stem at base. Very distinctive silhouette.
 function _drawBirch(ctx,cx,baseY,slotW,treeH,col){
-  var trunkW=slotW*0.04;
-  var trunkTop=baseY-treeH*0.88;
-  // Slender trunk
-  ctx.beginPath();
-  ctx.moveTo(cx-trunkW,baseY);ctx.lineTo(cx-trunkW*0.5,trunkTop);
-  ctx.lineTo(cx+trunkW*0.5,trunkTop);ctx.lineTo(cx+trunkW,baseY);
-  ctx.closePath();ctx.fillStyle=col;ctx.fill();
-  // Bark marks — horizontal dashes
-  for(var i=0;i<5;i++){
-    var by=baseY-treeH*(0.15+i*0.14);
-    ctx.beginPath();ctx.moveTo(cx-trunkW*0.8,by);ctx.lineTo(cx+trunkW*0.8,by);
-    ctx.strokeStyle=col;ctx.lineWidth=trunkW*0.5;ctx.stroke();
-  }
-  // Main canopy — elongated oval, slightly off-center drooping clusters
-  var cW=slotW*0.38,cH=treeH*0.55;
-  var cY=trunkTop+cH*0.3;
-  ctx.beginPath();ctx.ellipse(cx,cY,cW,cH,0,0,Math.PI*2);
-  ctx.fillStyle=col;ctx.fill();
-  // Drooping side tufts
-  for(var s=-1;s<=1;s+=2){
-    ctx.beginPath();
-    ctx.ellipse(cx+s*cW*0.5,cY+cH*0.2,cW*0.28,cH*0.35,s*0.3,0,Math.PI*2);
-    ctx.fillStyle=col;ctx.fill();
-  }
-}
+  var tw=slotW*0.038;
+  var trunkTop=baseY-treeH*0.92;
 
-// ── OAK (general) ── wide spreading crown, gnarled trunk, massive presence
-function _drawOak(ctx,cx,baseY,slotW,treeH,col){
-  var trunkW=slotW*0.09;
-  var trunkH=treeH*0.42;
-  var trunkTop=baseY-trunkH;
-  // Thick gnarled trunk — slight curve
-  ctx.beginPath();
-  ctx.moveTo(cx-trunkW,baseY);
-  ctx.quadraticCurveTo(cx-trunkW*1.2,baseY-trunkH*0.5,cx-trunkW*0.4,trunkTop);
-  ctx.lineTo(cx+trunkW*0.4,trunkTop);
-  ctx.quadraticCurveTo(cx+trunkW*1.2,baseY-trunkH*0.5,cx+trunkW,baseY);
-  ctx.closePath();ctx.fillStyle=col;ctx.fill();
-  // Main wide canopy — layered blobs for oak bulk
-  var cR=slotW*0.46;
-  var cY=trunkTop-cR*0.55;
-  ctx.beginPath();ctx.arc(cx,cY,cR,0,Math.PI*2);
-  ctx.fillStyle=col;ctx.fill();
-  // Side lobes
-  ctx.beginPath();ctx.arc(cx-cR*0.55,cY+cR*0.1,cR*0.65,0,Math.PI*2);
-  ctx.fillStyle=col;ctx.fill();
-  ctx.beginPath();ctx.arc(cx+cR*0.55,cY+cR*0.1,cR*0.65,0,Math.PI*2);
-  ctx.fillStyle=col;ctx.fill();
-  // Top lobe
-  ctx.beginPath();ctx.arc(cx,cY-cR*0.45,cR*0.5,0,Math.PI*2);
-  ctx.fillStyle=col;ctx.fill();
-  // Low branches poking out
-  for(var s=-1;s<=1;s+=2){
-    ctx.beginPath();ctx.moveTo(cx+s*trunkW*0.3,trunkTop+trunkH*0.15);
-    ctx.lineTo(cx+s*cR*0.85,trunkTop-treeH*0.05);
-    ctx.strokeStyle=col;ctx.lineWidth=trunkW*0.5;ctx.stroke();
-  }
-}
-
-// ── PINE (daily) ── classic layered triangle, strong and symmetric
-function _drawPine(ctx,cx,baseY,slotW,treeH,col){
-  var trunkW=slotW*0.055;
-  var trunkH=treeH*0.2;
-  // Trunk
-  ctx.beginPath();
-  ctx.rect(cx-trunkW,baseY-trunkH,trunkW*2,trunkH);
-  ctx.fillStyle=col;ctx.fill();
-  // Layered triangles — 4 tiers, each one slightly narrower and higher
-  var tiers=4;
-  for(var i=0;i<tiers;i++){
-    var frac=i/tiers;
-    var tierW=slotW*(0.46-frac*0.12);
-    var tierTop=baseY-trunkH-(treeH-trunkH)*(0.18+frac*0.72);
-    var tierBase=baseY-trunkH-(treeH-trunkH)*(frac*0.55);
-    ctx.beginPath();
-    ctx.moveTo(cx,tierTop);
-    ctx.lineTo(cx-tierW,tierBase);
-    ctx.lineTo(cx+tierW,tierBase);
-    ctx.closePath();ctx.fillStyle=col;ctx.fill();
-  }
-  // Pointed top cap
-  ctx.beginPath();
-  ctx.moveTo(cx,baseY-treeH);
-  ctx.lineTo(cx-slotW*0.06,baseY-treeH*0.82);
-  ctx.lineTo(cx+slotW*0.06,baseY-treeH*0.82);
-  ctx.closePath();ctx.fillStyle=col;ctx.fill();
-}
-
-// ── HICKORY (conversation) ── tall straight trunk, irregular asymmetric crown
-// Hickory is a tall hardwood with a high crown and slightly zigzag branching
-function _drawHickory(ctx,cx,baseY,slotW,treeH,col){
-  var trunkW=slotW*0.06;
-  var trunkH=treeH*0.52; // tall straight trunk
-  var trunkTop=baseY-trunkH;
-  // Tall straight trunk
-  ctx.beginPath();
-  ctx.rect(cx-trunkW*0.5,baseY-trunkH,trunkW,trunkH);
-  ctx.fillStyle=col;ctx.fill();
-  // Irregular crown — 5 offset blobs at different heights/angles
-  var blobs=[
-    {ox:0,        oy:-0.30, r:0.30},
-    {ox:-0.28,    oy:-0.18, r:0.22},
-    {ox: 0.32,    oy:-0.20, r:0.24},
-    {ox:-0.18,    oy:-0.48, r:0.18},
-    {ox: 0.14,    oy:-0.55, r:0.16},
+  // Multi-stem base — birch often grows in clumps of 2-3
+  var stems=[
+    {ox:-slotW*0.055, lean:-0.06},
+    {ox:0,            lean: 0.00},
+    {ox: slotW*0.048, lean: 0.05}
   ];
-  blobs.forEach(function(b){
+  stems.forEach(function(s){
     ctx.beginPath();
-    ctx.arc(cx+b.ox*slotW,trunkTop+b.oy*treeH,b.r*slotW,0,Math.PI*2);
+    ctx.moveTo(cx+s.ox-tw,baseY);
+    ctx.quadraticCurveTo(cx+s.ox*1.3-tw*0.5, baseY-treeH*0.5, cx+s.ox+s.lean*treeH-tw*0.3, trunkTop+treeH*0.15);
+    ctx.quadraticCurveTo(cx+s.ox*1.3+tw*0.5, baseY-treeH*0.5, cx+s.ox+s.lean*treeH+tw*0.3, trunkTop+treeH*0.15);
+    ctx.closePath();
     ctx.fillStyle=col;ctx.fill();
   });
-  // Zigzag branch lines
-  var branches=[[0,-0.08,-0.35,-0.22],[0,-0.08,0.38,-0.25],[0,-0.22,-0.20,-0.44],[0,-0.22,0.22,-0.50]];
-  branches.forEach(function(b){
-    ctx.beginPath();
-    ctx.moveTo(cx+b[0]*slotW,trunkTop+b[1]*treeH);
-    ctx.lineTo(cx+b[2]*slotW,trunkTop+b[3]*treeH);
-    ctx.strokeStyle=col;ctx.lineWidth=trunkW*0.6;ctx.stroke();
+
+  // Horizontal bark lenticels — the signature white birch marks
+  for(var i=0;i<7;i++){
+    var by=baseY-treeH*(0.08+i*0.11);
+    var bw=tw*(1.1-i*0.06);
+    ctx.beginPath();ctx.rect(cx-bw*2.2,by,bw*4.4,tw*0.35);
+    ctx.fillStyle=col;ctx.fill();
+    // Second stem mark
+    ctx.beginPath();ctx.rect(cx+slotW*0.048-bw*2,by+tw*0.5,bw*3.5,tw*0.3);
+    ctx.fillStyle=col;ctx.fill();
+  }
+
+  // Canopy — tall narrow oval, slightly asymmetric
+  // Main center canopy
+  ctx.beginPath();
+  ctx.ellipse(cx,trunkTop+treeH*0.28,slotW*0.22,treeH*0.36,0,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+
+  // Right secondary canopy
+  ctx.beginPath();
+  ctx.ellipse(cx+slotW*0.12,trunkTop+treeH*0.38,slotW*0.16,treeH*0.26,0.15,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+
+  // Left secondary canopy
+  ctx.beginPath();
+  ctx.ellipse(cx-slotW*0.10,trunkTop+treeH*0.42,slotW*0.14,treeH*0.22,-0.12,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+
+  // Drooping branch sprays — birch has very distinctive pendulous branches
+  var branchData=[
+    {bx:cx-slotW*0.18, by:trunkTop+treeH*0.30, dx:-slotW*0.10, dy:treeH*0.18, n:4},
+    {bx:cx+slotW*0.16, by:trunkTop+treeH*0.32, dx: slotW*0.10, dy:treeH*0.16, n:3},
+    {bx:cx-slotW*0.14, by:trunkTop+treeH*0.50, dx:-slotW*0.14, dy:treeH*0.20, n:5},
+    {bx:cx+slotW*0.12, by:trunkTop+treeH*0.52, dx: slotW*0.12, dy:treeH*0.18, n:4},
+  ];
+  branchData.forEach(function(b){
+    for(var i=0;i<b.n;i++){
+      var t=i/(b.n-1||1);
+      ctx.beginPath();
+      ctx.moveTo(b.bx,b.by);
+      ctx.quadraticCurveTo(b.bx+b.dx*0.4,b.by+b.dy*0.3,b.bx+b.dx*(0.7+t*0.3),b.by+b.dy*(0.6+t*0.4));
+      ctx.strokeStyle=col;ctx.lineWidth=tw*0.35;ctx.stroke();
+    }
   });
 }
 
-// ── GINKGO (project) ── surprise! fan-shaped leaves, ancient, distinctive
-// The ginkgo biloba — one of the oldest living tree species.
-// Fan-shaped lobes, straight trunk, spreading tiered crown.
-function _drawGinkgo(ctx,cx,baseY,slotW,treeH,col){
-  var trunkW=slotW*0.055;
+// ── OAK (general) ────────────────────────────────────────
+// The king. Massive spreading crown, deeply furrowed bark, gnarled branches.
+// Short thick trunk, crown wider than tall. Ancient and powerful.
+function _drawOak(ctx,cx,baseY,slotW,treeH,col){
+  var tw=slotW*0.10;
   var trunkH=treeH*0.38;
   var trunkTop=baseY-trunkH;
-  // Trunk
+
+  // Thick gnarled trunk — slightly tapered with a hint of buttress roots
+  // Buttress flare at base
   ctx.beginPath();
-  ctx.rect(cx-trunkW*0.5,baseY-trunkH,trunkW,trunkH);
+  ctx.moveTo(cx-tw*1.8,baseY);
+  ctx.quadraticCurveTo(cx-tw*1.2,baseY-trunkH*0.15,cx-tw*0.55,trunkTop);
+  ctx.lineTo(cx+tw*0.55,trunkTop);
+  ctx.quadraticCurveTo(cx+tw*1.2,baseY-trunkH*0.15,cx+tw*1.8,baseY);
+  ctx.closePath();
   ctx.fillStyle=col;ctx.fill();
-  // Ginkgo fan clusters — characteristic bilobed fans arranged in tiers
-  // Each "fan" is a wide semicircle with a notch
-  function drawFan(fx,fy,r,angle){
-    ctx.save();ctx.translate(fx,fy);ctx.rotate(angle);
-    // Fan shape: semicircle
-    ctx.beginPath();ctx.arc(0,0,r,-Math.PI*0.05,-Math.PI,true);ctx.closePath();
-    ctx.fillStyle=col;ctx.fill();
-    // Central notch (ginkgo leaf characteristic)
-    ctx.beginPath();ctx.arc(0,0,r*0.38,Math.PI*0.2,-Math.PI*1.2,false);ctx.closePath();
-    ctx.fillStyle='rgba(0,0,0,0.0)'; // transparent — just clip visually via globalAlpha
-    ctx.restore();
-  }
-  // 3 tiers of fans
-  var tiers=[
-    [{ox:0,oy:-0.55,r:0.30,a:0},{ox:-0.22,oy:-0.42,r:0.22,a:-0.4},{ox:0.22,oy:-0.42,r:0.22,a:0.4}],
-    [{ox:-0.30,oy:-0.20,r:0.24,a:-0.6},{ox:0.30,oy:-0.20,r:0.24,a:0.6},{ox:0,oy:-0.28,r:0.20,a:0}],
-    [{ox:-0.26,oy:-0.04,r:0.18,a:-0.8},{ox:0.26,oy:-0.04,r:0.18,a:0.8}],
-  ];
-  tiers.forEach(function(tier){
-    tier.forEach(function(b){
-      drawFan(cx+b.ox*slotW,trunkTop+b.oy*treeH,b.r*slotW,b.a);
-    });
-  });
-  // Thin branch lines to each fan cluster
-  var blines=[
-    [0,0,-0.30,-0.44],[0,0,0.30,-0.44],[0,0,0,-0.52],
-    [0,-0.44,-0.30,-0.20],[0,-0.44,0.30,-0.20]
-  ];
-  blines.forEach(function(b){
+
+  // Bark texture — vertical fissures
+  for(var i=0;i<4;i++){
+    var fx=cx-tw*0.4+i*tw*0.25;
     ctx.beginPath();
-    ctx.moveTo(cx+b[0]*slotW,trunkTop+b[1]*treeH);
-    ctx.lineTo(cx+b[2]*slotW,trunkTop+b[3]*treeH);
-    ctx.strokeStyle=col;ctx.lineWidth=trunkW*0.45;ctx.stroke();
+    ctx.moveTo(fx,baseY-trunkH*0.1);
+    ctx.lineTo(fx+tw*0.05,baseY-trunkH*0.55);
+    ctx.strokeStyle=col;ctx.lineWidth=tw*0.18;ctx.stroke();
+  }
+
+  // Primary scaffold branches — the gnarled low branches oak is famous for
+  var scaffolds=[
+    {sx:cx-tw*0.3,sy:trunkTop,ex:cx-slotW*0.44,ey:trunkTop-treeH*0.12,mx:cx-slotW*0.22,my:trunkTop+treeH*0.04},
+    {sx:cx+tw*0.3,sy:trunkTop,ex:cx+slotW*0.42,ey:trunkTop-treeH*0.10,mx:cx+slotW*0.20,my:trunkTop+treeH*0.05},
+    {sx:cx-tw*0.1,sy:trunkTop,ex:cx-slotW*0.18,ey:trunkTop-treeH*0.28,mx:cx-slotW*0.08,my:trunkTop-treeH*0.08},
+    {sx:cx+tw*0.1,sy:trunkTop,ex:cx+slotW*0.16,ey:trunkTop-treeH*0.30,mx:cx+slotW*0.07,my:trunkTop-treeH*0.09},
+  ];
+  scaffolds.forEach(function(s){
+    ctx.beginPath();
+    ctx.moveTo(s.sx,s.sy);
+    ctx.quadraticCurveTo(s.mx,s.my,s.ex,s.ey);
+    ctx.strokeStyle=col;ctx.lineWidth=tw*0.5;ctx.lineCap='round';ctx.stroke();
+  });
+
+  // Massive multi-lobed crown — oak crown is wider than it is tall
+  // Central dome
+  ctx.beginPath();
+  ctx.ellipse(cx,trunkTop-treeH*0.22,slotW*0.40,treeH*0.30,0,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+  // Left lobe
+  ctx.beginPath();
+  ctx.ellipse(cx-slotW*0.34,trunkTop-treeH*0.10,slotW*0.28,treeH*0.22,-0.2,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+  // Right lobe
+  ctx.beginPath();
+  ctx.ellipse(cx+slotW*0.32,trunkTop-treeH*0.10,slotW*0.26,treeH*0.22,0.2,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+  // Top lobe
+  ctx.beginPath();
+  ctx.ellipse(cx,trunkTop-treeH*0.44,slotW*0.22,treeH*0.18,0,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+  // Low side lobes — oak hangs low
+  ctx.beginPath();
+  ctx.ellipse(cx-slotW*0.42,trunkTop-treeH*0.01,slotW*0.18,treeH*0.14,0.3,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx+slotW*0.40,trunkTop-treeH*0.01,slotW*0.17,treeH*0.14,-0.3,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+}
+
+// ── PINE (daily) ─────────────────────────────────────────
+// Classic conifer. Perfectly symmetric layered tiers, straight trunk,
+// sharp pointed top. Strong, reliable, geometric. Loblolly/Eastern White pine.
+function _drawPine(ctx,cx,baseY,slotW,treeH,col){
+  var tw=slotW*0.048;
+  var trunkH=treeH*0.22;
+  var trunkTop=baseY-trunkH;
+
+  // Straight trunk — pine trunks are very straight and cylindrical
+  ctx.beginPath();
+  ctx.rect(cx-tw*0.55,baseY-trunkH,tw*1.1,trunkH);
+  ctx.fillStyle=col;ctx.fill();
+
+  // Bark plates — pine has plated scaly bark
+  for(var p=0;p<5;p++){
+    var py=baseY-trunkH*0.12-p*trunkH*0.17;
+    ctx.beginPath();
+    ctx.rect(cx-tw*0.5,py,tw,trunkH*0.12);
+    ctx.fillStyle=col;ctx.globalAlpha*=0.7;ctx.fill();ctx.globalAlpha=1;
+  }
+
+  // 5 tiers — each slightly narrower and higher, with upswept branch tips
+  var tiers=5;
+  for(var i=0;i<tiers;i++){
+    var frac=i/tiers;
+    // Each tier: flat base that sweeps up at tips
+    var tierW=slotW*(0.46-frac*0.10);
+    var tierBaseY=trunkTop-((treeH-trunkH)*frac*0.82);
+    var tierTopY=tierBaseY-(treeH-trunkH)*0.16*(1-frac*0.3);
+
+    // Main tier triangle
+    ctx.beginPath();
+    ctx.moveTo(cx,tierTopY);
+    ctx.lineTo(cx-tierW,tierBaseY);
+    ctx.lineTo(cx+tierW,tierBaseY);
+    ctx.closePath();
+    ctx.fillStyle=col;ctx.fill();
+
+    // Upswept branch tips — pine branches angle upward at tips
+    if(i<tiers-1){
+      ctx.beginPath();
+      ctx.moveTo(cx-tierW,tierBaseY);
+      ctx.quadraticCurveTo(cx-tierW*0.85,tierBaseY-treeH*0.03,cx-tierW*0.7,tierBaseY-treeH*0.045);
+      ctx.strokeStyle=col;ctx.lineWidth=tw*0.4;ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx+tierW,tierBaseY);
+      ctx.quadraticCurveTo(cx+tierW*0.85,tierBaseY-treeH*0.03,cx+tierW*0.7,tierBaseY-treeH*0.045);
+      ctx.strokeStyle=col;ctx.lineWidth=tw*0.4;ctx.stroke();
+    }
+  }
+
+  // Sharp pointed leader at top — very characteristic of pine
+  var topTierY=trunkTop-(treeH-trunkH)*0.82;
+  ctx.beginPath();
+  ctx.moveTo(cx,baseY-treeH);
+  ctx.lineTo(cx-slotW*0.04,topTierY);
+  ctx.lineTo(cx+slotW*0.04,topTierY);
+  ctx.closePath();
+  ctx.fillStyle=col;ctx.fill();
+}
+
+// ── HICKORY (conversation) ────────────────────────────────
+// Tall straight hardwood, high crown, compound leaves make for
+// an airy irregular silhouette. Trunk is very straight with tight bark.
+// One of the strongest North American hardwoods.
+function _drawHickory(ctx,cx,baseY,slotW,treeH,col){
+  var tw=slotW*0.055;
+  var trunkH=treeH*0.52;
+  var trunkTop=baseY-trunkH;
+
+  // Very straight tall trunk — hickory is notably upright
+  ctx.beginPath();
+  ctx.moveTo(cx-tw*0.55,baseY);
+  ctx.lineTo(cx-tw*0.42,trunkTop);
+  ctx.lineTo(cx+tw*0.42,trunkTop);
+  ctx.lineTo(cx+tw*0.55,baseY);
+  ctx.closePath();
+  ctx.fillStyle=col;ctx.fill();
+
+  // Tight ridged bark — hickory has very tight interlacing ridges
+  for(var r=0;r<6;r++){
+    var ry=baseY-trunkH*0.08-r*trunkH*0.14;
+    ctx.beginPath();
+    ctx.moveTo(cx-tw*0.4,ry);
+    ctx.lineTo(cx-tw*0.1,ry-trunkH*0.05);
+    ctx.lineTo(cx+tw*0.3,ry-trunkH*0.02);
+    ctx.strokeStyle=col;ctx.lineWidth=tw*0.2;ctx.stroke();
+  }
+
+  // High crown branches — hickory branches emerge high up
+  // Primary branches angle outward then upward (compound leaf habit)
+  var branches=[
+    {sx:cx-tw*0.3,sy:trunkTop,        ex:cx-slotW*0.32,ey:trunkTop-treeH*0.14},
+    {sx:cx+tw*0.3,sy:trunkTop,        ex:cx+slotW*0.30,ey:trunkTop-treeH*0.12},
+    {sx:cx-tw*0.2,sy:trunkTop-treeH*0.04, ex:cx-slotW*0.22,ey:trunkTop-treeH*0.32},
+    {sx:cx+tw*0.2,sy:trunkTop-treeH*0.04, ex:cx+slotW*0.20,ey:trunkTop-treeH*0.34},
+    {sx:cx,       sy:trunkTop-treeH*0.06, ex:cx-slotW*0.08,ey:trunkTop-treeH*0.44},
+    {sx:cx,       sy:trunkTop-treeH*0.06, ex:cx+slotW*0.06,ey:trunkTop-treeH*0.46},
+  ];
+  branches.forEach(function(b){
+    ctx.beginPath();
+    ctx.moveTo(b.sx,b.sy);
+    ctx.quadraticCurveTo((b.sx+b.ex)/2,b.sy-(Math.abs(b.ey-b.sy)*0.3),b.ex,b.ey);
+    ctx.strokeStyle=col;ctx.lineWidth=tw*0.45;ctx.lineCap='round';ctx.stroke();
+  });
+
+  // Airy irregular crown — compound leaves create open irregular texture
+  // Multiple small-medium blobs rather than one solid mass
+  var crownBlobs=[
+    {ox:0,        oy:-0.52, rx:0.18,ry:0.16},
+    {ox:-0.24,    oy:-0.38, rx:0.16,ry:0.14},
+    {ox: 0.22,    oy:-0.36, rx:0.15,ry:0.13},
+    {ox:-0.14,    oy:-0.60, rx:0.13,ry:0.12},
+    {ox: 0.12,    oy:-0.62, rx:0.12,ry:0.11},
+    {ox:-0.28,    oy:-0.20, rx:0.14,ry:0.12},
+    {ox: 0.26,    oy:-0.20, rx:0.13,ry:0.11},
+    {ox:0,        oy:-0.70, rx:0.10,ry:0.10},
+  ];
+  crownBlobs.forEach(function(b){
+    ctx.beginPath();
+    ctx.ellipse(cx+b.ox*slotW,trunkTop+b.oy*treeH,b.rx*slotW,b.ry*treeH,0,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.fill();
   });
 }
 
-// ── WALNUT (orphan grove) ── broad rounded crown, divided trunk
-function _drawWalnut(ctx,cx,baseY,slotW,treeH,col){
-  var trunkW=slotW*0.08;
+// ── GINKGO (project) ─────────────────────────────────────
+// THE SURPRISE. Ancient living fossil, 270 million years old.
+// Unmistakable fan-shaped bilobed leaves, conical young shape
+// but mature ginkgos have very distinctive tiered horizontal branching.
+// Brilliant yellow in fall. Perfect for "project" — ancient, enduring, unique.
+function _drawGinkgo(ctx,cx,baseY,slotW,treeH,col){
+  var tw=slotW*0.052;
   var trunkH=treeH*0.35;
   var trunkTop=baseY-trunkH;
-  // Divided trunk (walnut splits low)
+
+  // Straight trunk — ginkgo has a very clean straight trunk
   ctx.beginPath();
-  ctx.moveTo(cx-trunkW,baseY);
-  ctx.lineTo(cx-trunkW*0.8,trunkTop+trunkH*0.3);
-  ctx.lineTo(cx-trunkW*1.4,trunkTop);
-  ctx.strokeStyle=col;ctx.lineWidth=trunkW*0.9;ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(cx+trunkW,baseY);
-  ctx.lineTo(cx+trunkW*0.8,trunkTop+trunkH*0.3);
-  ctx.lineTo(cx+trunkW*1.4,trunkTop);
-  ctx.strokeStyle=col;ctx.lineWidth=trunkW*0.9;ctx.stroke();
-  // Short joining trunk section
-  ctx.beginPath();ctx.rect(cx-trunkW*0.5,baseY-trunkH*0.35,trunkW,trunkH*0.35);
+  ctx.moveTo(cx-tw*0.6,baseY);
+  ctx.lineTo(cx-tw*0.44,trunkTop);
+  ctx.lineTo(cx+tw*0.44,trunkTop);
+  ctx.lineTo(cx+tw*0.6,baseY);
+  ctx.closePath();
   ctx.fillStyle=col;ctx.fill();
-  // Wide rounded canopy — two overlapping blobs (one per split trunk)
-  ctx.beginPath();ctx.arc(cx-slotW*0.12,trunkTop-treeH*0.18,slotW*0.30,0,Math.PI*2);
-  ctx.fillStyle=col;ctx.fill();
-  ctx.beginPath();ctx.arc(cx+slotW*0.12,trunkTop-treeH*0.18,slotW*0.30,0,Math.PI*2);
-  ctx.fillStyle=col;ctx.fill();
-  // Top blob joining them
-  ctx.beginPath();ctx.arc(cx,trunkTop-treeH*0.28,slotW*0.24,0,Math.PI*2);
-  ctx.fillStyle=col;ctx.fill();
+
+  // Draw a genuine ginkgo fan leaf shape
+  function drawFanLeaf(fx,fy,r,angle){
+    ctx.save();
+    ctx.translate(fx,fy);
+    ctx.rotate(angle);
+    // Fan shape — semicircle with a central notch (the defining ginkgo feature)
+    ctx.beginPath();
+    ctx.arc(0,0,r,Math.PI,0); // top semicircle
+    ctx.closePath();
+    ctx.fillStyle=col;ctx.fill();
+    // Central notch — cut out a small triangle from the top
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.lineTo(-r*0.15,-r*0.55);
+    ctx.lineTo(r*0.15,-r*0.55);
+    ctx.closePath();
+    // We can't actually cut out, so draw the notch as a thin line instead
+    ctx.strokeStyle=col;ctx.lineWidth=r*0.12;ctx.stroke();
+    // Veins radiating from stem — very visible in ginkgo
+    for(var v=-3;v<=3;v++){
+      ctx.beginPath();
+      ctx.moveTo(0,0);
+      var vang=v*(Math.PI/8);
+      ctx.lineTo(Math.sin(vang)*r*0.85,-Math.cos(vang)*r*0.85);
+      ctx.strokeStyle=col;ctx.lineWidth=r*0.06;ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // Horizontal tiered branches — mature ginkgo has very distinctive
+  // horizontal whorls of branches at each tier
+  var tierData=[
+    {y:trunkTop+treeH*0.05, spread:0.38, fans:5, fanR:0.12, sW:slotW},
+    {y:trunkTop-treeH*0.10, spread:0.30, fans:4, fanR:0.10, sW:slotW},
+    {y:trunkTop-treeH*0.24, spread:0.22, fans:3, fanR:0.09, sW:slotW},
+    {y:trunkTop-treeH*0.36, spread:0.16, fans:3, fanR:0.08, sW:slotW},
+    {y:trunkTop-treeH*0.48, spread:0.10, fans:2, fanR:0.07, sW:slotW},
+  ];
+
+  tierData.forEach(function(tier){
+    // Draw horizontal branch line
+    ctx.beginPath();
+    ctx.moveTo(cx-tier.spread*slotW,tier.y);
+    ctx.lineTo(cx+tier.spread*slotW,tier.y);
+    ctx.strokeStyle=col;ctx.lineWidth=tw*0.4;ctx.stroke();
+
+    // Fan leaves clustered at branch tips and along branches
+    for(var f=0;f<tier.fans;f++){
+      var fx=cx-tier.spread*slotW+(f/(Math.max(tier.fans-1,1)))*tier.spread*slotW*2;
+      var fanR=tier.fanR*slotW*(0.8+Math.random()*0.4);
+      // Small cluster of 2-3 fans at each position
+      drawFanLeaf(fx,tier.y-fanR*0.3,fanR,0);
+      if(f===0||f===tier.fans-1){
+        drawFanLeaf(fx+(f===0?-1:1)*fanR*0.5,tier.y-fanR*0.5,fanR*0.7,(f===0?-0.3:0.3));
+      }
+    }
+  });
+
+  // Crown tuft at very top
+  drawFanLeaf(cx,trunkTop-treeH*0.55,slotW*0.08,0);
+  drawFanLeaf(cx-slotW*0.06,trunkTop-treeH*0.52,slotW*0.065,-0.4);
+  drawFanLeaf(cx+slotW*0.06,trunkTop-treeH*0.52,slotW*0.065,0.4);
 }
 
+// ── WALNUT (orphan grove) ─────────────────────────────────
+// Black walnut — one of the most prized North American hardwoods.
+// Deep dark furrowed bark, compound leaves, distinctive divided crown.
+// Perfect for a woodworker to recognize.
+function _drawWalnut(ctx,cx,baseY,slotW,treeH,col){
+  var tw=slotW*0.082;
+  var trunkH=treeH*0.38;
+  var trunkTop=baseY-trunkH;
+
+  // Main trunk — walnut has very dark deeply furrowed bark
+  ctx.beginPath();
+  ctx.moveTo(cx-tw*1.2,baseY);
+  ctx.quadraticCurveTo(cx-tw*0.9,baseY-trunkH*0.4,cx-tw*0.52,trunkTop);
+  ctx.lineTo(cx+tw*0.52,trunkTop);
+  ctx.quadraticCurveTo(cx+tw*0.9,baseY-trunkH*0.4,cx+tw*1.2,baseY);
+  ctx.closePath();
+  ctx.fillStyle=col;ctx.fill();
+
+  // Deep vertical furrows — walnut bark is very deeply ridged
+  for(var f=0;f<5;f++){
+    var fx=cx-tw*0.8+f*tw*0.38;
+    ctx.beginPath();
+    ctx.moveTo(fx,baseY-trunkH*0.05);
+    ctx.bezierCurveTo(fx-tw*0.08,baseY-trunkH*0.3,fx+tw*0.08,baseY-trunkH*0.5,fx,baseY-trunkH*0.85);
+    ctx.strokeStyle=col;ctx.lineWidth=tw*0.22;ctx.stroke();
+  }
+
+  // Walnut divides into 2-3 main scaffold limbs fairly low
+  var scaffolds=[
+    {ex:cx-slotW*0.28,ey:trunkTop-treeH*0.08,w:tw*0.65},
+    {ex:cx+slotW*0.25,ey:trunkTop-treeH*0.07,w:tw*0.60},
+    {ex:cx-slotW*0.05,ey:trunkTop-treeH*0.18,w:tw*0.50},
+  ];
+  scaffolds.forEach(function(s){
+    ctx.beginPath();
+    ctx.moveTo(cx,trunkTop+tw*0.3);
+    ctx.quadraticCurveTo((cx+s.ex)/2,trunkTop-treeH*0.04,s.ex,s.ey);
+    ctx.strokeStyle=col;ctx.lineWidth=s.w;ctx.lineCap='round';ctx.stroke();
+  });
+
+  // Wide rounded crown — two overlapping domes (one per main scaffold)
+  // Walnut has a broad spreading crown
+  ctx.beginPath();
+  ctx.ellipse(cx-slotW*0.14,trunkTop-treeH*0.22,slotW*0.32,treeH*0.24,0,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx+slotW*0.12,trunkTop-treeH*0.22,slotW*0.30,treeH*0.23,0,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+  // Top join
+  ctx.beginPath();
+  ctx.ellipse(cx,trunkTop-treeH*0.34,slotW*0.22,treeH*0.16,0,0,Math.PI*2);
+  ctx.fillStyle=col;ctx.fill();
+
+  // Compound leaf clusters at branch tips — walnut has very large compound leaves
+  // Draw as small radiating finger shapes
+  function leafCluster(lx,ly,r){
+    for(var i=0;i<7;i++){
+      var a=(i/7)*Math.PI*2;
+      ctx.beginPath();
+      ctx.ellipse(lx+Math.cos(a)*r*0.55,ly+Math.sin(a)*r*0.55,r*0.28,r*0.14,a,0,Math.PI*2);
+      ctx.fillStyle=col;ctx.fill();
+    }
+  }
+  leafCluster(cx-slotW*0.28,trunkTop-treeH*0.18,slotW*0.08);
+  leafCluster(cx+slotW*0.24,trunkTop-treeH*0.17,slotW*0.08);
+  leafCluster(cx,trunkTop-treeH*0.42,slotW*0.07);
+}
 // ── Draw Yggdrasil decorations ────────────────────────────
 function _drawYggdrasil(ctx,W,H){
   var CX=W*0.5,TRUNK_Y=H*0.78;
