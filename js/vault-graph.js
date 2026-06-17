@@ -509,6 +509,7 @@ function detectType(path,content){
 // ── SIMULATION + DRAW LOOP ────────────────────────────────
 var GRAPH_FPS=1000/30,lastGraphFrame=0;
 function runGraphSim(){
+  if(graphAnim)return; // prevent duplicate loops
   graphAnim=requestAnimationFrame(function(now){
     runGraphSim();if(now-lastGraphFrame<GRAPH_FPS)return;lastGraphFrame=now;
     var dt=1/30;
@@ -590,6 +591,7 @@ function runGraphSim(){
     });
 
     // ── DRAW ──────────────────────────────────────────────
+    try{
     ctx.clearRect(0,0,W,H);
     ctx.save();
     ctx.translate(graphTransform.x,graphTransform.y);
@@ -650,6 +652,7 @@ function runGraphSim(){
 
     // Birth particles drawn in screen space (after restore, ignores transform)
     _drawBirthParticles(ctx);
+    }catch(drawErr){console.warn('[BAKER] draw error:',drawErr.message);}
   });
 }
 
