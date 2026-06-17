@@ -877,7 +877,7 @@ function openDB(){return new Promise(function(res,rej){var r=indexedDB.open('bak
 async function storeHandle(h){try{var db=await openDB();db.transaction('handles','readwrite').objectStore('handles').put({id:'vault',handle:h});}catch(e){}}
 async function getStoredHandle(){try{var db=await openDB();return new Promise(function(res){var r=db.transaction('handles','readonly').objectStore('handles').get('vault');r.onsuccess=function(){res(r.result?r.result.handle:null);};r.onerror=function(){res(null);};});}catch(e){return null;}}
 async function clearHandle(){try{var db=await openDB();db.transaction('handles','readwrite').objectStore('handles').delete('vault');}catch(e){}}
-async function tryReconnectVault(){var stored=await getStoredHandle();if(!stored)return;setVaultBtn('scanning');try{var perm=await stored.requestPermission({mode:'readwrite'});if(perm==='granted'){await doConnect(stored);}else{await clearHandle();setVaultBtn('off');}}catch(e){await clearHandle();setVaultBtn('off');}}
+async function tryReconnectVault(){var stored=await getStoredHandle();if(!stored)return;setVaultBtn('scanning');try{var perm=await stored.requestPermission({mode:'readwrite'});if(perm==='granted'){await doConnect(stored);}else{setVaultBtn('off');}}catch(e){setVaultBtn('off');}}
 async function handleVaultBtn(){if(!hasFS){alert('Requires Chrome on desktop.');return;}if(vaultConnected){vaultHandle=null;vaultIndex=[];vaultConnected=false;graphNodes=[];graphEdges=[];setVaultBtn('off');document.getElementById('graph-overlay').classList.remove('hidden');document.getElementById('graph-stats').style.display='none';if(graphAnim){cancelAnimationFrame(graphAnim);graphAnim=null;}var ctx=document.getElementById('vault-graph-canvas').getContext('2d');ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);}else{try{var handle=await window.showDirectoryPicker({mode:'readwrite'});await doConnect(handle);}catch(e){if(e.name!=='AbortError')alert('Failed: '+e.message);}}}
 async function doConnect(handle){
   vaultHandle=handle;await storeHandle(handle);setVaultBtn('scanning');
@@ -907,7 +907,7 @@ var conversationHistory=[];
 function loadVoices(){cachedVoices=speechSynthesis.getVoices();}
 function startWakeWord(){var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;stopWakeWord();wakeRec=new SR();wakeRec.continuous=true;wakeRec.interimResults=false;wakeRec.lang='en-US';wakeRec.onresult=function(e){var txt=e.results[e.results.length-1][0].transcript.toLowerCase().trim();if(HOT_WORDS.some(function(w){return txt.includes(w);})){stopWakeWord();activateListening();}};wakeRec.onend=function(){if(!voiceActive&&!isSpeaking)try{wakeRec.start();}catch(e){}};try{wakeRec.start();document.getElementById('wake-status').textContent='👂 listening for wake word';}catch(e){}}
 function stopWakeWord(){if(wakeRec){wakeRec.stop();wakeRec=null;}document.getElementById('wake-status').textContent='';}
-function handleOrbClick(e){if(orbMusicMode)return;if(conversationMode){endConversationMode('Goodbye, sir.');return;}if(isSpeaking){stopSpeaking();return;}if(voiceActive){stopVoice();}else{activateListening();}}
+function handleOrbClick(e){if(orbMusicMode){toggleMusicMode();return;}if(conversationMode){endConversationMode('Goodbye, sir.');return;}if(isSpeaking){stopSpeaking();return;}if(voiceActive){stopVoice();}else{activateListening();}}
 
 // ═══════════════════════════════════════════════════════════
 // RECORD / MUSIC MODE
@@ -925,9 +925,10 @@ function toggleMusicMode(){
 function _applyMusicMode(){var orbCanvas=document.getElementById('orb-canvas');var recCanvas=document.getElementById('record-canvas');var footNormal=document.getElementById('orb-foot-normal');var footMusic=document.getElementById('orb-foot-music');var panel=document.getElementById('orb-panel');var icon=document.getElementById('orb-mode-icon');var lbl=document.getElementById('orb-panel-label');if(orbMusicMode){orbCanvas.style.display='none';recCanvas.style.display='block';footNormal.style.display='none';footMusic.style.display='block';panel.classList.add('music-mode');icon.textContent='♫';lbl.textContent='Now Playing';
     var _tn=document.getElementById('orb-track-name');
     var _an=document.getElementById('orb-artist-name');
-    if(typeof SP!=='undefined'&&!SP.isConnected()){
+    var _spOk=(typeof SP!=='undefined'&&typeof SP.isConnected==='function'&&SP.isConnected());
+    if(!_spOk){
       if(_tn)_tn.textContent='Music Mode';
-      if(_an)_an.textContent='Connect Spotify for track info';
+      if(_an)_an.textContent='Double-click again to exit';
     }
     _syncRecordFromState();_startRecordLoop();}else{orbCanvas.style.display='block';recCanvas.style.display='none';footNormal.style.display='block';footMusic.style.display='none';panel.classList.remove('music-mode');icon.textContent='◈';lbl.textContent='BAKER';_stopRecordLoop();
     if(typeof vaultConnected!=='undefined'&&vaultConnected&&typeof graphNodes!=='undefined'&&graphNodes.length&&!graphAnim)runGraphSim();}}
@@ -1171,11 +1172,11 @@ var savedEffort=localStorage.getItem('baker_effort')||'standard';setEffort(saved
 var savedRate=parseFloat(localStorage.getItem('baker_speech_rate')||'0.92');speechRate=savedRate;
 var pct=Math.round(savedRate*100);document.getElementById('speech-rate-slider').value=pct;document.getElementById('speech-rate-display').textContent=pct;
 SP.init();startWakeWord();
-// Vault reconnect requires a user gesture for requestPermission in Chrome.
-// Defer until first user interaction so the permission prompt can succeed.
+// Vault reconnect requires a user gesture (click) for requestPermission in Chrome.
+// Register a one-time listener — fires on first click anywhere on the page.
 (function(){
   var _reconnected=false;
-  function _tryOnce(){
+  function _tryOnce(e){
     if(_reconnected)return;
     _reconnected=true;
     document.removeEventListener('click',_tryOnce);
@@ -1184,9 +1185,6 @@ SP.init();startWakeWord();
   }
   document.addEventListener('click',_tryOnce);
   document.addEventListener('keydown',_tryOnce);
-  // Also try after 500ms — sometimes Chrome allows it without gesture
-  // if the page was recently interacted with (e.g. refresh via Ctrl+R)
-  setTimeout(function(){_tryOnce();},600);
 })();
 </script>
 </body>
