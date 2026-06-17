@@ -278,13 +278,12 @@ function buildGraph(){
   _updateModeLabel();
 
   var _canvas=document.getElementById('vault-graph-canvas');
-  var W=window.innerWidth;
-  var H=window.innerHeight;
-  // Sync canvas pixel buffer to match — critical so sim loop uses same coords
-  if(_canvas){
-    if(_canvas.offsetWidth>100)W=_canvas.offsetWidth;
-    if(_canvas.offsetHeight>100)H=_canvas.offsetHeight;
-    _canvas.width=W;_canvas.height=H;
+  var W=(_canvas&&_canvas.width>100)?_canvas.width:window.innerWidth;
+  var H=(_canvas&&_canvas.height>100)?_canvas.height:window.innerHeight;
+  // Only initialize canvas size if not yet set — never reset during operation
+  if(_canvas&&(_canvas.width<100||_canvas.height<100)){
+    _canvas.width=window.innerWidth;_canvas.height=window.innerHeight;
+    W=_canvas.width;H=_canvas.height;
   }
 
   if(GraphSettings.yggdrasilMode){_layoutYggdrasil(W,H);}
@@ -300,19 +299,9 @@ function buildGraph(){
 }
 
 function _scatterNodes(W,H){
-  // Ensure canvas pixel buffer matches layout size
-  var canvas=document.getElementById('vault-graph-canvas');
+  // Use the same W/H that the sim loop uses (canvas.width/height pixel buffer)
   var cW=W||window.innerWidth;
   var cH=H||window.innerHeight;
-  if(canvas){
-    // Re-sync canvas pixel buffer in case it hasn't been set yet
-    if(canvas.width<100||canvas.height<100){
-      canvas.width=cW;canvas.height=cH;
-    }
-    // Always prefer actual canvas buffer size for consistency with sim loop
-    if(canvas.width>100)cW=canvas.width;
-    if(canvas.height>100)cH=canvas.height;
-  }
   var spread=Math.min(0.95,0.7*(GraphSettings.graphArea||1));
   var margin=(1-spread)/2;
   graphNodes.forEach(function(n){
