@@ -610,17 +610,15 @@ var VAULTUI=(function(){
       openNoteByPath(fullPath);
 
       if(typeof buildGraph==='function'&&typeof vaultConnected!=='undefined'&&vaultConnected){
-        if(typeof graphNodes!=='undefined'&&graphNodes.length){
-          buildGraph();
-          // Spawn birth particle after graph rebuilds
-          var _bpType=t.type||detectType(fullPath,'');
-          var _bpPath=fullPath;
-          setTimeout(function(){
-            if(typeof spawnBirthParticle==='function')spawnBirthParticle(_bpType,_bpPath);
-          },200);
-          // Smart link suggestions (async, non-blocking)
-          _suggestLinks(fullPath,content||'');
-        }
+        buildGraph();
+        // Spawn birth particle after graph rebuilds — regardless of current node count
+        var _bpType=t.type||detectType(fullPath,'');
+        var _bpPath=fullPath;
+        setTimeout(function(){
+          if(typeof spawnBirthParticle==='function')spawnBirthParticle(_bpType,_bpPath);
+        },400);
+        // Smart link suggestions (async, non-blocking)
+        _suggestLinks(fullPath,content||'');
       }
     }catch(e){
       console.error('[VAULTUI] createNote error:',e);
