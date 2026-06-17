@@ -226,7 +226,7 @@ function buildGraph(){
   document.getElementById('graph-overlay').classList.add('hidden');
   document.getElementById('graph-stats').style.display='flex';
 
-  var candidates=vaultIndex.slice(0,150).map(function(note,i){
+  var candidates=vaultIndex.map(function(note,i){
     return{srcIdx:i,name:note.name.replace('.md',''),path:note.path,
            type:detectType(note.path,note.content),content:note.content};
   });
@@ -305,8 +305,12 @@ function _scatterNodes(W,H){
   var spread=Math.min(0.95,0.7*(GraphSettings.graphArea||1));
   var margin=(1-spread)/2;
   graphNodes.forEach(function(n){
-    n.x=cW*margin+Math.random()*(cW*spread);
-    n.y=cH*(0.15+margin)+Math.random()*(cH*(spread*0.7));
+    // Only scatter if node has no position yet (x===0 && y===0)
+    // This preserves positions during slider-driven rebuilds
+    if(n.x===0&&n.y===0){
+      n.x=cW*margin+Math.random()*(cW*spread);
+      n.y=cH*(0.15+margin)+Math.random()*(cH*(spread*0.7));
+    }
   });
 }
 
@@ -372,9 +376,10 @@ function _layoutForest(W,H){
       var maxSpread=(slotW*W)*spreadFrac*0.5;
       layer.forEach(function(node,ni){
         var xFrac=layer.length===1?0.5:(ni/(layer.length-1));
-        node.x=treeCX-maxSpread+xFrac*(maxSpread*2)+(Math.random()-0.5)*8;
-        node.y=y+(Math.random()-0.5)*10;
-        // Tag leaf nodes for sway
+        var jx=((node.id*7+ni*3)%9-4)*2;
+        var jy=((node.id*13+li*5)%7-3)*2;
+        node.x=treeCX-maxSpread+xFrac*(maxSpread*2)+jx;
+        node.y=y+jy;
         node.isLeaf=(li===numLayers-1);
       });
     });
@@ -509,17 +514,17 @@ function detectType(path,content){
 // ── SIMULATION + DRAW LOOP ────────────────────────────────
 var GRAPH_FPS=1000/30,lastGraphFrame=0;
 function runGraphSim(){
-  if(graphAnim)return; // prevent duplicate loops
+  if(graphAnim){cancelAnimationFrame(graphAnim);graphAnim=null;}
   graphAnim=requestAnimationFrame(function(now){
     runGraphSim();if(now-lastGraphFrame<GRAPH_FPS)return;lastGraphFrame=now;
     var dt=1/30;
     swayTime+=dt;
-    H_REF=H;
-    _tickBirthParticles(dt);
 
     var canvas=document.getElementById('vault-graph-canvas');
     var ctx=canvas.getContext('2d');
     var W=canvas.width,H=canvas.height;
+    H_REF=H; // update AFTER H is defined
+    _tickBirthParticles(dt);
     var linkDist=GraphSettings.linkDistance||90;
     var repulsion=(GraphSettings.repulsion||100)/100;
     var query=GraphSettings.searchQuery||'';
@@ -655,5 +660,3 @@ function runGraphSim(){
     }catch(drawErr){console.warn('[BAKER] draw error:',drawErr.message);}
   });
 }
-
-// ── Draw curved branch edge ───────────────────────────────
