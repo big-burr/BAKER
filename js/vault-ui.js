@@ -875,7 +875,20 @@ var GRAPHUI=(function(){
   }
 
   function bindControls(){
-    function _el(id){return document.getElementById(id);}
+    // Safe element getter — returns no-op proxy if element missing
+    // so bindControls never crashes even if an ID isn't in the DOM yet
+    function _el(id){
+      var el=document.getElementById(id);
+      if(el)return el;
+      // Return a harmless stub so .addEventListener/.checked/.value never throw
+      return{
+        addEventListener:function(){},
+        removeEventListener:function(){},
+        get checked(){return false;},set checked(v){},
+        get value(){return '';},set value(v){},
+        get textContent(){return '';},set textContent(v){}
+      };
+    }
     // Type filters
     document.querySelectorAll('[data-gui-type]').forEach(function(cb){
       cb.addEventListener('change',function(){
@@ -884,7 +897,7 @@ var GRAPHUI=(function(){
       });
     });
     // Link distance
-    var ld=_el('gui-linkdist');if(!ld)return; // guard: if panel not in DOM, abort
+    var ld=_el('gui-linkdist');
     var ldDebounce;
     ld.addEventListener('input',function(){
       GraphSettings.linkDistance=parseInt(this.value,10);
