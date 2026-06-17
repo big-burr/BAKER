@@ -319,7 +319,7 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .mcal-detail-list::-webkit-scrollbar{width:3px}
 .mcal-detail-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 .mcal-detail-empty{padding:32px 16px;text-align:center;color:var(--muted);font-size:12px;line-height:1.6}
-#graphui-panel{position:fixed;top:120px;right:460px;width:300px;height:580px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:260px;min-height:400px}
+#graphui-panel{position:fixed;top:120px;right:460px;width:300px;height:calc(100vh - 140px);max-height:580px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:260px;min-height:300px}
 #graphui-panel.gui-vis{display:flex}
 #graphui-panel>div:not(.rh){overflow:hidden;border-radius:14px}
 .gui-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--border);cursor:move;user-select:none;border-radius:14px 14px 0 0;flex-shrink:0}
@@ -1162,7 +1162,24 @@ var ws=localStorage.getItem('baker_web_search')==='true';var wsBtn=document.getE
 var savedEffort=localStorage.getItem('baker_effort')||'standard';setEffort(savedEffort,true);
 var savedRate=parseFloat(localStorage.getItem('baker_speech_rate')||'0.92');speechRate=savedRate;
 var pct=Math.round(savedRate*100);document.getElementById('speech-rate-slider').value=pct;document.getElementById('speech-rate-display').textContent=pct;
-SP.init();tryReconnectVault();startWakeWord();
+SP.init();startWakeWord();
+// Vault reconnect requires a user gesture for requestPermission in Chrome.
+// Defer until first user interaction so the permission prompt can succeed.
+(function(){
+  var _reconnected=false;
+  function _tryOnce(){
+    if(_reconnected)return;
+    _reconnected=true;
+    document.removeEventListener('click',_tryOnce);
+    document.removeEventListener('keydown',_tryOnce);
+    tryReconnectVault();
+  }
+  document.addEventListener('click',_tryOnce);
+  document.addEventListener('keydown',_tryOnce);
+  // Also try after 500ms — sometimes Chrome allows it without gesture
+  // if the page was recently interacted with (e.g. refresh via Ctrl+R)
+  setTimeout(function(){_tryOnce();},600);
+})();
 </script>
 </body>
 </html>
