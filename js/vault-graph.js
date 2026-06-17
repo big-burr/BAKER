@@ -277,23 +277,33 @@ function buildGraph(){
   document.getElementById('stat-links').textContent=graphEdges.length;
   _updateModeLabel();
 
-  var W=window.innerWidth,H=window.innerHeight;
+  var _canvas=document.getElementById('vault-graph-canvas');
+  var W=_canvas&&_canvas.offsetWidth>100?_canvas.offsetWidth:window.innerWidth;
+  var H=_canvas&&_canvas.offsetHeight>100?_canvas.offsetHeight:window.innerHeight;
 
   if(GraphSettings.yggdrasilMode){_layoutYggdrasil(W,H);}
   else if(GraphSettings.treeMode){_layoutForest(W,H);}
   else if(GraphSettings.gridMode){_layoutGrid(W,H);}
   else if(GraphSettings.clusterMode){_layoutCluster(W,H);}
   else{
-    var spread=Math.min(0.95,0.7*(GraphSettings.graphArea||1));
-    var margin=(1-spread)/2;
-    graphNodes.forEach(function(n){
-      n.x=W*margin+Math.random()*(W*spread);
-      n.y=H*margin+Math.random()*(H*spread);
-    });
+    _scatterNodes(W,H);
   }
 
   _initSapParticles();
   simTick=0;if(graphAnim)cancelAnimationFrame(graphAnim);runGraphSim();
+}
+
+function _scatterNodes(W,H){
+  // Use canvas pixel dimensions — more reliable than window at load time
+  var canvas=document.getElementById('vault-graph-canvas');
+  var cW=canvas&&canvas.offsetWidth>100?canvas.offsetWidth:W||window.innerWidth;
+  var cH=canvas&&canvas.offsetHeight>100?canvas.offsetHeight:H||window.innerHeight;
+  var spread=Math.min(0.95,0.7*(GraphSettings.graphArea||1));
+  var margin=(1-spread)/2;
+  graphNodes.forEach(function(n){
+    n.x=cW*margin+Math.random()*(cW*spread);
+    n.y=cH*(0.15+margin)+Math.random()*(cH*(spread*0.7));
+  });
 }
 
 function _updateModeLabel(){
