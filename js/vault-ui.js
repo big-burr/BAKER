@@ -762,7 +762,7 @@ var VAULTUI=(function(){
     pop.style.cssText='position:fixed;top:54px;right:24px;z-index:500;background:rgba(22,22,25,.97);border:1px solid var(--accent-dim);border-radius:10px;padding:12px 14px;backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.6);max-width:300px;min-width:220px;animation:fadeIn .2s ease both';
     var hdr=document.createElement('div');
     hdr.style.cssText='font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center';
-    hdr.innerHTML='&#128279; Link Suggestions<button onclick="document.getElementById('baker-link-suggest').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0">&#215;</button>';
+    hdr.innerHTML='&#128279; Link Suggestions<button onclick="document.getElementById(\'baker-link-suggest\').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0">&#215;</button>';
     pop.appendChild(hdr);
     var sub=document.createElement('div');
     sub.style.cssText='font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:8px';
