@@ -1,7 +1,9 @@
+// ── Draw functions (vault-graph-draw.js) ────────────────
+// ── Draw curved branch edge ─────────────────────────────
 function _drawBranchEdge(ctx,a,b,col,isHL,baseW){
   var mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
   var trunkY=Math.max(a.y,b.y);
-  var cpx=mx+(Math.random()-0.5)*18;
+  var cpx=mx+(((a.id*7+b.id*3)%9)-4)*4; // deterministic, no random per frame
   var cpy=my+(trunkY-my)*0.3;
   ctx.beginPath();ctx.moveTo(a.x,a.y);
   ctx.quadraticCurveTo(cpx,cpy,b.x,b.y);
@@ -37,8 +39,9 @@ function _drawForest(ctx,W,H){
     return graphNodes.some(function(n){return n.type===t&&!n.orphan;});
   });
   var orderedTypes=activeGroups.slice().sort(function(a,b){
-    return graphNodes.filter(function(n){return n.type===b;}).length-
-           graphNodes.filter(function(n){return n.type===a;}).length;
+    // Count non-orphan nodes per type — same as _layoutForest
+    return graphNodes.filter(function(n){return n.type===b&&!n.orphan;}).length-
+           graphNodes.filter(function(n){return n.type===a&&!n.orphan;}).length;
   });
   orderedTypes=_centerLargest(orderedTypes);
   var numSlots=orderedTypes.length+(orphans.length>0?1:0);
