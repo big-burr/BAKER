@@ -875,20 +875,8 @@ var GRAPHUI=(function(){
   }
 
   function bindControls(){
-    // Safe element getter — returns no-op proxy if element missing
-    // so bindControls never crashes even if an ID isn't in the DOM yet
-    function _el(id){
-      var el=document.getElementById(id);
-      if(el)return el;
-      // Return a harmless stub so .addEventListener/.checked/.value never throw
-      return{
-        addEventListener:function(){},
-        removeEventListener:function(){},
-        get checked(){return false;},set checked(v){},
-        get value(){return '';},set value(v){},
-        get textContent(){return '';},set textContent(v){}
-      };
-    }
+    function _el(id){return document.getElementById(id);}
+    function _on(id,ev,fn){var e=_el(id);if(e)e.addEventListener(ev,fn);}
     // Type filters
     document.querySelectorAll('[data-gui-type]').forEach(function(cb){
       cb.addEventListener('change',function(){
@@ -901,7 +889,7 @@ var GRAPHUI=(function(){
     var ldDebounce;
     ld.addEventListener('input',function(){
       GraphSettings.linkDistance=parseInt(this.value,10);
-      _el('gui-linkdist-val').textContent=this.value;
+      (_el('gui-linkdist-val')||{}).textContent =this.value;
       clearTimeout(ldDebounce);ldDebounce=setTimeout(applyAndRebuild,150);
     });
     // Repulsion
@@ -909,7 +897,7 @@ var GRAPHUI=(function(){
     var rpDebounce;
     rp.addEventListener('input',function(){
       GraphSettings.repulsion=parseInt(this.value,10);
-      _el('gui-repulsion-val').textContent=this.value;
+      (_el('gui-repulsion-val')||{}).textContent =this.value;
       clearTimeout(rpDebounce);rpDebounce=setTimeout(applyAndRebuild,150);
     });
     // Node size
@@ -917,7 +905,7 @@ var GRAPHUI=(function(){
     var nsDebounce;
     ns.addEventListener('input',function(){
       GraphSettings.nodeSizeScale=parseInt(this.value,10)/100;
-      _el('gui-nodesize-val').textContent=this.value;
+      (_el('gui-nodesize-val')||{}).textContent =this.value;
       clearTimeout(nsDebounce);nsDebounce=setTimeout(applyAndRebuild,150);
     });
     // Graph area
@@ -925,80 +913,81 @@ var GRAPHUI=(function(){
     var gaDebounce;
     ga.addEventListener('input',function(){
       GraphSettings.graphArea=parseInt(this.value,10)/100;
-      _el('gui-grapharea-val').textContent=this.value;
+      (_el('gui-grapharea-val')||{}).textContent =this.value;
       clearTimeout(gaDebounce);gaDebounce=setTimeout(applyAndRebuild,150);
     });
     // Size by connections
-    _el('gui-sizebyconn').addEventListener('change',function(){
+    _on('gui-sizebyconn','change',function(){
       GraphSettings.sizeByConnections=this.checked;
       applyAndRebuild();
     });
     // Always show labels
-    _el('gui-showlabels').addEventListener('change',function(){
+    _on('gui-showlabels','change',function(){
       GraphSettings.showLabels=this.checked;
     });
     // Cluster by type
-    _el('gui-clustermode').addEventListener('change',function(){
+    _on('gui-clustermode','change',function(){
       GraphSettings.clusterMode=this.checked;
       if(this.checked)GraphSettings.treeMode=false;
-      _el('gui-treemode').checked=false;
+      (_el('gui-treemode')||{}).checked =false;
       applyAndRebuild();
     });
     // Tree mode (forest)
-    _el('gui-treemode').addEventListener('change',function(){
+    _on('gui-treemode','change',function(){
       GraphSettings.treeMode=this.checked;
       if(this.checked)GraphSettings.clusterMode=false;
-      _el('gui-clustermode').checked=false;
+      (_el('gui-clustermode')||{}).checked =false;
       applyAndRebuild();
     });
     // Grid mode
-    _el('gui-gridmode').addEventListener('change',function(){
+    _on('gui-gridmode','change',function(){
       GraphSettings.gridMode=this.checked;
       if(this.checked){GraphSettings.treeMode=false;GraphSettings.yggdrasilMode=false;GraphSettings.clusterMode=false;}
-      _el('gui-treemode').checked=false;
-      _el('gui-yggmode').checked=false;
-      _el('gui-clustermode').checked=false;
+      (_el('gui-treemode')||{}).checked =false;
+      (_el('gui-yggmode')||{}).checked =false;
+      (_el('gui-clustermode')||{}).checked =false;
       applyAndRebuild();
     });
     // Yggdrasil mode
-    _el('gui-yggmode').addEventListener('change',function(){
+    _on('gui-yggmode','change',function(){
       GraphSettings.yggdrasilMode=this.checked;
       if(this.checked){GraphSettings.treeMode=false;GraphSettings.gridMode=false;GraphSettings.clusterMode=false;}
-      _el('gui-treemode').checked=false;
-      _el('gui-gridmode').checked=false;
-      _el('gui-clustermode').checked=false;
+      (_el('gui-treemode')||{}).checked =false;
+      (_el('gui-gridmode')||{}).checked =false;
+      (_el('gui-clustermode')||{}).checked =false;
       applyAndRebuild();
     });
     // Node brightness
-    _el('gui-brightness').addEventListener('input',function(){
+    _on('gui-brightness','input',function(){
       GraphSettings.nodeBrightness=parseInt(this.value,10)/100;
-      _el('gui-brightness-val').textContent=this.value;
+      (_el('gui-brightness-val')||{}).textContent =this.value;
     });
     // Search / highlight
-    _el('gui-search-input').addEventListener('input',function(){
+    _on('gui-search-input','input',function(){
       GraphSettings.searchQuery=this.value.trim().toLowerCase();
     });
     // Reset
-    _el('gui-reset-btn').addEventListener('click',function(){
+    _on('gui-reset-btn','click',function(){
       GraphSettings=JSON.parse(JSON.stringify(DEFAULT_GRAPH_SETTINGS));
       document.querySelectorAll('[data-gui-type]').forEach(function(cb){cb.checked=true;});
-      _el('gui-linkdist').value=GraphSettings.linkDistance;
-      _el('gui-linkdist-val').textContent=GraphSettings.linkDistance;
-      _el('gui-repulsion').value=GraphSettings.repulsion;
-      _el('gui-repulsion-val').textContent=GraphSettings.repulsion;
-      _el('gui-nodesize').value=GraphSettings.nodeSizeScale*100;
-      _el('gui-nodesize-val').textContent=GraphSettings.nodeSizeScale*100;
-      _el('gui-grapharea').value=GraphSettings.graphArea*100;
-      _el('gui-grapharea-val').textContent=GraphSettings.graphArea*100;
-      _el('gui-sizebyconn').checked=false;
-      _el('gui-showlabels').checked=false;
-      _el('gui-clustermode').checked=false;
-      _el('gui-treemode').checked=false;
-      _el('gui-gridmode').checked=false;
-      _el('gui-yggmode').checked=false;
-      _el('gui-brightness').value=100;
-      _el('gui-brightness-val').textContent='100';
-      _el('gui-search-input').value='';
+      function _set(id,prop,val){var e=_el(id);if(e)e[prop]=val;}
+      _set('gui-linkdist','value',GraphSettings.linkDistance);
+      _set('gui-linkdist-val','textContent',GraphSettings.linkDistance);
+      _set('gui-repulsion','value',GraphSettings.repulsion);
+      _set('gui-repulsion-val','textContent',GraphSettings.repulsion);
+      _set('gui-nodesize','value',GraphSettings.nodeSizeScale*100);
+      _set('gui-nodesize-val','textContent',GraphSettings.nodeSizeScale*100);
+      _set('gui-grapharea','value',GraphSettings.graphArea*100);
+      _set('gui-grapharea-val','textContent',GraphSettings.graphArea*100);
+      _set('gui-sizebyconn','checked',false);
+      _set('gui-showlabels','checked',false);
+      _set('gui-clustermode','checked',false);
+      _set('gui-treemode','checked',false);
+      _set('gui-gridmode','checked',false);
+      _set('gui-yggmode','checked',false);
+      _set('gui-brightness','value',100);
+      _set('gui-brightness-val','textContent','100');
+      _set('gui-search-input','value','');
       applyAndRebuild();
     });
   }
