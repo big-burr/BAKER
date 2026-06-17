@@ -368,7 +368,7 @@ function _drawGinkgo(ctx,cx,baseY,slotW,treeH,col,foliage){
     {y:trunkTop-treeH*0.48, spread:0.10, fans:2, fanR:0.07, sW:slotW},
   ];
 
-  tierData.forEach(function(tier){
+  tierData.forEach(function(tier,i){
     // Draw horizontal branch line
     ctx.beginPath();
     ctx.moveTo(cx-tier.spread*slotW,tier.y);
