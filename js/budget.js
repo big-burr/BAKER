@@ -579,6 +579,18 @@ var BUDGET=(function(){
   // ── Panel ─────────────────────────────────────────────────
   function showPanel(){
     var p=document.getElementById('budget-panel'); if(!p) return;
+    // Convert CSS transform centering to absolute pixel coords on first open
+    // so makeWindowBehavior can drag freely without transform interference
+    if(!p._positioned){
+      p._positioned=true;
+      var pw=Math.min(780,window.innerWidth-48);
+      var ph=Math.min(680,window.innerHeight-88);
+      p.style.transform='none';
+      p.style.left=Math.round((window.innerWidth-pw)/2)+'px';
+      p.style.top='64px';
+      p.style.width=pw+'px';
+      p.style.height=ph+'px';
+    }
     p.classList.add('bp-vis');
     if(p._wbNormalise) p._wbNormalise();
     render();
