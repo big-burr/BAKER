@@ -1103,7 +1103,7 @@ async function processCommand(txt){
   var spResult=await SP.handleVoice(txt);if(spResult!==null){speakResponse(spResult);return;}
   var calResult=await CAL.handleVoice(txt);if(calResult!==null){speakResponse(calResult);return;}
   var mcalResult=MCAL.handleVoice(txt);if(mcalResult!==null){speakResponse(mcalResult);return;}
-  var openMatch=lower.match(/(?:open|find|pull up|show me) (?:note|my note)?\s*(?:about|on|called)?\s*(.+)/);if(openMatch){_voiceOpenNote(openMatch[1].trim());return;}
+  var openMatch=lower.match(/(?:open|find) (?:note|my note)\s*(?:about|on|called)?\s*(.+)/);if(openMatch&&openMatch[1].trim().length>2){_voiceOpenNote(openMatch[1].trim());return;}
   var vaultResult=VAULTUI.handleVoice(txt);if(vaultResult!==null){speakResponse(vaultResult);return;}
   var graphUIResult=GRAPHUI.handleVoice(txt);if(graphUIResult!==null){speakResponse(graphUIResult);return;}
   if(/\b(open|pull up|show|launch|let'?s (open|use|check))\b.*\bmap\b/.test(lower)&&!/\b(fly to|directions to|route to|on (the )?map)\b/.test(lower)){showWidget('url','🗺 Map','map.html','🗺');speakResponse('Opening map, sir.');return;}
