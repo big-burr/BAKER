@@ -736,7 +736,7 @@ var VAULTUI=(function(){
   function _suggestLinks(newPath,newContent){
     if(!vaultIndex||vaultIndex.length<2)return;
     // Find up to 5 related notes using TF-IDF
-    var words=newContent.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(function(w){return w.length>3;});
+    var words=newContent.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(function(w){return w.length>2;});
     if(words.length<3)return;
     var scores=[];
     vaultIndex.forEach(function(note){
