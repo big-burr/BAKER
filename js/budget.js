@@ -514,7 +514,7 @@ var BUDGET=(function(){
   function logTxToVault(tx){
     if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected) return;
     var sign=tx.type==='income'?'+':'-';
-    var bullet='- \uD83D\uDCB0 '+sign+'$'+tx.amount.toFixed(2)+
+    var bullet='- 💰 '+sign+'$'+tx.amount.toFixed(2)+
       ' ['+tx.cat+']'+(tx.note&&tx.note!==tx.cat?' \u2014 '+tx.note:'')+'\n';
     var fname=tx.date+'.md';
     vaultHandle.getDirectoryHandle('00-Capture',{create:true})
