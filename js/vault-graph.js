@@ -389,7 +389,7 @@ function _layoutForest(W,H){
     var groveCX=W*(USABLE_LEFT+(ordered.length*(slotW+GAP_FRAC)+slotW*0.5));
     orphans.forEach(function(n,i){
       var angle=(i/Math.max(orphans.length,1))*Math.PI*2;
-      var r=25+Math.random()*35;
+      var r=25+(((n.id||0)*13)%35);
       n.x=groveCX+Math.cos(angle)*r;
       n.y=baseY-treeH*0.22+Math.sin(angle)*r*0.5;
       n.isLeaf=true;
@@ -439,8 +439,9 @@ function _layoutYggdrasil(W,H){
       layer.forEach(function(node,ni){
         var xFrac=layer.length===1?0:(ni/(layer.length-1)-0.5);
         var perpAngle=branchAngle+Math.PI/2;
-        node.x=bx+Math.cos(perpAngle)*xFrac*spreadW*2+(Math.random()-0.5)*10;
-        node.y=by+Math.sin(perpAngle)*xFrac*spreadW*2+(Math.random()-0.5)*8;
+        var _yj=((node.id||0)*1.618)%1;
+        node.x=bx+Math.cos(perpAngle)*xFrac*spreadW*2+(_yj*2-1)*4;
+        node.y=by+Math.sin(perpAngle)*xFrac*spreadW*2+(_yj*2-1)*3;
         node.isLeaf=(li===numLayers-1);
       });
     });
@@ -449,8 +450,9 @@ function _layoutYggdrasil(W,H){
   // Roots
   orphans.forEach(function(n,i){
     var angle=Math.PI*0.3+((i/(Math.max(orphans.length-1,1)))*Math.PI*0.4);
-    var dist=(0.15+Math.random()*0.55)*(ROOT_BOT-TRUNK_Y);
-    n.x=CX+Math.cos(angle)*dist*0.7+(Math.random()-0.5)*40;
+    var _yd=((n.id||0)*0.618)%1;
+    var dist=(0.15+_yd*0.55)*(ROOT_BOT-TRUNK_Y);
+    n.x=CX+Math.cos(angle)*dist*0.7+(_yd*2-1)*15;
     n.y=TRUNK_Y+Math.sin(angle)*dist;
     n.isLeaf=false;
   });
@@ -473,8 +475,11 @@ function _layoutCluster(W,H){
       n.x=W*0.12+Math.cos(angle)*45;n.y=H*0.82+Math.sin(angle)*45;
     }else{
       var center=groupCenters[n.type]||{x:W/2,y:H/2};
-      n.x=center.x+(Math.random()-0.5)*160;
-      n.y=center.y+(Math.random()-0.5)*160;
+      var _cj=((n.id||0)*1.618)%1;
+      var _ca=_cj*Math.PI*2;
+      var _cr=30+_cj*70;
+      n.x=center.x+Math.cos(_ca)*_cr;
+      n.y=center.y+Math.sin(_ca)*_cr;
     }
   });
 }
@@ -582,8 +587,8 @@ function runGraphSim(){
         if(n.pinned)return;
         n.x+=Math.max(-8,Math.min(8,n.vx));
         n.y+=Math.max(-8,Math.min(8,n.vy));
-        n.x=Math.max(30,Math.min(W/graphTransform.scale-30,n.x));
-        n.y=Math.max(30,Math.min(H/graphTransform.scale-30,n.y));
+        n.x=Math.max(60,Math.min(W/graphTransform.scale-60,n.x));
+        n.y=Math.max(60,Math.min(H/graphTransform.scale-60,n.y));
       });
       simTick++;
     }
@@ -657,6 +662,6 @@ function runGraphSim(){
 
     // Birth particles drawn in screen space (after restore, ignores transform)
     _drawBirthParticles(ctx);
-    }catch(drawErr){console.warn('[BAKER] draw error:',drawErr.message);}
+    }catch(drawErr){if(!drawErrCount)drawErrCount=0;if(++drawErrCount<=3)console.warn('[BAKER] draw error:',drawErr.message);}
   });
 }
