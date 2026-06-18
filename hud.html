@@ -441,6 +441,77 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
 .vh-streak{color:var(--amber)}
 .vh-divider{border:none;border-top:1px solid var(--border);margin:2px 0}
 #vaultchat-panel.vc-vis{display:flex!important}
+/* ── Budget Panel ──────────────────────────────────────── */
+#budget-panel{position:fixed;top:64px;left:50%;transform:translateX(-50%);width:780px;max-width:calc(100vw - 48px);height:calc(100vh - 88px);max-height:680px;background:rgba(22,22,25,.98);border:1px solid var(--border);border-radius:14px;z-index:200;display:none;flex-direction:column;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.8);backdrop-filter:blur(24px)}
+#budget-panel.bp-vis{display:flex}
+.bp-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+.bp-title{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.12em;text-transform:uppercase}
+.bp-hdr-right{display:flex;align-items:center;gap:10px}
+.bp-month-nav{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;color:var(--text)}
+.bp-month-btn{background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;padding:2px 8px;font-size:12px}
+.bp-month-btn:hover{border-color:var(--accent);color:var(--text)}
+.bp-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0}
+.bp-close:hover{color:var(--text)}
+.bp-body{display:flex;flex:1;overflow:hidden;gap:0}
+/* Left — pie + summary */
+.bp-left{width:300px;flex-shrink:0;display:flex;flex-direction:column;padding:16px;gap:12px;border-right:1px solid var(--border)}
+.bp-totals{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bp-total-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.bp-total-label{font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.bp-total-val{font-family:var(--mono);font-size:18px;color:var(--text);margin-top:3px}
+.bp-total-val.income{color:var(--green)}
+.bp-total-val.spent{color:var(--amber)}
+.bp-total-val.left.positive{color:var(--green)}
+.bp-total-val.left.negative{color:var(--red)}
+.bp-total-val.savings{color:var(--blue)}
+#bp-pie-canvas{width:100%;aspect-ratio:1;border-radius:8px}
+.bp-legend{display:flex;flex-direction:column;gap:5px}
+.bp-legend-row{display:flex;align-items:center;justify-content:space-between;font-family:var(--mono);font-size:10px}
+.bp-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-right:6px}
+.bp-legend-label{color:var(--muted);flex:1;display:flex;align-items:center}
+.bp-legend-val{color:var(--text)}
+.bp-legend-pct{color:var(--muted);margin-left:6px;font-size:9px}
+/* Right — categories + log */
+.bp-right{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.bp-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.bp-tab{flex:1;padding:10px;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.bp-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.bp-tab:hover{color:var(--text)}
+.bp-tab-content{flex:1;overflow-y:auto;padding:14px}
+.bp-tab-content::-webkit-scrollbar{width:4px}
+.bp-tab-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+/* Categories tab */
+.bp-cat-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.bp-cat-color{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.bp-cat-name{font-family:var(--mono);font-size:11px;color:var(--text);flex:1}
+.bp-cat-budget-input{width:70px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:11px;padding:3px 6px;text-align:right}
+.bp-cat-budget-input:focus{outline:none;border-color:var(--accent)}
+.bp-cat-spent{font-family:var(--mono);font-size:11px;color:var(--muted);width:60px;text-align:right}
+.bp-cat-bar-wrap{width:80px;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+.bp-cat-bar{height:100%;border-radius:3px;transition:width .3s}
+/* Add transaction */
+.bp-add{display:flex;flex-direction:column;gap:8px;padding:12px;background:rgba(255,255,255,.02);border-radius:8px;margin-bottom:12px;border:1px solid var(--border)}
+.bp-add-row{display:flex;gap:8px;align-items:center}
+.bp-add-label{font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;width:52px;flex-shrink:0}
+.bp-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 8px}
+.bp-input:focus{outline:none;border-color:var(--accent)}
+.bp-select{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 8px;cursor:pointer}
+.bp-add-submit{background:var(--accent);border:none;border-radius:4px;color:#fff;font-family:var(--mono);font-size:10px;padding:6px 14px;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.bp-add-submit:hover{background:#9180ff}
+/* Transaction log */
+.bp-tx-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);font-family:var(--mono);font-size:10px}
+.bp-tx-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.bp-tx-cat{color:var(--muted);width:80px;flex-shrink:0}
+.bp-tx-note{color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bp-tx-amount{color:var(--amber);width:60px;text-align:right;flex-shrink:0}
+.bp-tx-amount.income{color:var(--green)}
+.bp-tx-date{color:var(--muted);font-size:9px;width:50px;text-align:right;flex-shrink:0}
+.bp-tx-del{background:none;border:none;color:var(--muted);cursor:pointer;padding:0 4px;font-size:12px;flex-shrink:0}
+.bp-tx-del:hover{color:var(--red)}
+/* Income row in categories tab */
+.bp-income-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:4px}
+.bp-income-label{font-family:var(--mono);font-size:11px;color:var(--green);flex:1}
+
 </style>
 </head>
 <body>
@@ -484,6 +555,7 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
     <button class="hbtn" id="graphui-nav-btn" onclick="GRAPHUI.togglePanel()" title="Graph Settings">&#128375; Graph</button>
     <button class="hbtn" id="brief-nav-btn" onclick="requestBrief()">&#9670; Brief</button>
     <button class="hbtn" id="health-nav-btn" onclick="toggleVaultHealth()">&#9650; Vault</button>
+    <button class="hbtn" id="budget-nav-btn" onclick="BUDGET.togglePanel()" title="Budget">&#36; Budget</button>
     <button class="hbtn" onclick="openSettings()">&#9881; Settings</button>
   </div>
 </nav>
@@ -736,6 +808,57 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
   <div class="vh-row"><span class="vh-label">Lectures</span><span class="vh-val" id="vh-lectures">&#8212;</span></div>
   <hr class="vh-divider">
   <div class="vh-row"><span class="vh-label">Daily Streak</span><span class="vh-val vh-streak" id="vh-streak">&#8212;</span></div>
+</div>
+
+
+<!-- BUDGET PANEL -->
+<div id="budget-panel">
+  <div class="bp-hdr">
+    <span class="bp-title">&#36; Budget</span>
+    <div class="bp-hdr-right">
+      <div class="bp-month-nav">
+        <button class="bp-month-btn" id="bp-prev-month">&#8249;</button>
+        <span id="bp-month-label">June 2026</span>
+        <button class="bp-month-btn" id="bp-next-month">&#8250;</button>
+      </div>
+      <button class="bp-close" onclick="BUDGET.hidePanel()">&#215;</button>
+    </div>
+  </div>
+  <div class="bp-body">
+    <!-- Left: pie + totals -->
+    <div class="bp-left">
+      <div class="bp-totals">
+        <div class="bp-total-card">
+          <div class="bp-total-label">Income</div>
+          <div class="bp-total-val income" id="bp-total-income">$0</div>
+        </div>
+        <div class="bp-total-card">
+          <div class="bp-total-label">Spent</div>
+          <div class="bp-total-val spent" id="bp-total-spent">$0</div>
+        </div>
+        <div class="bp-total-card">
+          <div class="bp-total-label">Remaining</div>
+          <div class="bp-total-val left positive" id="bp-total-left">$0</div>
+        </div>
+        <div class="bp-total-card">
+          <div class="bp-total-label">Saved</div>
+          <div class="bp-total-val savings" id="bp-total-saved">$0</div>
+        </div>
+      </div>
+      <canvas id="bp-pie-canvas" width="268" height="268"></canvas>
+      <div class="bp-legend" id="bp-legend"></div>
+    </div>
+    <!-- Right: tabs -->
+    <div class="bp-right">
+      <div class="bp-tabs">
+        <button class="bp-tab active" id="bp-tab-log" onclick="BUDGET.switchTab('log')">&#128179; Log</button>
+        <button class="bp-tab" id="bp-tab-cats" onclick="BUDGET.switchTab('cats')">&#9776; Categories</button>
+      </div>
+      <div class="bp-tab-content" id="bp-tab-content">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="fp" id="confirm-popup" style="border-radius:10px">
@@ -1034,6 +1157,8 @@ document.getElementById('speech-rate-slider').addEventListener('input',function(
 <script src="js/spotify.js"></script>
 <script src="js/calendar.js"></script>
 <script src="js/vault-ui.js"></script>
+<script src="js/budget.js"></script>
+
 <script>
 // ═══════════════════════════════════════════════════════════
 // DAILY BRIEF + VAULT HEALTH + VOICE OPEN NOTE
@@ -1158,6 +1283,8 @@ makeWindowBehavior(document.getElementById('vault-panel'),document.getElementByI
 VAULTUI.init();
 makeWindowBehavior(document.getElementById('vaultchat-panel'),document.getElementById('vaultchat-panel').querySelector('#vc-hdr'),{minW:320,minH:300});
 VAULTCHAT.init();
+BUDGET.init();
+makeWindowBehavior(document.getElementById('budget-panel'),document.getElementById('budget-panel').querySelector('.bp-hdr'),{minW:600,minH:400});
 makeWindowBehavior(document.getElementById('graphui-panel'),document.getElementById('graphui-panel').querySelector('.gui-hdr'),{minW:260,minH:400});
 GRAPHUI.init();
 (function(){
