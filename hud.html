@@ -15,9 +15,10 @@
 --accent:#7c6af7;--accent-dim:#3d3578;--text:#e8e6f0;--muted:#7a7880;
 --green:#4ade80;--amber:#fbbf24;--red:#f87171;--blue:#60a5fa;
 --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+--fo-color:#39ff14;--fo-scanline-opacity:0.09;
 }
 html,body{background:var(--bg);color:var(--text);font-family:var(--sans);width:100vw;height:100vh;overflow:hidden;position:relative}
-@keyframes b{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 @keyframes fadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
 @keyframes listening-pulse{0%,100%{box-shadow:0 0 0 0 rgba(124,106,247,.5)}50%{box-shadow:0 0 28px 8px rgba(124,106,247,.2)}}
 @keyframes sp-pulse{0%,100%{opacity:1}50%{opacity:.3}}
@@ -417,8 +418,6 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
 .vc-mode-active{background:var(--accent);border-color:var(--accent);color:#fff}
 #vc-messages::-webkit-scrollbar{width:3px}
 #vc-messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-
-/* ── Daily Brief Panel ── */
 #daily-brief-panel{position:fixed;top:54px;left:50%;transform:translateX(-50%);z-index:500;background:rgba(22,22,25,.97);border:1px solid var(--accent-dim);border-radius:12px;padding:20px 22px;backdrop-filter:blur(24px);box-shadow:0 12px 40px rgba(0,0,0,.7);display:none;flex-direction:column;gap:10px;max-width:480px;width:90%;cursor:move;user-select:none}
 #daily-brief-panel.vis{display:flex}
 .brief-hdr{display:flex;align-items:center;justify-content:space-between}
@@ -429,7 +428,6 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
 .brief-stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:4px}
 .brief-stat{background:rgba(124,106,247,.08);border:1px solid var(--accent-dim);border-radius:6px;padding:5px 10px;font-family:var(--mono);font-size:10px;color:var(--accent)}
 .brief-stat span{color:var(--text);font-size:12px;display:block;margin-top:1px}
-/* ── Vault Health Panel ── */
 #vault-health-panel{position:fixed;bottom:40px;left:260px;z-index:200;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:10px;padding:14px 16px;backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.5);display:none;flex-direction:column;gap:8px;min-width:220px;cursor:move;user-select:none}
 #vault-health-panel.vis{display:flex}
 .vh-title{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
@@ -441,7 +439,6 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
 .vh-streak{color:var(--amber)}
 .vh-divider{border:none;border-top:1px solid var(--border);margin:2px 0}
 #vaultchat-panel.vc-vis{display:flex!important}
-/* ── Budget Panel ──────────────────────────────────────── */
 #budget-panel{position:fixed;top:64px;width:780px;max-width:calc(100vw - 48px);height:calc(100vh - 88px);max-height:680px;background:rgba(22,22,25,.98);border:1px solid var(--border);border-radius:14px;z-index:200;display:none;flex-direction:column;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.8);backdrop-filter:blur(24px)}
 #budget-panel.bp-vis{display:flex}
 .bp-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
@@ -453,7 +450,6 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
 .bp-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0}
 .bp-close:hover{color:var(--text)}
 .bp-body{display:flex;flex:1;overflow:hidden;gap:0}
-/* Left — pie + summary */
 .bp-left{width:300px;flex-shrink:0;display:flex;flex-direction:column;padding:16px;gap:12px;border-right:1px solid var(--border)}
 .bp-totals{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .bp-total-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
@@ -471,7 +467,6 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
 .bp-legend-label{color:var(--muted);flex:1;display:flex;align-items:center}
 .bp-legend-val{color:var(--text)}
 .bp-legend-pct{color:var(--muted);margin-left:6px;font-size:9px}
-/* Right — categories + log */
 .bp-right{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .bp-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
 .bp-tab{flex:1;padding:10px;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
@@ -480,7 +475,6 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
 .bp-tab-content{flex:1;overflow-y:auto;padding:14px}
 .bp-tab-content::-webkit-scrollbar{width:4px}
 .bp-tab-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-/* Categories tab */
 .bp-cat-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)}
 .bp-cat-color{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .bp-cat-name{font-family:var(--mono);font-size:11px;color:var(--text);flex:1}
@@ -489,7 +483,6 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
 .bp-cat-spent{font-family:var(--mono);font-size:11px;color:var(--muted);width:60px;text-align:right}
 .bp-cat-bar-wrap{width:80px;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
 .bp-cat-bar{height:100%;border-radius:3px;transition:width .3s}
-/* Add transaction */
 .bp-add{display:flex;flex-direction:column;gap:8px;padding:12px;background:rgba(255,255,255,.02);border-radius:8px;margin-bottom:12px;border:1px solid var(--border)}
 .bp-add-row{display:flex;gap:8px;align-items:center}
 .bp-add-label{font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;width:52px;flex-shrink:0}
@@ -498,7 +491,6 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
 .bp-select{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 8px;cursor:pointer}
 .bp-add-submit{background:var(--accent);border:none;border-radius:4px;color:#fff;font-family:var(--mono);font-size:10px;padding:6px 14px;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
 .bp-add-submit:hover{background:#9180ff}
-/* Transaction log */
 .bp-tx-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);font-family:var(--mono);font-size:10px}
 .bp-tx-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .bp-tx-cat{color:var(--muted);width:80px;flex-shrink:0}
@@ -508,89 +500,25 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
 .bp-tx-date{color:var(--muted);font-size:9px;width:50px;text-align:right;flex-shrink:0}
 .bp-tx-del{background:none;border:none;color:var(--muted);cursor:pointer;padding:0 4px;font-size:12px;flex-shrink:0}
 .bp-tx-del:hover{color:var(--red)}
-/* Income row in categories tab */
 .bp-income-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:4px}
 .bp-income-label{font-family:var(--mono);font-size:11px;color:var(--green);flex:1}
-/* ── FALLOUT MODE ─────────────────────────────────────── */
-:root{--fo-color:#39ff14;--fo-scanline-opacity:0.09;}
-
-/* Scanline overlay */
-body.fallout-mode::after{
-  content:'';pointer-events:none;position:fixed;inset:0;z-index:9999;
-  background:repeating-linear-gradient(
-    0deg,
-    rgba(0,0,0,var(--fo-scanline-opacity)) 0px,
-    rgba(0,0,0,var(--fo-scanline-opacity)) 1px,
-    transparent 1px,
-    transparent 3px
-  );
-}
-
-/* Color scheme swap */
-body.fallout-mode{
-  --bg:#060a06;
-  --surface:#0b120b;
-  --surface2:#0f180f;
-  --border:#1a2e1a;
-  --accent:var(--fo-color);
-  --accent-dim:#1a3d1a;
-  --text:var(--fo-color);
-  --muted:#3a5c3a;
-  --green:var(--fo-color);
-  --amber:#c8a000;
-  --red:#c84040;
-  --blue:#40a040;
-  --mono:'Courier Prime','Courier New',monospace;
-  --sans:'Courier Prime','Courier New',monospace;
-}
-
-/* Glow on nav logo */
-body.fallout-mode .nav-logo{
-  text-shadow:0 0 8px var(--fo-color);
-  border-color:var(--fo-color);
-}
-
-/* Panel glow edges */
-body.fallout-mode .fp,
-body.fallout-mode #spotify-panel,
-body.fallout-mode #calendar-panel,
-body.fallout-mode #month-panel,
-body.fallout-mode #vault-panel,
-body.fallout-mode #vaultchat-panel,
-body.fallout-mode #graphui-panel,
-body.fallout-mode #budget-panel,
-body.fallout-mode #daily-brief-panel,
-body.fallout-mode #vault-health-panel{
-  box-shadow:0 0 12px rgba(57,255,20,0.08),0 8px 32px rgba(0,0,0,.6);
-  border-color:var(--fo-color);
-}
-
-/* Status bar */
-body.fallout-mode #status-bar{
-  border-top-color:var(--fo-color);
-}
-
-/* Nav buttons active state */
-body.fallout-mode .hbtn.on{
-  color:var(--fo-color);
-  border-color:var(--fo-color);
-  text-shadow:0 0 6px var(--fo-color);
-}
-
-/* Orb panel label */
-body.fallout-mode #orb-panel-label{
-  letter-spacing:.18em;
-}
-
+/* ══ FALLOUT MODE ══ */
+body.fallout-mode::after{content:'';pointer-events:none;position:fixed;inset:0;z-index:9999;background:repeating-linear-gradient(0deg,rgba(0,0,0,var(--fo-scanline-opacity)) 0px,rgba(0,0,0,var(--fo-scanline-opacity)) 1px,transparent 1px,transparent 3px);}
+body.fallout-mode{--bg:#060a06;--surface:#0b120b;--surface2:#0f180f;--border:#1a2e1a;--accent:var(--fo-color);--accent-dim:#1a3d1a;--text:var(--fo-color);--muted:#3a5c3a;--green:var(--fo-color);--amber:#c8a000;--red:#c84040;--blue:#40a040;--mono:'Courier Prime','Courier New',monospace;--sans:'Courier Prime','Courier New',monospace;}
+body.fallout-mode .nav-logo{text-shadow:0 0 8px var(--fo-color);border-color:var(--fo-color);}
+body.fallout-mode .fp,body.fallout-mode #spotify-panel,body.fallout-mode #calendar-panel,body.fallout-mode #month-panel,body.fallout-mode #vault-panel,body.fallout-mode #vaultchat-panel,body.fallout-mode #graphui-panel,body.fallout-mode #budget-panel,body.fallout-mode #daily-brief-panel,body.fallout-mode #vault-health-panel{box-shadow:0 0 12px rgba(57,255,20,0.08),0 8px 32px rgba(0,0,0,.6);border-color:var(--fo-color);}
+body.fallout-mode #status-bar{border-top-color:var(--fo-color);}
+body.fallout-mode .hbtn.on{color:var(--fo-color);border-color:var(--fo-color);text-shadow:0 0 6px var(--fo-color);}
+body.fallout-mode #orb-panel-label{letter-spacing:.18em;}
 </style>
 </head>
 <body>
 <div id="graph-bg"><canvas id="vault-graph-canvas"></canvas></div>
 <div id="graph-overlay">
-  <div class="graph-ph-icon">🕸</div>
+  <div class="graph-ph-icon">&#128336;</div>
   <div class="graph-ph-title">No vault connected</div>
   <div class="graph-ph-sub">Connect your vault to see your knowledge graph. Notes become nodes, wikilinks become edges.</div>
-  <button class="graph-connect-btn" onclick="handleVaultBtn()">⬡ Connect Vault</button>
+  <button class="graph-connect-btn" onclick="handleVaultBtn()">&#11041; Connect Vault</button>
 </div>
 <div id="graph-tooltip">
   <div class="tt-name" id="tt-name"></div>
@@ -638,6 +566,7 @@ body.fallout-mode #orb-panel-label{
   <div class="fp-body" style="display:flex;flex-direction:column;position:relative">
     <canvas id="orb-canvas" style="flex:1;display:block;cursor:pointer;min-height:160px;position:relative;z-index:1"></canvas>
     <canvas id="record-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;display:none;cursor:pointer;z-index:2"></canvas>
+    <!-- vault-door-canvas injected by fallout.js at z-index:3 -->
     <div class="orb-foot">
       <div id="orb-foot-normal">
         <div class="orb-status-txt" id="orb-status-txt">Say "Baker" to begin</div>
@@ -855,8 +784,6 @@ body.fallout-mode #orb-panel-label{
     <button id="vc-send-btn" style="background:var(--accent);border:none;border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;flex-shrink:0;color:#fff">&#8593;</button>
   </div>
 </div>
-
-<!-- DAILY BRIEF PANEL -->
 <div id="daily-brief-panel">
   <div class="brief-hdr">
     <span class="brief-title">&#9670; Daily Brief</span>
@@ -865,8 +792,6 @@ body.fallout-mode #orb-panel-label{
   <div class="brief-stats" id="brief-stats"></div>
   <div class="brief-body" id="brief-body">Generating brief...</div>
 </div>
-
-<!-- VAULT HEALTH PANEL -->
 <div id="vault-health-panel">
   <div class="vh-title">
     <span>&#9650; Vault Health</span>
@@ -879,9 +804,6 @@ body.fallout-mode #orb-panel-label{
   <hr class="vh-divider">
   <div class="vh-row"><span class="vh-label">Daily Streak</span><span class="vh-val vh-streak" id="vh-streak">&#8212;</span></div>
 </div>
-
-
-<!-- BUDGET PANEL -->
 <div id="budget-panel">
   <div class="bp-hdr">
     <span class="bp-title">&#36; Budget</span>
@@ -895,43 +817,26 @@ body.fallout-mode #orb-panel-label{
     </div>
   </div>
   <div class="bp-body">
-    <!-- Left: pie + totals -->
     <div class="bp-left">
       <div class="bp-totals">
-        <div class="bp-total-card">
-          <div class="bp-total-label">Income</div>
-          <div class="bp-total-val income" id="bp-total-income">$0</div>
-        </div>
-        <div class="bp-total-card">
-          <div class="bp-total-label">Spent</div>
-          <div class="bp-total-val spent" id="bp-total-spent">$0</div>
-        </div>
-        <div class="bp-total-card">
-          <div class="bp-total-label">Remaining</div>
-          <div class="bp-total-val left positive" id="bp-total-left">$0</div>
-        </div>
-        <div class="bp-total-card">
-          <div class="bp-total-label">Saved</div>
-          <div class="bp-total-val savings" id="bp-total-saved">$0</div>
-        </div>
+        <div class="bp-total-card"><div class="bp-total-label">Income</div><div class="bp-total-val income" id="bp-total-income">$0</div></div>
+        <div class="bp-total-card"><div class="bp-total-label">Spent</div><div class="bp-total-val spent" id="bp-total-spent">$0</div></div>
+        <div class="bp-total-card"><div class="bp-total-label">Remaining</div><div class="bp-total-val left positive" id="bp-total-left">$0</div></div>
+        <div class="bp-total-card"><div class="bp-total-label">Saved</div><div class="bp-total-val savings" id="bp-total-saved">$0</div></div>
       </div>
       <canvas id="bp-pie-canvas" width="268" height="268"></canvas>
       <div class="bp-legend" id="bp-legend"></div>
     </div>
-    <!-- Right: tabs -->
     <div class="bp-right">
       <div class="bp-tabs">
         <button class="bp-tab active" id="bp-tab-log" onclick="BUDGET.switchTab('log')">&#128179; Log</button>
         <button class="bp-tab" id="bp-tab-cats" onclick="BUDGET.switchTab('cats')">&#9776; Categories</button>
         <button class="bp-tab" id="bp-tab-bills" onclick="BUDGET.switchTab('bills')">&#128197; Bills</button>
       </div>
-      <div class="bp-tab-content" id="bp-tab-content">
-        <!-- filled by JS -->
-      </div>
+      <div class="bp-tab-content" id="bp-tab-content"></div>
     </div>
   </div>
 </div>
-
 <div class="fp" id="confirm-popup" style="border-radius:10px">
   <div id="confirm-popup-text"></div>
   <div id="confirm-popup-btns">
@@ -999,6 +904,8 @@ body.fallout-mode #orb-panel-label{
         Add <code style="color:var(--accent)">https://big-burr.github.io/BAKER/hud.html</code> as a Redirect URI.
       </div>
     </div>
+    <!-- Fallout Mode section injected here by FALLOUT.init() -->
+    <div id="fo-settings-section"></div>
     <div class="modal-note">Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> &rarr; API Keys &rarr; Create Key.</div>
     <div class="modal-actions">
       <button class="cancel-btn" onclick="closeSettings()">Cancel</button>
@@ -1112,20 +1019,45 @@ var _musicModeDebounce=false;
 function toggleMusicMode(){
   if(_musicModeDebounce)return;
   _musicModeDebounce=true;setTimeout(function(){_musicModeDebounce=false;},400);
-  // Always enter music mode on double-click — works with or without Spotify
-  // Single-click handles voice; double-click is always the vinyl record
   orbMusicMode=!orbMusicMode;_applyMusicMode();
 }
-function _applyMusicMode(){var orbCanvas=document.getElementById('orb-canvas');var recCanvas=document.getElementById('record-canvas');var footNormal=document.getElementById('orb-foot-normal');var footMusic=document.getElementById('orb-foot-music');var panel=document.getElementById('orb-panel');var icon=document.getElementById('orb-mode-icon');var lbl=document.getElementById('orb-panel-label');if(orbMusicMode){orbCanvas.style.display='none';recCanvas.style.display='block';footNormal.style.display='none';footMusic.style.display='block';panel.classList.add('music-mode');icon.textContent='♫';lbl.textContent='Now Playing';
+function _applyMusicMode(){
+  var orbCanvas=document.getElementById('orb-canvas');
+  var recCanvas=document.getElementById('record-canvas');
+  var vaultDoor=document.getElementById('vault-door-canvas');
+  var footNormal=document.getElementById('orb-foot-normal');
+  var footMusic=document.getElementById('orb-foot-music');
+  var panel=document.getElementById('orb-panel');
+  var icon=document.getElementById('orb-mode-icon');
+  var lbl=document.getElementById('orb-panel-label');
+  if(orbMusicMode){
+    orbCanvas.style.display='none';
+    if(vaultDoor)vaultDoor.style.display='none';
+    recCanvas.style.display='block';
+    footNormal.style.display='none';
+    footMusic.style.display='block';
+    panel.classList.add('music-mode');
+    icon.textContent='♫';
+    lbl.textContent='Now Playing';
     var _tn=document.getElementById('orb-track-name');
     var _an=document.getElementById('orb-artist-name');
     var _spOk=(typeof SP!=='undefined'&&typeof SP.isConnected==='function'&&SP.isConnected());
-    if(!_spOk){
-      if(_tn)_tn.textContent='Music Mode';
-      if(_an)_an.textContent='Double-click again to exit';
-    }
-    _syncRecordFromState();_startRecordLoop();}else{orbCanvas.style.display='block';recCanvas.style.display='none';footNormal.style.display='block';footMusic.style.display='none';panel.classList.remove('music-mode');icon.textContent='◈';lbl.textContent='BAKER';_stopRecordLoop();
-    if(typeof vaultConnected!=='undefined'&&vaultConnected&&typeof graphNodes!=='undefined'&&graphNodes.length&&!graphAnim)runGraphSim();}}
+    if(!_spOk){if(_tn)_tn.textContent='Music Mode';if(_an)_an.textContent='Double-click again to exit';}
+    _syncRecordFromState();_startRecordLoop();
+  }else{
+    recCanvas.style.display='none';
+    footNormal.style.display='block';
+    footMusic.style.display='none';
+    panel.classList.remove('music-mode');
+    icon.textContent='◈';
+    lbl.textContent='BAKER';
+    _stopRecordLoop();
+    // Restore correct canvas: vault door if Fallout active, else orb
+    if(typeof FALLOUT!=='undefined'&&FALLOUT.isActive()){if(vaultDoor)vaultDoor.style.display='block';}
+    else{orbCanvas.style.display='block';}
+    if(typeof vaultConnected!=='undefined'&&vaultConnected&&typeof graphNodes!=='undefined'&&graphNodes.length&&!graphAnim)runGraphSim();
+  }
+}
 function _syncRecordFromState(){var state=SP.getCurrentTrack&&SP.getCurrentTrack();if(!state||!state.item)return;var it=state.item;var tn=document.getElementById('orb-track-name');var an=document.getElementById('orb-artist-name');if(tn)tn.textContent=it.name||'';if(an)an.textContent=(it.artists&&it.artists.map(function(a){return a.name;}).join(', '))||'';var pp=document.getElementById('orb-music-pp');if(pp)pp.textContent=state.is_playing?'⏸':'▶';recordSpinning=!!state.is_playing;var artUrl=(it.album&&it.album.images&&(it.album.images[1]||it.album.images[0]))?((it.album.images[1]||it.album.images[0]).url):'';if(artUrl&&artUrl!==recordArtUrl){recordArtUrl=artUrl;recordImg=new Image();recordImg.crossOrigin='anonymous';recordImg.src=artUrl;}}
 function orbMusicSyncState(state){if(!orbMusicMode)return;if(!state||!state.item)return;var it=state.item;var tn=document.getElementById('orb-track-name');var an=document.getElementById('orb-artist-name');if(tn)tn.textContent=it.name||'';if(an)an.textContent=(it.artists&&it.artists.map(function(a){return a.name;}).join(', '))||'';var pp=document.getElementById('orb-music-pp');if(pp)pp.textContent=state.is_playing?'⏸':'▶';recordSpinning=!!state.is_playing;var artUrl=(it.album&&it.album.images&&(it.album.images[1]||it.album.images[0]))?((it.album.images[1]||it.album.images[0]).url):'';if(artUrl&&artUrl!==recordArtUrl){recordArtUrl=artUrl;recordImg=new Image();recordImg.crossOrigin='anonymous';recordImg.src=artUrl;}}
 function orbMusicTogglePlay(){var state=SP.getCurrentTrack&&SP.getCurrentTrack();if(state&&state.is_playing){SP.pause();}else{SP.resume();}recordSpinning=!recordSpinning;var pp=document.getElementById('orb-music-pp');if(pp)pp.textContent=recordSpinning?'⏸':'▶';}
@@ -1211,9 +1143,18 @@ function speakResponse(txt){isSpeaking=true;setOrbState('speaking');setStatus(tx
 function setStatus(txt){document.getElementById('sb-txt').textContent=txt;}
 
 // ═══════════════════════════════════════════════════════════
-// SETTINGS
+// SETTINGS — updated: calls FALLOUT.injectSettingsSection()
 // ═══════════════════════════════════════════════════════════
-function openSettings(){var overlay=document.getElementById('overlay');overlay.classList.add('open');var k=localStorage.getItem('baker_api_key');if(k)document.getElementById('key-input').value=k;var ws=localStorage.getItem('baker_web_search')==='true';document.getElementById('search-toggle').checked=ws;document.getElementById('search-lbl').textContent=ws?'ON':'OFF';var effort=localStorage.getItem('baker_effort')||'standard';setEffort(effort,true);var rate=parseFloat(localStorage.getItem('baker_speech_rate')||'0.92');var pct=Math.round(rate*100);document.getElementById('speech-rate-slider').value=pct;document.getElementById('speech-rate-display').textContent=pct;var id=localStorage.getItem('baker_spotify_id');if(id){var inp=document.getElementById('sp-set-id-inp');if(inp)inp.value=id;}SP.updateSettingsUI();}
+function openSettings(){
+  var overlay=document.getElementById('overlay');overlay.classList.add('open');
+  var k=localStorage.getItem('baker_api_key');if(k)document.getElementById('key-input').value=k;
+  var ws=localStorage.getItem('baker_web_search')==='true';document.getElementById('search-toggle').checked=ws;document.getElementById('search-lbl').textContent=ws?'ON':'OFF';
+  var effort=localStorage.getItem('baker_effort')||'standard';setEffort(effort,true);
+  var rate=parseFloat(localStorage.getItem('baker_speech_rate')||'0.92');var pct=Math.round(rate*100);document.getElementById('speech-rate-slider').value=pct;document.getElementById('speech-rate-display').textContent=pct;
+  var id=localStorage.getItem('baker_spotify_id');if(id){var inp=document.getElementById('sp-set-id-inp');if(inp)inp.value=id;}
+  SP.updateSettingsUI();
+  if(typeof FALLOUT!=='undefined')setTimeout(function(){FALLOUT.injectSettingsSection();},0);
+}
 function closeSettings(){document.getElementById('overlay').classList.remove('open');}
 function closeIfOutside(e){if(e.target===document.getElementById('overlay'))closeSettings();}
 function toggleShow(){var i=document.getElementById('key-input');i.type=i.type==='password'?'text':'password';}
@@ -1223,14 +1164,13 @@ function toggleWebSearch(){var b=document.getElementById('web-search-btn');var o
 function updateSearchToggle(){var on=document.getElementById('search-toggle').checked;localStorage.setItem('baker_web_search',on);document.getElementById('search-lbl').textContent=on?'ON':'OFF';var b=document.getElementById('web-search-btn');b.className='hbtn'+(on?' on':'');b.textContent=(on?'🌐 Web ✓':'🌐 Web');}
 function setEffort(e,noSave){if(!noSave)localStorage.setItem('baker_effort',e);['deep','standard','quick','minimal'].forEach(function(x){document.getElementById('effort-'+x).classList.toggle('active',x===e);});}
 document.getElementById('speech-rate-slider').addEventListener('input',function(){var v=parseInt(this.value);document.getElementById('speech-rate-display').textContent=v;speechRate=v/100;localStorage.setItem('baker_speech_rate',speechRate);});
-
 </script>
 <script src="js/spotify.js"></script>
-<script src="js/cal.js"></script> <script src="js/mcal.js"></script>
+<script src="js/cal.js"></script>
+<script src="js/mcal.js"></script>
 <script src="js/vault-ui.js"></script>
 <script src="js/budget.js"></script>
-  <script src="js/fallout.js"></script>
-
+<script src="js/fallout.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════
 // DAILY BRIEF + VAULT HEALTH + VOICE OPEN NOTE
@@ -1281,7 +1221,7 @@ function updateVaultHealthPanel(){
   if(el('vh-total'))el('vh-total').textContent=s.total;
   if(el('vh-daily'))el('vh-daily').textContent=s.dailyCount;
   if(el('vh-lectures'))el('vh-lectures').textContent=s.lectureCount;
-  if(el('vh-streak'))el('vh-streak').textContent=s.streak>0?(s.streak+' day'+(s.streak!==1?'s':'')+' &#128293;'):'None yet';
+  if(el('vh-streak'))el('vh-streak').innerHTML=s.streak>0?(s.streak+' day'+(s.streak!==1?'s':'')+' &#128293;'):'None yet';
 }
 
 function toggleVaultHealth(){
@@ -1301,7 +1241,6 @@ async function requestBrief(){
   if(!panel)return;
   if(statsEl)statsEl.innerHTML=[{l:'Total Notes',v:s.total},{l:'Daily Logs',v:s.dailyCount},{l:'Lectures',v:s.lectureCount},{l:'Streak',v:s.streak>0?(s.streak+'d'):'0'}].map(function(c){return '<div class="brief-stat">'+c.l+'<span>'+c.v+'</span></div>';}).join('');
   if(bodyEl)bodyEl.textContent='Generating brief...';
-  // Position panel absolutely so dragging doesn't cause transform jump
   if(!panel.style.left||panel.style.left===''){
     var pw=Math.min(480,window.innerWidth*0.9);
     panel.style.left=Math.round((window.innerWidth-pw)/2)+'px';
@@ -1359,6 +1298,7 @@ BUDGET.init();
 makeWindowBehavior(document.getElementById('budget-panel'),document.getElementById('budget-panel').querySelector('.bp-hdr'),{minW:600,minH:400});
 makeWindowBehavior(document.getElementById('graphui-panel'),document.getElementById('graphui-panel').querySelector('.gui-hdr'),{minW:260,minH:400});
 GRAPHUI.init();
+FALLOUT.init();
 (function(){
   var oc=document.getElementById('orb-canvas');var rc=document.getElementById('record-canvas');
   oc.addEventListener('click',handleOrbClick);rc.addEventListener('click',handleOrbClick);
@@ -1373,10 +1313,6 @@ var savedEffort=localStorage.getItem('baker_effort')||'standard';setEffort(saved
 var savedRate=parseFloat(localStorage.getItem('baker_speech_rate')||'0.92');speechRate=savedRate;
 var pct=Math.round(savedRate*100);document.getElementById('speech-rate-slider').value=pct;document.getElementById('speech-rate-display').textContent=pct;
 SP.init();startWakeWord();
-    FALLOUT.init();
-
-// Vault reconnect requires a user gesture (click) for requestPermission in Chrome.
-// Register a one-time listener — fires on first click anywhere on the page.
 (function(){
   var _reconnected=false;
   function _tryOnce(e){
