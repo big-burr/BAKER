@@ -4,7 +4,7 @@
 var SP=(function(){
   var LS={TOKEN:'baker_spotify_token',REFRESH:'baker_spotify_refresh',EXPIRY:'baker_spotify_expiry',ID:'baker_spotify_id',DEVICE:'baker_spotify_device',CV:'baker_spotify_cv'};
   var SCOPES='user-read-playback-state user-modify-playback-state user-read-currently-playing playlist-read-private playlist-read-collaborative user-library-read user-read-recently-played streaming';
-  var currentState=null,pollTimer=null,devices=[];
+  var currentState=null,pollTimer=null,progressTimer=null,progressEpoch=0,devices=[];
 
   // ── Auth ──────────────────────────────────────────────────
   function getRedirectUri(){return window.location.origin+window.location.pathname;}
@@ -76,11 +76,19 @@ var SP=(function(){
   async function poll(){
     if(!isConnected())return;
     var s=await api('/me/player?additional_types=track,episode');
-    if(!s)return;currentState=s;renderNP();updateNavBtn();
+    if(!s)return;currentState=s;progressEpoch=Date.now();renderNP();updateNavBtn();
     if(typeof orbMusicSyncState==='function')orbMusicSyncState(s);
   }
-  function startPolling(){if(pollTimer)return;poll();pollTimer=setInterval(poll,5000);}
-  function stopPolling(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
+  function startPolling(){
+    if(pollTimer)return;
+    poll();
+    pollTimer=setInterval(poll,5000);
+    if(!progressTimer)progressTimer=setInterval(_tickProgress,1000);
+  }
+  function stopPolling(){
+    if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
+    if(progressTimer){clearInterval(progressTimer);progressTimer=null;}
+  }
   async function fetchDevices(){var d=await api('/me/player/devices');devices=d?.devices||[];return devices;}
   async function search(q,types='track,album,playlist',limit=7){return api('/search?q='+encodeURIComponent(q)+'&type='+types+'&limit='+limit);}
   async function fetchPlaylists(){return api('/me/playlists?limit=30');}
@@ -133,6 +141,8 @@ var SP=(function(){
     // Normalise position now that it's visible so drag/resize work immediately
     if(p._wbNormalise)p._wbNormalise();
     render();
+    // Immediately refresh state so we don't sit on stale/null for 5s
+    if(isConnected())poll();
   }
   function hidePanel(){document.getElementById('spotify-panel').classList.remove('sp-vis');}
   function togglePanel(){
@@ -141,6 +151,7 @@ var SP=(function(){
     if(p.classList.contains('sp-vis')){
       if(p._wbNormalise)p._wbNormalise();
       render();
+      if(isConnected())poll();
     }
   }
 
@@ -202,7 +213,7 @@ var SP=(function(){
           </div>
         </div>
         <div class="spp-prog-wrap">
-          <span class="spp-t">${fmtMs(prog)}</span>
+          <span class="spp-t" id="spp-elapsed">${fmtMs(prog)}</span>
           <div class="spp-prog" id="spp-prog">
             <div class="spp-fill" id="spp-fill" style="width:${pct}%"></div>
           </div>
@@ -262,9 +273,10 @@ var tracks=(d.tracks?.items||[]).filter(Boolean);
     var c=document.getElementById('spp-li');if(!c)return;
     c.innerHTML='<div style="padding:10px;font-size:11px;color:var(--muted)">Loading…</div>';
     var items=[];
-    if(type==='pl'){var d=await fetchPlaylists();items=(d?.items||[]).map(p=>({uri:p.uri,name:p.name,sub:(p.tracks?.total||'?')+' tracks',art:p.images?.[0]?.url||''}));}
-    else if(type==='liked'){var d=await fetchLiked();items=(d?.items||[]).map(i=>({uri:i.track.uri,name:i.track.name,sub:i.track.artists?.map(a=>a.name).join(', ')||'',art:i.track.album?.images?.[2]?.url||''}));}
-    else{var d=await fetchRecent();items=(d?.items||[]).map(i=>({uri:i.track.uri,name:i.track.name,sub:i.track.artists?.map(a=>a.name).join(', ')||'',art:i.track.album?.images?.[2]?.url||''}));}
+    var _d;
+    if(type==='pl'){_d=await fetchPlaylists();items=(_d?.items||[]).map(p=>({uri:p.uri,name:p.name,sub:(p.tracks?.total||'?')+' tracks',art:p.images?.[0]?.url||''}));}
+    else if(type==='liked'){_d=await fetchLiked();items=(_d?.items||[]).map(i=>({uri:i.track.uri,name:i.track.name,sub:i.track.artists?.map(a=>a.name).join(', ')||'',art:i.track.album?.images?.[2]?.url||''}));}
+    else{_d=await fetchRecent();items=(_d?.items||[]).map(i=>({uri:i.track.uri,name:i.track.name,sub:i.track.artists?.map(a=>a.name).join(', ')||'',art:i.track.album?.images?.[2]?.url||''}));}
     if(!items.length){c.innerHTML='<div style="padding:10px;font-size:11px;color:var(--muted)">Nothing here yet.</div>';return;}
     c.innerHTML=items.map(i=>`<div class="spp-ri" data-uri="${i.uri}">${i.art?`<img class="spp-rthumb" src="${i.art}">`:'<div class="spp-rthumb"></div>'}<div class="spp-rm"><div class="spp-rn">${esc(i.name)}</div><div class="spp-rs">${esc(i.sub)}</div></div></div>`).join('');
     c.querySelectorAll('.spp-ri').forEach(item=>{item.addEventListener('click',()=>{play(item.dataset.uri);switchTab('np');});});
