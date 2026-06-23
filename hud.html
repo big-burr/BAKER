@@ -7,7 +7,7 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#7c6af7">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -17,7 +17,7 @@
 --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
 }
 html,body{background:var(--bg);color:var(--text);font-family:var(--sans);width:100vw;height:100vh;overflow:hidden;position:relative}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes b{0%,100%{opacity:1}50%{opacity:0}}
 @keyframes fadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
 @keyframes listening-pulse{0%,100%{box-shadow:0 0 0 0 rgba(124,106,247,.5)}50%{box-shadow:0 0 28px 8px rgba(124,106,247,.2)}}
 @keyframes sp-pulse{0%,100%{opacity:1}50%{opacity:.3}}
@@ -511,6 +511,76 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
 /* Income row in categories tab */
 .bp-income-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:4px}
 .bp-income-label{font-family:var(--mono);font-size:11px;color:var(--green);flex:1}
+/* ── FALLOUT MODE ─────────────────────────────────────── */
+:root{--fo-color:#39ff14;--fo-scanline-opacity:0.09;}
+
+/* Scanline overlay */
+body.fallout-mode::after{
+  content:'';pointer-events:none;position:fixed;inset:0;z-index:9999;
+  background:repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,var(--fo-scanline-opacity)) 0px,
+    rgba(0,0,0,var(--fo-scanline-opacity)) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* Color scheme swap */
+body.fallout-mode{
+  --bg:#060a06;
+  --surface:#0b120b;
+  --surface2:#0f180f;
+  --border:#1a2e1a;
+  --accent:var(--fo-color);
+  --accent-dim:#1a3d1a;
+  --text:var(--fo-color);
+  --muted:#3a5c3a;
+  --green:var(--fo-color);
+  --amber:#c8a000;
+  --red:#c84040;
+  --blue:#40a040;
+  --mono:'Courier Prime','Courier New',monospace;
+  --sans:'Courier Prime','Courier New',monospace;
+}
+
+/* Glow on nav logo */
+body.fallout-mode .nav-logo{
+  text-shadow:0 0 8px var(--fo-color);
+  border-color:var(--fo-color);
+}
+
+/* Panel glow edges */
+body.fallout-mode .fp,
+body.fallout-mode #spotify-panel,
+body.fallout-mode #calendar-panel,
+body.fallout-mode #month-panel,
+body.fallout-mode #vault-panel,
+body.fallout-mode #vaultchat-panel,
+body.fallout-mode #graphui-panel,
+body.fallout-mode #budget-panel,
+body.fallout-mode #daily-brief-panel,
+body.fallout-mode #vault-health-panel{
+  box-shadow:0 0 12px rgba(57,255,20,0.08),0 8px 32px rgba(0,0,0,.6);
+  border-color:var(--fo-color);
+}
+
+/* Status bar */
+body.fallout-mode #status-bar{
+  border-top-color:var(--fo-color);
+}
+
+/* Nav buttons active state */
+body.fallout-mode .hbtn.on{
+  color:var(--fo-color);
+  border-color:var(--fo-color);
+  text-shadow:0 0 6px var(--fo-color);
+}
+
+/* Orb panel label */
+body.fallout-mode #orb-panel-label{
+  letter-spacing:.18em;
+}
 
 </style>
 </head>
@@ -1159,6 +1229,7 @@ document.getElementById('speech-rate-slider').addEventListener('input',function(
 <script src="js/cal.js"></script> <script src="js/mcal.js"></script>
 <script src="js/vault-ui.js"></script>
 <script src="js/budget.js"></script>
+  <script src="js/fallout.js"></script>
 
 <script>
 // ═══════════════════════════════════════════════════════════
@@ -1302,6 +1373,8 @@ var savedEffort=localStorage.getItem('baker_effort')||'standard';setEffort(saved
 var savedRate=parseFloat(localStorage.getItem('baker_speech_rate')||'0.92');speechRate=savedRate;
 var pct=Math.round(savedRate*100);document.getElementById('speech-rate-slider').value=pct;document.getElementById('speech-rate-display').textContent=pct;
 SP.init();startWakeWord();
+    FALLOUT.init();
+
 // Vault reconnect requires a user gesture (click) for requestPermission in Chrome.
 // Register a one-time listener — fires on first click anywhere on the page.
 (function(){
