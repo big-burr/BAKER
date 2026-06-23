@@ -435,5 +435,5 @@ var FALLOUT=(function(){
     // directly, so no patching needed here.
   }
 
-  return{init,toggle,setColor,setScanlines,onOrbState,isActive:function(){return active;}};
+  return{init,toggle,setColor,setScanlines,onOrbState,injectSettingsSection,isActive:function(){return active;}};
 })();
