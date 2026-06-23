@@ -1,5 +1,5 @@
 // BAKER Service Worker — baker-v27
-const CACHE = 'baker-v32';
+const CACHE = 'baker-v33';
 
 const ASSETS = [
   '/BAKER/',
