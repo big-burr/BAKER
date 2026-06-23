@@ -505,11 +505,34 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
 /* ══ FALLOUT MODE ══ */
 body.fallout-mode::after{content:'';pointer-events:none;position:fixed;inset:0;z-index:9999;background:repeating-linear-gradient(0deg,rgba(0,0,0,var(--fo-scanline-opacity)) 0px,rgba(0,0,0,var(--fo-scanline-opacity)) 1px,transparent 1px,transparent 3px);}
 body.fallout-mode{--bg:#060a06;--surface:#0b120b;--surface2:#0f180f;--border:#1a2e1a;--accent:var(--fo-color);--accent-dim:#1a3d1a;--text:var(--fo-color);--muted:#3a5c3a;--green:var(--fo-color);--amber:#c8a000;--red:#c84040;--blue:#40a040;--mono:'Courier Prime','Courier New',monospace;--sans:'Courier Prime','Courier New',monospace;}
+/* Override hardcoded rgba panel backgrounds that don't use CSS vars */
+body.fallout-mode .fp{background:rgba(6,10,6,.95)!important;}
+body.fallout-mode #graph-tooltip{background:rgba(6,10,6,.97)!important;}
+body.fallout-mode #confirm-popup{background:rgba(6,10,6,.97)!important;}
+body.fallout-mode #spotify-panel,body.fallout-mode #calendar-panel,body.fallout-mode #month-panel,
+body.fallout-mode #vault-panel,body.fallout-mode #vaultchat-panel,body.fallout-mode #graphui-panel,
+body.fallout-mode #budget-panel,body.fallout-mode #daily-brief-panel,body.fallout-mode #vault-health-panel{background:rgba(6,10,6,.97)!important;}
+/* Sub-panels that are absolutely positioned overlays inside panels */
+body.fallout-mode #mcal-detail,body.fallout-mode #vp-viewer,body.fallout-mode #vp-create{background:rgba(6,10,6,.99)!important;}
+/* VaultChat input bar and bottom strip */
+body.fallout-mode #vaultchat-panel>div:last-child{background:rgba(6,10,6,.97)!important;}
+/* Graph settings reset button sticky */
+body.fallout-mode #gui-reset-btn{background:rgba(6,10,6,.97)!important;}
+/* Nav logo glow */
 body.fallout-mode .nav-logo{text-shadow:0 0 8px var(--fo-color);border-color:var(--fo-color);}
+/* All main panels: fo-color border + glow */
 body.fallout-mode .fp,body.fallout-mode #spotify-panel,body.fallout-mode #calendar-panel,body.fallout-mode #month-panel,body.fallout-mode #vault-panel,body.fallout-mode #vaultchat-panel,body.fallout-mode #graphui-panel,body.fallout-mode #budget-panel,body.fallout-mode #daily-brief-panel,body.fallout-mode #vault-health-panel{box-shadow:0 0 12px rgba(57,255,20,0.08),0 8px 32px rgba(0,0,0,.6);border-color:var(--fo-color);}
 body.fallout-mode #status-bar{border-top-color:var(--fo-color);}
 body.fallout-mode .hbtn.on{color:var(--fo-color);border-color:var(--fo-color);text-shadow:0 0 6px var(--fo-color);}
 body.fallout-mode #orb-panel-label{letter-spacing:.18em;}
+/* Link suggestion popup (injected by vault-ui.js) */
+body.fallout-mode #baker-link-suggest{background:rgba(6,10,6,.97)!important;border-color:var(--fo-color)!important;}
+/* Scrollbar thumbs */
+body.fallout-mode ::-webkit-scrollbar-thumb{background:var(--border)!important;}
+/* Modal background */
+body.fallout-mode .modal{background:var(--surface)!important;}
+/* Active state text glow */
+body.fallout-mode .orb-status-txt.active,body.fallout-mode .sb-txt{text-shadow:0 0 6px rgba(57,255,20,0.4);}
 </style>
 </head>
 <body>
