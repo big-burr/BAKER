@@ -119,6 +119,12 @@ var BUDGET=(function(){
   function drawPie(md){
     var canvas=document.getElementById('bp-pie-canvas');
     if(!canvas) return;
+    // Resolve CSS variables for Fallout mode compatibility
+    var _cs=getComputedStyle(document.body);
+    var _bgColor=_cs.getPropertyValue('--bg').trim()||'#0f0f10';
+    var _textColor=_cs.getPropertyValue('--text').trim()||'#e8e6f0';
+    var _mutedColor=_cs.getPropertyValue('--muted').trim()||'#7a7880';
+    var _monoFont=_cs.getPropertyValue('--mono').trim()||"'IBM Plex Mono',monospace";
     // Size canvas to actual CSS display size
     var rect=canvas.getBoundingClientRect();
     var dpr=window.devicePixelRatio||1;
@@ -143,10 +149,10 @@ var BUDGET=(function(){
       ctx.beginPath();
       ctx.arc(cx,cy,R,0,Math.PI*2);
       ctx.arc(cx,cy,innerR,0,Math.PI*2,true);
-      ctx.fillStyle='rgba(255,255,255,.06)';
+      ctx.fillStyle=(_cs.getPropertyValue('--surface2').trim()||'rgba(255,255,255,.06)');
       ctx.fill();
-      ctx.fillStyle='rgba(255,255,255,.25)';
-      ctx.font='bold 13px IBM Plex Mono,monospace';
+      ctx.fillStyle=_textColor;
+      ctx.font='bold 13px '+_monoFont;
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText('No data',cx,cy);
       return;
@@ -173,7 +179,7 @@ var BUDGET=(function(){
       ctx.fillStyle=color;
       ctx.fill();
       // Thin separator line
-      ctx.strokeStyle='rgba(15,15,16,.4)';
+      ctx.strokeStyle=(_bgColor.startsWith('#')?_bgColor+'66':_bgColor);
       ctx.lineWidth=1.5;
       ctx.stroke();
     });
@@ -181,16 +187,16 @@ var BUDGET=(function(){
     // Single clean donut punch
     ctx.beginPath();
     ctx.arc(cx,cy,innerR,0,Math.PI*2);
-    ctx.fillStyle='#0f0f10';
+    ctx.fillStyle=_bgColor;
     ctx.fill();
 
     // Center text — total spent
-    ctx.fillStyle='#e8e6f0';
-    ctx.font='bold 17px IBM Plex Mono,monospace';
+    ctx.fillStyle=_textColor;
+    ctx.font='bold 17px '+_monoFont;
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText('$'+total.toFixed(0),cx,cy-8);
-    ctx.font='9px IBM Plex Mono,monospace';
-    ctx.fillStyle='#7a7880';
+    ctx.font='9px '+_monoFont;
+    ctx.fillStyle=_mutedColor;
     ctx.fillText('SPENT',cx,cy+10);
 
     // Legend
