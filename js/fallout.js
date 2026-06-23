@@ -327,12 +327,18 @@ var FALLOUT=(function(){
   // ── Settings UI ───────────────────────────────────────────
   // Called by openSettings() to inject our section into the modal
   function injectSettingsSection(){
-    if(document.getElementById('fo-settings-section'))return;
-    var modal=document.querySelector('.modal');
-    if(!modal)return;
-
-    var sec=document.createElement('div');
-    sec.id='fo-settings-section';
+    // Use the existing placeholder div — populate it if empty, refresh if already populated
+    var sec=document.getElementById('fo-settings-section');
+    if(!sec){
+      // Fallback: create and insert before modal-note
+      sec=document.createElement('div');
+      sec.id='fo-settings-section';
+      var modal=document.querySelector('.modal');
+      if(!modal)return;
+      var note=modal.querySelector('.modal-note');
+      if(note)modal.insertBefore(sec,note);
+      else modal.appendChild(sec);
+    }
     sec.className='sp-set-sep';
     sec.innerHTML=
       '<div class="sp-set-hd">☢ Fallout Mode</div>'+
@@ -364,11 +370,6 @@ var FALLOUT=(function(){
         '<label>Scanline Intensity — <span id="fo-scan-val">'+scanlines+'</span></label>'+
         '<input type="range" id="fo-scan-slider" min="0" max="100" value="'+scanlines+'" style="width:100%;accent-color:var(--accent);margin-top:6px">'+
       '</div>';
-
-    // Insert before the modal-note div
-    var note=modal.querySelector('.modal-note');
-    if(note)modal.insertBefore(sec,note);
-    else modal.appendChild(sec);
 
     _bindSettingsEvents();
   }
@@ -430,14 +431,8 @@ var FALLOUT=(function(){
 
     if(active)apply();
 
-    // Patch openSettings to inject our section each time modal opens
-    var _origOpen=window.openSettings;
-    if(typeof _origOpen==='function'){
-      window.openSettings=function(){
-        _origOpen();
-        setTimeout(injectSettingsSection,0);
-      };
-    }
+    // openSettings() in hud.html already calls FALLOUT.injectSettingsSection()
+    // directly, so no patching needed here.
   }
 
   return{init,toggle,setColor,setScanlines,onOrbState,isActive:function(){return active;}};
