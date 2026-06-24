@@ -1,5 +1,5 @@
 // BAKER Service Worker — baker-v27
-const CACHE = 'baker-v35';
+const CACHE = 'baker-v36';
 
 const ASSETS = [
   '/BAKER/',
@@ -26,6 +26,7 @@ const ASSETS = [
   '/BAKER/js/cal.js',
   '/BAKER/js/mcal.js',
   '/BAKER/js/budget.js',
+  '/BAKER/js/strength.js',
 ];
 
 self.addEventListener('install', e => {
@@ -43,7 +44,6 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Network-first for API calls — never cache Anthropic or Spotify
   if (
     e.request.url.includes('anthropic.com') ||
     e.request.url.includes('spotify.com') ||
@@ -56,7 +56,6 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Cache-first for everything else
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
