@@ -34,6 +34,7 @@ function openSettings(){
   var id=localStorage.getItem('baker_spotify_id');if(id){var inp=document.getElementById('sp-set-id-inp');if(inp)inp.value=id;}
   SP.updateSettingsUI();
   if(typeof FALLOUT!=='undefined')setTimeout(function(){FALLOUT.injectSettingsSection();},0);
+  if(typeof REMINDERS!=='undefined')setTimeout(function(){REMINDERS.injectSettings();},50);
 }
 function closeSettings(){document.getElementById('overlay').classList.remove('open');}
 function closeIfOutside(e){if(e.target===document.getElementById('overlay'))closeSettings();}
