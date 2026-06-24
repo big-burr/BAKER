@@ -79,6 +79,17 @@ var SP=(function(){
     if(!s)return;currentState=s;progressEpoch=Date.now();renderNP();updateNavBtn();
     if(typeof orbMusicSyncState==='function')orbMusicSyncState(s);
   }
+  function _tickProgress(){
+    if(!currentState||!currentState.is_playing)return;
+    var elapsed=Date.now()-progressEpoch;
+    var prog=Math.min((currentState.progress_ms||0)+elapsed,(currentState.item&&currentState.item.duration_ms)||999999);
+    var dur=(currentState.item&&currentState.item.duration_ms)||1;
+    var pct=Math.min(100,(prog/dur)*100);
+    var elEl=document.getElementById('spp-elapsed');
+    var fillEl=document.getElementById('spp-fill');
+    if(elEl)elEl.textContent=fmtMs(prog);
+    if(fillEl)fillEl.style.width=pct+'%';
+  }
   function startPolling(){
     if(pollTimer)return;
     poll();
