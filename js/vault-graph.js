@@ -511,11 +511,21 @@ function detectType(path,content){
   if(p.includes('conversation')||c.includes('type: conversation'))return'conversation';
   if(p.includes('01-projects')||c.includes('type: project'))return'project';
   if(p.includes('lecture')||c.includes('type: lecture'))return'lecture';
-  // daily: explicit type tag, daily-log folder, 00-capture with date filename, or YYYY-MM-DD.md anywhere
   if(c.includes('type: daily')||c.includes('type: daily log')||c.includes('type: daily-log'))return'daily';
   if(p.includes('07-system/daily')||p.includes('daily-log')||p.includes('daily log'))return'daily';
   if(p.includes('00-capture')&&/^\d{4}-\d{2}-\d{2}\.md$/.test(fname))return'daily';
   if(/^\d{4}-\d{2}-\d{2}\.md$/.test(fname))return'daily';
+  // System/module types
+  if(c.includes('type: workout-week')||c.includes('type: system-strength')||p.includes('workouts/'))return'workout';
+  if(c.includes('type: focus-log')||p.includes('focus/'))return'system';
+  if(c.includes('type: baker-memory')||fname==='memory.md')return'system';
+  if(c.includes('type: system-tasks')||fname==='tasks.md')return'system';
+  if(c.includes('type: system-budget')||fname==='budget.md')return'system';
+  if(c.includes('type: system-academic')||p.includes('academic/'))return'academic';
+  if(c.includes('type: system-biometrics')||p.includes('biometrics/'))return'biometric';
+  if(c.includes('type: analyzed-file')||p.includes('04-archive/'))return'general';
+  if(p.includes('07-system/'))return'system';
+  if(c.includes('type: weekly')||p.includes('weekly'))return'weekly';
   return'general';
 }
 
