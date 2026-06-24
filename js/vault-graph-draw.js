@@ -108,55 +108,73 @@ function _drawBirthParticles(ctx){
   if(!birthParticles||!birthParticles.length)return;
   birthParticles.forEach(function(p){
     if(p.done&&p.popped){
-      // Landing pop — expanding ring that fades
-      var popT=Math.min((p.elapsed-p.life)/0.3,1);
-      var popR=4+popT*12;
+      // Landing pop — 3 expanding rings + big flash
+      var popT=Math.min((p.elapsed-p.life)/0.6,1);
       ctx.save();
-      ctx.globalAlpha=(1-popT)*0.8;
-      ctx.beginPath();
-      ctx.arc(p.x,p.y,popR,0,Math.PI*2);
-      ctx.strokeStyle=p.col;
-      ctx.lineWidth=1.5;
-      ctx.shadowColor=p.col;
-      ctx.shadowBlur=8;
+      // Outer shockwave ring
+      var popR1=20+popT*80;
+      ctx.globalAlpha=(1-popT)*0.7;
+      ctx.beginPath();ctx.arc(p.x,p.y,popR1,0,Math.PI*2);
+      ctx.strokeStyle=p.col;ctx.lineWidth=3;
+      ctx.shadowColor=p.col;ctx.shadowBlur=20;
       ctx.stroke();
-      // Inner dot fades out
-      ctx.globalAlpha=(1-popT)*0.6;
-      ctx.beginPath();
-      ctx.arc(p.x,p.y,2,0,Math.PI*2);
-      ctx.fillStyle=p.col;
-      ctx.fill();
+      // Mid ring
+      var popR2=10+popT*45;
+      ctx.globalAlpha=(1-popT)*0.9;
+      ctx.beginPath();ctx.arc(p.x,p.y,popR2,0,Math.PI*2);
+      ctx.strokeStyle='#ffffff';ctx.lineWidth=2;
+      ctx.shadowBlur=12;ctx.stroke();
+      // Inner glow fill (fades fast)
+      if(popT<0.4){
+        ctx.globalAlpha=(1-popT/0.4)*0.5;
+        ctx.beginPath();ctx.arc(p.x,p.y,popR2*0.5,0,Math.PI*2);
+        var grd=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,popR2*0.5);
+        grd.addColorStop(0,'#ffffff');grd.addColorStop(1,p.col+'00');
+        ctx.fillStyle=grd;ctx.shadowBlur=30;ctx.fill();
+      }
       ctx.restore();
       return;
     }
-    // In-flight — bright dot with glow trail
-    // Brightness pulses slightly as it flies
-    var pulse=0.85+0.15*Math.sin(p.elapsed*12);
-    var r=3.5;
+    // In-flight — large glowing comet
+    var pulse=0.9+0.1*Math.sin(p.elapsed*14);
+    var r=10; // much bigger
     ctx.save();
-    // Glow
-    ctx.globalAlpha=0.35*pulse;
-    ctx.beginPath();
-    ctx.arc(p.x,p.y,r*3,0,Math.PI*2);
-    var grd=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*3);
-    grd.addColorStop(0,p.col);
-    grd.addColorStop(1,p.col+'00');
-    ctx.fillStyle=grd;
-    ctx.fill();
-    // Core dot — brighter than normal nodes
+    // Outer aura — very wide
+    ctx.globalAlpha=0.2*pulse;
+    ctx.beginPath();ctx.arc(p.x,p.y,r*4.5,0,Math.PI*2);
+    var grd2=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*4.5);
+    grd2.addColorStop(0,p.col);grd2.addColorStop(1,p.col+'00');
+    ctx.fillStyle=grd2;ctx.fill();
+    // Mid glow
+    ctx.globalAlpha=0.5*pulse;
+    ctx.beginPath();ctx.arc(p.x,p.y,r*2,0,Math.PI*2);
+    var grd3=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*2);
+    grd3.addColorStop(0,p.col);grd3.addColorStop(1,p.col+'00');
+    ctx.fillStyle=grd3;ctx.fill();
+    // White hot core
     ctx.globalAlpha=pulse;
-    ctx.beginPath();
-    ctx.arc(p.x,p.y,r,0,Math.PI*2);
+    ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);
     ctx.fillStyle='#ffffff';
-    ctx.shadowColor=p.col;
-    ctx.shadowBlur=10;
+    ctx.shadowColor=p.col;ctx.shadowBlur=24;
     ctx.fill();
-    // Colored inner ring
-    ctx.globalAlpha=0.9*pulse;
-    ctx.beginPath();
-    ctx.arc(p.x,p.y,r*0.6,0,Math.PI*2);
-    ctx.fillStyle=p.col;
-    ctx.fill();
+    // Colored center
+    ctx.globalAlpha=0.85*pulse;
+    ctx.beginPath();ctx.arc(p.x,p.y,r*0.55,0,Math.PI*2);
+    ctx.fillStyle=p.col;ctx.shadowBlur=0;ctx.fill();
+    // Comet tail — draw trail behind movement direction
+    if(p.t>0.05&&p.t<0.95){
+      var prevT=Math.max(0,p.t-0.08);
+      var e2=prevT<0.5?4*prevT*prevT*prevT:(1-Math.pow(-2*prevT+2,3)/2);
+      var cx2=(p.sx+p.tx)/2,cy2=Math.min(p.sy,p.ty);
+      var px2=(1-e2)*(1-e2)*p.sx+2*(1-e2)*e2*cx2+e2*e2*p.tx;
+      var py2=(1-e2)*(1-e2)*p.sy+2*(1-e2)*e2*cy2+e2*e2*p.ty;
+      var tailGrd=ctx.createLinearGradient(px2,py2,p.x,p.y);
+      tailGrd.addColorStop(0,p.col+'00');tailGrd.addColorStop(1,p.col+'cc');
+      ctx.globalAlpha=0.6*pulse;
+      ctx.beginPath();ctx.moveTo(px2,py2);ctx.lineTo(p.x,p.y);
+      ctx.strokeStyle=tailGrd;ctx.lineWidth=r*1.2;
+      ctx.lineCap='round';ctx.stroke();
+    }
     ctx.restore();
   });
 }
