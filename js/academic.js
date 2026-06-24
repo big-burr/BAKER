@@ -33,6 +33,7 @@ var ACADEMIC=(function(){
     try{localStorage.setItem(LS_KEY,JSON.stringify(data));}catch(e){}
     _syncToCAL();
     _checkReminders();
+    if(typeof VAULTSYNC!=='undefined'&&VAULTSYNC.syncAcademic)VAULTSYNC.syncAcademic(data);
   }
 
   function _id(){return 'a'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
@@ -407,5 +408,18 @@ var ACADEMIC=(function(){
 
   function init(){_load();}
 
-  return{init,showPanel,hidePanel,togglePanel,handleVoice,saveToVault};
+  function importData(imported){
+    if(!imported)return;
+    if(imported.semester)data.semester=imported.semester;
+    if(imported.classes&&imported.classes.length){
+      // Merge: add classes not already present
+      imported.classes.forEach(function(ic){
+        var exists=data.classes.some(function(c){return c.name===ic.name;});
+        if(!exists)data.classes.push(ic);
+      });
+    }
+    try{localStorage.setItem(LS_KEY,JSON.stringify(data));}catch(e){}
+    render();
+  }
+  return{init,showPanel,hidePanel,togglePanel,handleVoice,saveToVault,importData};
 })();
