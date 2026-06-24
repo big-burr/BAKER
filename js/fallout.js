@@ -445,206 +445,581 @@ var FALLOUT=(function(){
 
   // ── Vault-Tec emblem ──────────────────────────────────────
   function _drawVaultTec(ctx,W,H,col){
-    var cx=W/2,cy=H/2,R=Math.min(W,H)/2-10;
-    var blue='#4a9eff', yellow=col;
-    ctx.save();ctx.shadowColor=yellow;ctx.shadowBlur=16;
+    var cx=W/2,cy=H/2,R=Math.min(W,H)/2-8;
+    var blue='#4a9eff',yellow=col,dark='#0a0c14';
+
+    // Outer glow
+    ctx.save();ctx.shadowColor=yellow;ctx.shadowBlur=22;
     ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);
-    ctx.strokeStyle=yellow;ctx.lineWidth=3;ctx.stroke();ctx.restore();
-    // Outer ring
-    ctx.save();ctx.translate(cx,cy);ctx.rotate(orbAngle*0.3);
-    ctx.beginPath();ctx.arc(0,0,R,0,Math.PI*2);
-    ctx.fillStyle='#0e1220';ctx.fill();
-    // Blue/yellow split ring
-    ctx.beginPath();ctx.arc(0,0,R*0.9,0,Math.PI*2);
-    ctx.strokeStyle=blue;ctx.lineWidth=R*0.08;ctx.stroke();
-    ctx.beginPath();ctx.arc(0,0,R*0.9,-Math.PI/2,Math.PI/2);
-    ctx.strokeStyle=yellow;ctx.lineWidth=R*0.08;ctx.stroke();
-    // Tick marks
-    for(var i=0;i<12;i++){
-      var a=(i/12)*Math.PI*2;
+    ctx.strokeStyle=yellow;ctx.lineWidth=2.5;ctx.stroke();ctx.restore();
+
+    // Base fill
+    ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.fillStyle=dark;ctx.fill();
+
+    // ── Outer rotating gear ring (blue, 16 teeth) ──
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(orbAngle*0.25);
+    var TEETH=16,TR=R,IR=R*0.88,TH=R*0.1,TW=0.14;
+    for(var i=0;i<TEETH;i++){
+      var ba=(i/TEETH)*Math.PI*2;
       ctx.beginPath();
-      ctx.moveTo(Math.cos(a)*R*0.82,Math.sin(a)*R*0.82);
-      ctx.lineTo(Math.cos(a)*R*0.75,Math.sin(a)*R*0.75);
-      ctx.strokeStyle=i%3===0?yellow:blue;ctx.lineWidth=2;ctx.stroke();
+      ctx.moveTo(Math.cos(ba-TW)*IR,Math.sin(ba-TW)*IR);
+      ctx.lineTo(Math.cos(ba-TW*0.6)*(IR+TH),Math.sin(ba-TW*0.6)*(IR+TH));
+      ctx.lineTo(Math.cos(ba+TW*0.6)*(IR+TH),Math.sin(ba+TW*0.6)*(IR+TH));
+      ctx.lineTo(Math.cos(ba+TW)*IR,Math.sin(ba+TW)*IR);
+      ctx.closePath();ctx.fillStyle=blue;ctx.fill();
+    }
+    // Gear ring base
+    ctx.beginPath();ctx.arc(0,0,IR,0,Math.PI*2);
+    ctx.strokeStyle=blue;ctx.lineWidth=3;ctx.stroke();
+    // Yellow accent arc (top half)
+    ctx.beginPath();ctx.arc(0,0,IR,-Math.PI*0.9,-Math.PI*0.1);
+    ctx.strokeStyle=yellow;ctx.lineWidth=3;ctx.stroke();
+    // Tick marks (24 total, every 15 degrees)
+    for(var t=0;t<24;t++){
+      var ta=(t/24)*Math.PI*2;
+      var major=t%6===0;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(ta)*IR*0.96,Math.sin(ta)*IR*0.96);
+      ctx.lineTo(Math.cos(ta)*IR*0.88,Math.sin(ta)*IR*0.88);
+      ctx.strokeStyle=major?yellow:blue;ctx.lineWidth=major?2:1;
+      ctx.globalAlpha=major?1:0.5;ctx.stroke();ctx.globalAlpha=1;
     }
     ctx.restore();
-    // Inner vault door — counter-rotates
-    ctx.save();ctx.translate(cx,cy);ctx.rotate(-orbAngle*0.5);
-    ctx.beginPath();ctx.arc(0,0,R*0.62,0,Math.PI*2);
-    ctx.fillStyle='#0a0c14';ctx.fill();ctx.strokeStyle=yellow;ctx.lineWidth=2;ctx.stroke();
-    // Vault-Tec V shape
-    ctx.beginPath();
-    ctx.moveTo(-R*0.25,-R*0.18);ctx.lineTo(0,R*0.18);ctx.lineTo(R*0.25,-R*0.18);
-    ctx.strokeStyle=yellow;ctx.lineWidth=R*0.07;ctx.lineJoin='round';
-    ctx.lineCap='round';ctx.stroke();
-    // Spokes
+
+    // ── Middle band (yellow, slow counter-rotate) ──
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(-orbAngle*0.1);
+    ctx.beginPath();ctx.arc(0,0,R*0.82,0,Math.PI*2);
+    ctx.fillStyle='#0d1020';ctx.fill();
+    ctx.strokeStyle=yellow;ctx.lineWidth=R*0.055;ctx.stroke();
+    // Chevron marks on band
+    for(var c=0;c<8;c++){
+      var ca=(c/8)*Math.PI*2;
+      ctx.save();ctx.rotate(ca);
+      ctx.beginPath();
+      ctx.moveTo(R*0.79,-R*0.045);ctx.lineTo(R*0.84,0);ctx.lineTo(R*0.79,R*0.045);
+      ctx.strokeStyle=c%2===0?yellow:blue;ctx.lineWidth=1.5;
+      ctx.globalAlpha=0.7;ctx.stroke();ctx.globalAlpha=1;
+      ctx.restore();
+    }
+    ctx.restore();
+
+    // ── Inner vault door plate (dark blue, counter-rotates faster) ──
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(-orbAngle*0.4);
+    ctx.beginPath();ctx.arc(0,0,R*0.66,0,Math.PI*2);
+    ctx.fillStyle='#080c1a';ctx.fill();
+    ctx.strokeStyle=yellow;ctx.lineWidth=2;ctx.stroke();
+    // Inner ring detail
+    ctx.beginPath();ctx.arc(0,0,R*0.58,0,Math.PI*2);
+    ctx.strokeStyle=blue;ctx.lineWidth=1;ctx.globalAlpha=0.5;ctx.stroke();ctx.globalAlpha=1;
+    // 6 spokes
     for(var s=0;s<6;s++){
       var sa=(s/6)*Math.PI*2;
       ctx.beginPath();
-      ctx.moveTo(Math.cos(sa)*R*0.15,Math.sin(sa)*R*0.15);
-      ctx.lineTo(Math.cos(sa)*R*0.58,Math.sin(sa)*R*0.58);
-      ctx.strokeStyle=blue;ctx.lineWidth=1;ctx.globalAlpha=0.5;ctx.stroke();ctx.globalAlpha=1;
+      ctx.moveTo(Math.cos(sa)*R*0.18,Math.sin(sa)*R*0.18);
+      ctx.lineTo(Math.cos(sa)*R*0.56,Math.sin(sa)*R*0.56);
+      ctx.strokeStyle=blue;ctx.lineWidth=1.5;ctx.globalAlpha=0.6;ctx.stroke();ctx.globalAlpha=1;
+    }
+    // 6 rivets at spoke ends
+    for(var rv=0;rv<6;rv++){
+      var ra=(rv/6)*Math.PI*2;
+      ctx.beginPath();ctx.arc(Math.cos(ra)*R*0.56,Math.sin(ra)*R*0.56,R*0.03,0,Math.PI*2);
+      ctx.fillStyle=blue;ctx.globalAlpha=0.8;ctx.fill();ctx.globalAlpha=1;
     }
     ctx.restore();
-    // Center hub
+
+    // ── Vault-Tec V logo (screen space, no rotation) ──
     ctx.save();ctx.translate(cx,cy);
-    ctx.beginPath();ctx.arc(0,0,R*0.22,0,Math.PI*2);
-    ctx.fillStyle=yellow;ctx.fill();
-    ctx.font='bold '+Math.round(R*0.18)+'px "IBM Plex Mono",monospace';
-    ctx.fillStyle='#0a0c14';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText('VT',0,0);ctx.restore();
+    // V shape — bold, with serifs
+    var vW=R*0.28,vH=R*0.32,vT=R*0.075;
+    ctx.beginPath();
+    // Left stroke of V
+    ctx.moveTo(-vW,-vH*0.8);ctx.lineTo(-vW+vT,-vH*0.8);
+    ctx.lineTo(0,vH*0.6);ctx.lineTo(-vT,vH*0.8);ctx.closePath();
+    // Right stroke of V
+    ctx.moveTo(vW,-vH*0.8);ctx.lineTo(vW-vT,-vH*0.8);
+    ctx.lineTo(0,vH*0.6);ctx.lineTo(vT,vH*0.8);ctx.closePath();
+    ctx.fillStyle=yellow;
+    ctx.shadowColor=yellow;ctx.shadowBlur=12;
+    ctx.fill();
+    // Top serif bars
+    ctx.fillRect(-vW-vT*0.5,-vH*0.8-vT*0.4,vT*2,vT*0.7);
+    ctx.fillRect(vW-vT*1.5,-vH*0.8-vT*0.4,vT*2,vT*0.7);
+    ctx.restore();
+
+    // ── Center hub ──
+    ctx.save();ctx.translate(cx,cy);
+    ctx.beginPath();ctx.arc(0,0,R*0.16,0,Math.PI*2);
+    ctx.fillStyle=yellow;ctx.shadowColor=yellow;ctx.shadowBlur=10;ctx.fill();
+    ctx.beginPath();ctx.arc(0,0,R*0.09,0,Math.PI*2);
+    ctx.fillStyle=dark;ctx.shadowBlur=0;ctx.fill();
+    ctx.restore();
+
     _drawStateRing(ctx,cx,cy,R,yellow);
   }
 
   // ── Enclave sigil ─────────────────────────────────────────
   function _drawEnclave(ctx,W,H,col){
-    var cx=W/2,cy=H/2,R=Math.min(W,H)/2-10;
-    ctx.save();ctx.shadowColor=col;ctx.shadowBlur=20;
+    var cx=W/2,cy=H/2,R=Math.min(W,H)/2-8;
+    var dark='#0a0808';
+
+    // Outer glow ring
+    ctx.save();ctx.shadowColor=col;ctx.shadowBlur=24;
     ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);
-    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();ctx.restore();
-    // Dark background
+    ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.stroke();ctx.restore();
+
+    // Background
     ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);
-    ctx.fillStyle='#0a0808';ctx.fill();
-    // Rotating outer hex ring
-    ctx.save();ctx.translate(cx,cy);ctx.rotate(orbAngle*0.2);
-    var SIDES=6;
+    ctx.fillStyle=dark;ctx.fill();
+
+    // ── Outer rotating double hex ──
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(orbAngle*0.18);
+    // Outer hex
     ctx.beginPath();
-    for(var i=0;i<=SIDES;i++){
-      var a=(i/SIDES)*Math.PI*2-Math.PI/6;
-      if(i===0)ctx.moveTo(Math.cos(a)*R*0.95,Math.sin(a)*R*0.95);
-      else ctx.lineTo(Math.cos(a)*R*0.95,Math.sin(a)*R*0.95);
+    for(var i=0;i<=6;i++){
+      var a=(i/6)*Math.PI*2-Math.PI/6;
+      i===0?ctx.moveTo(Math.cos(a)*R*0.96,Math.sin(a)*R*0.96):ctx.lineTo(Math.cos(a)*R*0.96,Math.sin(a)*R*0.96);
     }
-    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.globalAlpha=0.6;ctx.stroke();ctx.globalAlpha=1;
-    // Tick marks on hex
-    for(var t2=0;t2<18;t2++){
-      var ta=(t2/18)*Math.PI*2;
+    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.globalAlpha=0.9;ctx.stroke();ctx.globalAlpha=1;
+    // Inner hex (rotated 30deg)
+    ctx.beginPath();
+    for(var j=0;j<=6;j++){
+      var aj=(j/6)*Math.PI*2;
+      j===0?ctx.moveTo(Math.cos(aj)*R*0.9,Math.sin(aj)*R*0.9):ctx.lineTo(Math.cos(aj)*R*0.9,Math.sin(aj)*R*0.9);
+    }
+    ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=0.4;ctx.stroke();ctx.globalAlpha=1;
+    // Tick marks between hexes
+    for(var t=0;t<24;t++){
+      var ta=(t/24)*Math.PI*2;
       ctx.beginPath();
-      ctx.moveTo(Math.cos(ta)*R*0.88,Math.sin(ta)*R*0.88);
-      ctx.lineTo(Math.cos(ta)*R*R*0.82/R,Math.sin(ta)*R*0.82);
-      ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=0.4;ctx.stroke();ctx.globalAlpha=1;
+      ctx.moveTo(Math.cos(ta)*R*0.94,Math.sin(ta)*R*0.94);
+      ctx.lineTo(Math.cos(ta)*R*0.88,Math.sin(ta)*R*0.88);
+      ctx.strokeStyle=col;ctx.lineWidth=t%4===0?2:1;
+      ctx.globalAlpha=t%4===0?0.9:0.35;ctx.stroke();ctx.globalAlpha=1;
     }
     ctx.restore();
-    // Inner circle — counter rotates
-    ctx.save();ctx.translate(cx,cy);ctx.rotate(-orbAngle*0.3);
-    ctx.beginPath();ctx.arc(0,0,R*0.7,0,Math.PI*2);
-    ctx.fillStyle='#140c0c';ctx.fill();ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
-    // Eagle wings — simplified
-    var ew=R*0.55,eh=R*0.25;
-    // Left wing
-    ctx.beginPath();ctx.moveTo(0,-R*0.05);
-    ctx.bezierCurveTo(-ew*0.3,-eh,-ew*0.7,-eh*0.5,-ew,-R*0.02);
-    ctx.bezierCurveTo(-ew*0.6,eh*0.3,-ew*0.3,eh*0.1,0,R*0.1);
-    ctx.fillStyle=col;ctx.globalAlpha=0.85;ctx.fill();ctx.globalAlpha=1;
-    // Right wing
-    ctx.beginPath();ctx.moveTo(0,-R*0.05);
-    ctx.bezierCurveTo(ew*0.3,-eh,ew*0.7,-eh*0.5,ew,-R*0.02);
-    ctx.bezierCurveTo(ew*0.6,eh*0.3,ew*0.3,eh*0.1,0,R*0.1);
-    ctx.fillStyle=col;ctx.globalAlpha=0.85;ctx.fill();ctx.globalAlpha=1;
-    ctx.restore();
-    // Center hub - E
+
+    // ── Eagle body — detailed with wing feathers ──
     ctx.save();ctx.translate(cx,cy);
-    ctx.beginPath();ctx.arc(0,0,R*0.28,0,Math.PI*2);
-    ctx.fillStyle='#0a0808';ctx.fill();ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
-    ctx.font='bold '+Math.round(R*0.26)+'px "Share Tech Mono","Courier New",monospace';
+
+    // Shield on chest (heraldic stripes)
+    var shW=R*0.22,shH=R*0.32,shY=R*0.04;
+    ctx.save();
+    // Shield outline
+    ctx.beginPath();
+    ctx.moveTo(-shW,shY-shH*0.5);
+    ctx.lineTo(shW,shY-shH*0.5);
+    ctx.lineTo(shW,shY+shH*0.3);
+    ctx.quadraticCurveTo(0,shY+shH*0.65,-shW+shW,shY+shH*0.5);
+    ctx.quadraticCurveTo(-shW*1.1,shY+shH*0.35,-shW,shY+shH*0.3);
+    ctx.closePath();
+    ctx.fillStyle=col;ctx.globalAlpha=0.15;ctx.fill();
+    ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.globalAlpha=0.8;ctx.stroke();ctx.globalAlpha=1;
+    // Stripes on shield
+    for(var st=0;st<5;st++){
+      var sy=shY-shH*0.5+shH*0.18*st;
+      ctx.fillStyle=col;ctx.globalAlpha=st%2===0?0.5:0.1;
+      ctx.fillRect(-shW+2,sy,shW*2-4,shH*0.18);ctx.globalAlpha=1;
+    }
+    ctx.restore();
+
+    // Left wing — 3 layers of feathers
+    function _wing(dir){
+      var d=dir; // 1=right, -1=left
+      // Wing base shape
+      ctx.beginPath();
+      ctx.moveTo(d*R*0.05,-R*0.12);
+      ctx.bezierCurveTo(d*R*0.25,-R*0.38,d*R*0.55,-R*0.32,d*R*0.72,-R*0.12);
+      ctx.bezierCurveTo(d*R*0.68,R*0.02,d*R*0.5,R*0.08,d*R*0.3,R*0.04);
+      ctx.bezierCurveTo(d*R*0.15,R*0.08,d*R*0.05,R*0.02,d*R*0.05,-R*0.12);
+      ctx.fillStyle=col;ctx.globalAlpha=0.9;ctx.fill();ctx.globalAlpha=1;
+      // Primary feathers (bottom edge, 5 feathers)
+      for(var f=0;f<5;f++){
+        var ft=f/4;
+        var fx=d*(R*0.1+R*0.55*ft);
+        var fy=R*0.04-R*0.06*Math.sin(ft*Math.PI);
+        ctx.beginPath();
+        ctx.moveTo(fx,fy);
+        ctx.lineTo(fx+d*R*0.07,fy+R*0.12);
+        ctx.lineTo(fx+d*R*0.04,fy+R*0.14);
+        ctx.lineTo(fx-d*R*0.01,fy+R*0.02);
+        ctx.closePath();
+        ctx.fillStyle=dark;ctx.globalAlpha=0.6;ctx.fill();ctx.globalAlpha=1;
+        ctx.strokeStyle=col;ctx.lineWidth=0.8;ctx.globalAlpha=0.5;ctx.stroke();ctx.globalAlpha=1;
+      }
+      // Wing vein lines
+      for(var v=0;v<3;v++){
+        var vt=(v+1)/4;
+        ctx.beginPath();
+        ctx.moveTo(d*R*0.08,-R*0.08+R*0.12*v);
+        ctx.lineTo(d*(R*0.08+R*0.55*vt),-R*0.22+R*0.1*v);
+        ctx.strokeStyle=col;ctx.lineWidth=0.8;ctx.globalAlpha=0.35;ctx.stroke();ctx.globalAlpha=1;
+      }
+    }
+    _wing(-1);_wing(1);
+
+    // Eagle body/torso
+    ctx.beginPath();
+    ctx.ellipse(0,-R*0.02,R*0.16,R*0.24,0,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.globalAlpha=0.9;ctx.fill();ctx.globalAlpha=1;
+
+    // Neck
+    ctx.beginPath();
+    ctx.ellipse(0,-R*0.22,R*0.1,R*0.12,0,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.fill();
+
+    // Head
+    ctx.beginPath();
+    ctx.arc(0,-R*0.34,R*0.115,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=8;ctx.fill();ctx.shadowBlur=0;
+
+    // Beak
+    ctx.beginPath();
+    ctx.moveTo(R*0.09,-R*0.36);
+    ctx.lineTo(R*0.22,-R*0.32);
+    ctx.lineTo(R*0.09,-R*0.28);
+    ctx.closePath();
+    ctx.fillStyle=col;ctx.fill();
+
+    // Eye
+    ctx.beginPath();ctx.arc(R*0.04,-R*0.35,R*0.025,0,Math.PI*2);
+    ctx.fillStyle=dark;ctx.fill();
+    ctx.beginPath();ctx.arc(R*0.04,-R*0.35,R*0.012,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.fill();
+
+    // Talons (bottom)
+    for(var tl=-1;tl<=1;tl+=2){
+      ctx.beginPath();
+      ctx.moveTo(tl*R*0.06,R*0.22);
+      ctx.lineTo(tl*R*0.14,R*0.34);
+      ctx.lineTo(tl*R*0.09,R*0.35);
+      ctx.lineTo(tl*R*0.04,R*0.26);
+      ctx.closePath();
+      ctx.fillStyle=col;ctx.globalAlpha=0.8;ctx.fill();ctx.globalAlpha=1;
+    }
+    ctx.restore();
+
+    // ── Outer label ring ──
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(-orbAngle*0.08);
+    ctx.font='bold '+Math.round(R*0.075)+'px "Share Tech Mono","Courier New",monospace';
     ctx.fillStyle=col;ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.shadowColor=col;ctx.shadowBlur=8;
-    ctx.fillText('E',0,0);ctx.restore();
+    ctx.globalAlpha=0.7;
+    var txt='* THE ENCLAVE * AMERICA *';
+    var chars=txt.split('');
+    var arc2=Math.PI*2/chars.length;
+    for(var ch=0;ch<chars.length;ch++){
+      ctx.save();ctx.rotate(arc2*ch-Math.PI/2);
+      ctx.translate(0,-R*0.8);
+      ctx.fillText(chars[ch],0,0);
+      ctx.restore();
+    }
+    ctx.globalAlpha=1;ctx.restore();
+
     _drawStateRing(ctx,cx,cy,R,col);
   }
 
   // ── Brotherhood of Steel ──────────────────────────────────
   function _drawBoS(ctx,W,H,col){
-    var cx=W/2,cy=H/2,R=Math.min(W,H)/2-10;
-    ctx.save();ctx.shadowColor=col;ctx.shadowBlur=16;
+    var cx=W/2,cy=H/2,R=Math.min(W,H)/2-8;
+    var dark='#080a0c',steel='#8090a0';
+
+    // Outer glow
+    ctx.save();ctx.shadowColor=col;ctx.shadowBlur=20;
     ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);
-    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();ctx.restore();
+    ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.stroke();ctx.restore();
+
+    // Background
     ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);
-    ctx.fillStyle='#080a0c';ctx.fill();
-    // Outer gear ring — slow rotation
-    ctx.save();ctx.translate(cx,cy);ctx.rotate(orbAngle*0.4);
-    var TEETH=18;
+    ctx.fillStyle=dark;ctx.fill();
+
+    // ── Outer gear ring (20 teeth, slow rotation) ──
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(orbAngle*0.3);
+    var TEETH=20,IR=R*0.9,TH=R*0.1,TW=0.11;
     for(var i=0;i<TEETH;i++){
       var ba=(i/TEETH)*Math.PI*2;
       ctx.beginPath();
-      ctx.moveTo(Math.cos(ba-0.12)*(R*0.92),Math.sin(ba-0.12)*(R*0.92));
-      ctx.lineTo(Math.cos(ba-0.08)*(R),Math.sin(ba-0.08)*(R));
-      ctx.lineTo(Math.cos(ba+0.08)*(R),Math.sin(ba+0.08)*(R));
-      ctx.lineTo(Math.cos(ba+0.12)*(R*0.92),Math.sin(ba+0.12)*(R*0.92));
-      ctx.closePath();ctx.fillStyle=col;ctx.fill();
+      ctx.moveTo(Math.cos(ba-TW)*IR,Math.sin(ba-TW)*IR);
+      ctx.lineTo(Math.cos(ba-TW*0.5)*(IR+TH),Math.sin(ba-TW*0.5)*(IR+TH));
+      ctx.lineTo(Math.cos(ba+TW*0.5)*(IR+TH),Math.sin(ba+TW*0.5)*(IR+TH));
+      ctx.lineTo(Math.cos(ba+TW)*IR,Math.sin(ba+TW)*IR);
+      ctx.closePath();
+      // Gradient-like: alternating shading
+      ctx.fillStyle=i%2===0?col:steel;ctx.globalAlpha=0.9;ctx.fill();ctx.globalAlpha=1;
     }
-    ctx.beginPath();ctx.arc(0,0,R*0.88,0,Math.PI*2);
+    // Gear base ring
+    ctx.beginPath();ctx.arc(0,0,IR,0,Math.PI*2);
     ctx.strokeStyle=col;ctx.lineWidth=3;ctx.stroke();
+    // Inner gear ring detail
+    ctx.beginPath();ctx.arc(0,0,IR*0.94,0,Math.PI*2);
+    ctx.strokeStyle=steel;ctx.lineWidth=1;ctx.globalAlpha=0.4;ctx.stroke();ctx.globalAlpha=1;
     ctx.restore();
-    // Inner plate
-    ctx.save();ctx.translate(cx,cy);ctx.rotate(-orbAngle*0.15);
-    ctx.beginPath();ctx.arc(0,0,R*0.75,0,Math.PI*2);
-    ctx.fillStyle='#0e1216';ctx.fill();ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
-    // Cross of the Brotherhood
-    var arm=R*0.55,thick=R*0.1;
-    ctx.fillStyle=col;ctx.globalAlpha=0.9;
-    // Vertical
-    ctx.fillRect(-thick/2,-arm,thick,arm*2);
-    // Horizontal
-    ctx.fillRect(-arm,-thick/2,arm*2,thick);
-    ctx.globalAlpha=1;
-    // Circle at center of cross
-    ctx.beginPath();ctx.arc(0,0,R*0.2,0,Math.PI*2);
-    ctx.fillStyle='#080a0c';ctx.fill();ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
+
+    // ── Inner plate (slate blue-grey, counter-rotates slightly) ──
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(-orbAngle*0.1);
+    ctx.beginPath();ctx.arc(0,0,R*0.76,0,Math.PI*2);
+    ctx.fillStyle='#0c1018';ctx.fill();
+    ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.stroke();
+    // Inner ring
+    ctx.beginPath();ctx.arc(0,0,R*0.68,0,Math.PI*2);
+    ctx.strokeStyle=steel;ctx.lineWidth=1;ctx.globalAlpha=0.3;ctx.stroke();ctx.globalAlpha=1;
     ctx.restore();
-    // BoS text center
+
+    // ── BoS cross (4-pointed, ornate) — static ──
     ctx.save();ctx.translate(cx,cy);
-    ctx.font='bold '+Math.round(R*0.2)+'px serif';
+    var arm=R*0.52,thick=R*0.095,tip=R*0.06;
+    // Cross arms with tapered tips (like a Templar cross)
+    function _crossArm(angle){
+      ctx.save();ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.moveTo(-thick/2,0);
+      ctx.lineTo(-thick/2,-arm*0.3);
+      ctx.lineTo(-tip,-arm);
+      ctx.lineTo(0,-arm-tip*0.5);
+      ctx.lineTo(tip,-arm);
+      ctx.lineTo(thick/2,-arm*0.3);
+      ctx.lineTo(thick/2,0);
+      ctx.closePath();
+      ctx.fillStyle=col;ctx.globalAlpha=0.95;ctx.fill();ctx.globalAlpha=1;
+      // Arm center line detail
+      ctx.beginPath();ctx.moveTo(0,-arm*0.15);ctx.lineTo(0,-arm*0.85);
+      ctx.strokeStyle=dark;ctx.lineWidth=1.5;ctx.globalAlpha=0.5;ctx.stroke();ctx.globalAlpha=1;
+      ctx.restore();
+    }
+    _crossArm(0);_crossArm(Math.PI/2);_crossArm(Math.PI);_crossArm(-Math.PI/2);
+
+    // Cross center circle
+    ctx.beginPath();ctx.arc(0,0,R*0.19,0,Math.PI*2);
+    ctx.fillStyle=dark;ctx.fill();
+    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
+
+    ctx.restore();
+
+    // ── Sword through the gear (vertical, static, on top) ──
+    ctx.save();ctx.translate(cx,cy);
+    var sL=R*1.05; // total sword length — extends beyond gear
+    var sW=R*0.055;
+
+    // Blade — tapers to point
+    ctx.beginPath();
+    ctx.moveTo(-sW*0.5,-sL*0.52);  // left base of blade
+    ctx.lineTo(sW*0.5,-sL*0.52);   // right base of blade
+    ctx.lineTo(sW*0.18,sL*0.3);    // right taper
+    ctx.lineTo(0,sL*0.52);         // tip
+    ctx.lineTo(-sW*0.18,sL*0.3);   // left taper
+    ctx.closePath();
+    ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=10;ctx.fill();ctx.shadowBlur=0;
+    // Blade fuller (groove down center)
+    ctx.beginPath();
+    ctx.moveTo(0,-sL*0.48);ctx.lineTo(0,sL*0.22);
+    ctx.strokeStyle=dark;ctx.lineWidth=sW*0.35;ctx.globalAlpha=0.5;ctx.stroke();ctx.globalAlpha=1;
+    // Blade edge highlight
+    ctx.beginPath();
+    ctx.moveTo(sW*0.3,-sL*0.48);ctx.lineTo(sW*0.1,sL*0.22);
+    ctx.strokeStyle='#e0d0a0';ctx.lineWidth=1;ctx.globalAlpha=0.35;ctx.stroke();ctx.globalAlpha=1;
+
+    // Crossguard
+    var gW=R*0.38,gH=R*0.055;
+    ctx.beginPath();
+    ctx.moveTo(-gW,-gH*0.5);
+    ctx.bezierCurveTo(-gW,-gH*1.2,-gW*0.1,-gH*1.0,0,-gH);
+    ctx.bezierCurveTo(gW*0.1,-gH*1.0,gW,-gH*1.2,gW,-gH*0.5);
+    ctx.lineTo(gW,gH*0.5);
+    ctx.bezierCurveTo(gW,gH*1.2,gW*0.1,gH*1.0,0,gH);
+    ctx.bezierCurveTo(-gW*0.1,gH*1.0,-gW,gH*1.2,-gW,gH*0.5);
+    ctx.closePath();
+    ctx.fillStyle=col;ctx.fill();
+    ctx.strokeStyle='#e0d0a0';ctx.lineWidth=1;ctx.globalAlpha=0.3;ctx.stroke();ctx.globalAlpha=1;
+    // Guard knobs
+    ctx.beginPath();ctx.arc(-gW,0,gH*0.8,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.fill();
+    ctx.beginPath();ctx.arc(gW,0,gH*0.8,0,Math.PI*2);
+    ctx.fill();
+
+    // Grip/handle (wrapped)
+    var gripTop=sL*0.1,gripBot=sL*0.42;
+    ctx.beginPath();ctx.roundRect(-sW*0.4,gripTop,sW*0.8,gripBot-gripTop,sW*0.15);
+    ctx.fillStyle='#3a2a18';ctx.fill();
+    // Grip wrapping lines
+    for(var g=0;g<6;g++){
+      var gy=gripTop+((gripBot-gripTop)/6)*g;
+      ctx.beginPath();ctx.moveTo(-sW*0.4,gy);ctx.lineTo(sW*0.4,gy);
+      ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=0.4;ctx.stroke();ctx.globalAlpha=1;
+    }
+
+    // Pommel
+    ctx.beginPath();ctx.ellipse(0,gripBot+gH*0.8,sW*0.65,gH*0.8,0,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.fill();
+    ctx.restore();
+
+    // ── Center hub circle (where sword passes through gear center) ──
+    ctx.save();ctx.translate(cx,cy);
+    ctx.beginPath();ctx.arc(0,0,R*0.12,0,Math.PI*2);
+    ctx.fillStyle='#101820';ctx.fill();
+    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
+    ctx.restore();
+
+    // ── Circular text: AD VICTORIAM ──
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(-orbAngle*0.06);
+    ctx.font='bold '+Math.round(R*0.072)+'px "Cinzel","Palatino Linotype",serif';
     ctx.fillStyle=col;ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.shadowColor=col;ctx.shadowBlur=8;
-    ctx.fillText('BoS',0,0);ctx.restore();
+    ctx.globalAlpha=0.75;
+    var txt='* AD VICTORIAM * BROTHERHOOD *';
+    var chars=txt.split('');
+    var arc2=Math.PI*2/chars.length;
+    for(var ch=0;ch<chars.length;ch++){
+      ctx.save();ctx.rotate(arc2*ch-Math.PI/2);
+      ctx.translate(0,-R*0.81);
+      ctx.fillText(chars[ch],0,0);
+      ctx.restore();
+    }
+    ctx.globalAlpha=1;ctx.restore();
+
     _drawStateRing(ctx,cx,cy,R,col);
   }
 
   // ── NCR emblem ────────────────────────────────────────────
   function _drawNCR(ctx,W,H,col){
-    var cx=W/2,cy=H/2,R=Math.min(W,H)/2-10;
-    ctx.save();ctx.shadowColor=col;ctx.shadowBlur=14;
+    var cx=W/2,cy=H/2,R=Math.min(W,H)/2-8;
+    var dark='#0e0c08',tan='#c8a060';
+
+    // Outer glow
+    ctx.save();ctx.shadowColor=col;ctx.shadowBlur=18;
     ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);
-    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();ctx.restore();
+    ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.stroke();ctx.restore();
+
+    // Background — slightly warm dark
     ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);
-    ctx.fillStyle='#0e0c08';ctx.fill();
-    // Flag shape — slow wave via rotation
-    ctx.save();ctx.translate(cx,cy);ctx.rotate(orbAngle*0.15);
-    // Outer decorative ring
-    ctx.beginPath();ctx.arc(0,0,R*0.92,0,Math.PI*2);
-    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.globalAlpha=0.5;ctx.stroke();ctx.globalAlpha=1;
-    // Rope/laurel detail — small dots
-    for(var i=0;i<24;i++){
-      var a=(i/24)*Math.PI*2;
-      ctx.beginPath();ctx.arc(Math.cos(a)*R*0.84,Math.sin(a)*R*0.84,R*0.025,0,Math.PI*2);
-      ctx.fillStyle=col;ctx.globalAlpha=0.5;ctx.fill();ctx.globalAlpha=1;
+    ctx.fillStyle=dark;ctx.fill();
+
+    // ── Laurel wreath ring (rotating slowly) ──
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(orbAngle*0.12);
+    // Outer border ring
+    ctx.beginPath();ctx.arc(0,0,R*0.95,0,Math.PI*2);
+    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.globalAlpha=0.7;ctx.stroke();ctx.globalAlpha=1;
+    ctx.beginPath();ctx.arc(0,0,R*0.87,0,Math.PI*2);
+    ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=0.3;ctx.stroke();ctx.globalAlpha=1;
+    // Laurel leaves — pairs of teardrop leaves around the ring
+    var LEAVES=20;
+    for(var i=0;i<LEAVES;i++){
+      var la=(i/LEAVES)*Math.PI*2;
+      var lx=Math.cos(la)*R*0.91,ly=Math.sin(la)*R*0.91;
+      ctx.save();ctx.translate(lx,ly);ctx.rotate(la+Math.PI/2);
+      // Leaf teardrop shape
+      ctx.beginPath();
+      ctx.moveTo(0,-R*0.06);
+      ctx.bezierCurveTo(R*0.025,-R*0.03,R*0.025,R*0.02,0,R*0.03);
+      ctx.bezierCurveTo(-R*0.025,R*0.02,-R*0.025,-R*0.03,0,-R*0.06);
+      ctx.fillStyle=col;ctx.globalAlpha=i%2===0?0.8:0.45;ctx.fill();ctx.globalAlpha=1;
+      ctx.restore();
+    }
+    // Star dots between leaves
+    for(var s=0;s<5;s++){
+      var sa=(s/5)*Math.PI*2+Math.PI/10;
+      ctx.beginPath();ctx.arc(Math.cos(sa)*R*0.91,Math.sin(sa)*R*0.91,R*0.02,0,Math.PI*2);
+      ctx.fillStyle=col;ctx.globalAlpha=0.9;ctx.fill();ctx.globalAlpha=1;
     }
     ctx.restore();
-    // Inner circle
-    ctx.save();ctx.translate(cx,cy);ctx.rotate(-orbAngle*0.1);
-    ctx.beginPath();ctx.arc(0,0,R*0.68,0,Math.PI*2);
-    ctx.fillStyle='#181410';ctx.fill();ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
-    // Bear silhouette — simplified geometric
-    var bR=R*0.35;
-    // Body
-    ctx.beginPath();ctx.ellipse(0,R*0.08,bR*0.55,bR*0.45,0,0,Math.PI*2);
-    ctx.fillStyle=col;ctx.globalAlpha=0.8;ctx.fill();ctx.globalAlpha=1;
-    // Head
-    ctx.beginPath();ctx.arc(0,-bR*0.18,bR*0.3,0,Math.PI*2);
-    ctx.fillStyle=col;ctx.globalAlpha=0.8;ctx.fill();ctx.globalAlpha=1;
-    // Ears
-    ctx.beginPath();ctx.arc(-bR*0.2,-bR*0.42,bR*0.1,0,Math.PI*2);
-    ctx.fillStyle=col;ctx.fill();
-    ctx.beginPath();ctx.arc(bR*0.2,-bR*0.42,bR*0.1,0,Math.PI*2);
-    ctx.fill();
-    ctx.globalAlpha=1;
+
+    // ── Inner flag circle ──
+    ctx.save();ctx.translate(cx,cy);
+    ctx.beginPath();ctx.arc(0,0,R*0.72,0,Math.PI*2);
+    ctx.fillStyle='#1a1610';ctx.fill();
+    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
+    // Inner border
+    ctx.beginPath();ctx.arc(0,0,R*0.64,0,Math.PI*2);
+    ctx.strokeStyle=col;ctx.lineWidth=0.8;ctx.globalAlpha=0.35;ctx.stroke();ctx.globalAlpha=1;
     ctx.restore();
-    // NCR text bottom
-    ctx.save();ctx.translate(cx,cy+R*0.55);
-    ctx.font='bold '+Math.round(R*0.18)+'px "Special Elite","Courier New",monospace';
+
+    // ── Bear silhouette — detailed ──
+    ctx.save();ctx.translate(cx,cy);
+    var bS=R*0.52; // scale
+
+    // Body (large rounded rectangle bear body)
+    ctx.beginPath();
+    ctx.ellipse(0,bS*0.12,bS*0.42,bS*0.36,0,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.globalAlpha=0.92;ctx.fill();ctx.globalAlpha=1;
+
+    // Hump (bear hump at shoulders)
+    ctx.beginPath();
+    ctx.ellipse(-bS*0.08,-bS*0.1,bS*0.22,bS*0.18,-0.2,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.fill();
+
+    // Neck
+    ctx.beginPath();
+    ctx.ellipse(bS*0.06,-bS*0.18,bS*0.13,bS*0.15,0.15,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.fill();
+
+    // Head
+    ctx.beginPath();
+    ctx.ellipse(bS*0.12,-bS*0.34,bS*0.2,bS*0.18,0.2,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=6;ctx.fill();ctx.shadowBlur=0;
+
+    // Snout/muzzle
+    ctx.beginPath();
+    ctx.ellipse(bS*0.28,-bS*0.32,bS*0.1,bS*0.08,0.3,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.globalAlpha=0.85;ctx.fill();ctx.globalAlpha=1;
+    // Nostril
+    ctx.beginPath();ctx.arc(bS*0.35,-bS*0.3,bS*0.025,0,Math.PI*2);
+    ctx.fillStyle=dark;ctx.fill();
+
+    // Eye
+    ctx.beginPath();ctx.arc(bS*0.18,-bS*0.38,bS*0.028,0,Math.PI*2);
+    ctx.fillStyle=dark;ctx.fill();
+    ctx.beginPath();ctx.arc(bS*0.18,-bS*0.38,bS*0.012,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.fill();
+
+    // Ears
+    ctx.beginPath();ctx.arc(bS*0.02,-bS*0.48,bS*0.075,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.fill();
+    ctx.beginPath();ctx.arc(bS*0.02,-bS*0.48,bS*0.04,0,Math.PI*2);
+    ctx.fillStyle=dark;ctx.fill();
+    ctx.beginPath();ctx.arc(bS*0.2,-bS*0.5,bS*0.06,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.fill();
+    ctx.beginPath();ctx.arc(bS*0.2,-bS*0.5,bS*0.032,0,Math.PI*2);
+    ctx.fillStyle=dark;ctx.fill();
+
+    // Front legs
+    ctx.beginPath();
+    ctx.ellipse(-bS*0.26,bS*0.3,bS*0.11,bS*0.22,-0.1,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.globalAlpha=0.9;ctx.fill();ctx.globalAlpha=1;
+    ctx.beginPath();
+    ctx.ellipse(bS*0.16,bS*0.34,bS*0.11,bS*0.2,0.1,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.globalAlpha=0.9;ctx.fill();ctx.globalAlpha=1;
+
+    // Claws (front legs)
+    for(var c=-1;c<=1;c++){
+      ctx.beginPath();ctx.arc(-bS*0.26+c*bS*0.07,bS*0.51,bS*0.035,0,Math.PI*2);
+      ctx.fillStyle=col;ctx.fill();
+    }
+
+    // Bear fur texture lines (subtle)
+    ctx.strokeStyle=dark;ctx.lineWidth=1;ctx.globalAlpha=0.2;
+    for(var f=0;f<4;f++){
+      ctx.beginPath();
+      ctx.moveTo(-bS*0.3+f*bS*0.15,bS*0.0);
+      ctx.quadraticCurveTo(-bS*0.2+f*bS*0.15,-bS*0.15,-bS*0.1+f*bS*0.15,-bS*0.0);
+      ctx.stroke();
+    }
+    ctx.globalAlpha=1;
+
+    ctx.restore();
+
+    // ── Circular text: NEW CALIFORNIA REPUBLIC ──
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(-orbAngle*0.1);
+    ctx.font='bold '+Math.round(R*0.07)+'px "Special Elite","Courier New",monospace';
     ctx.fillStyle=col;ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.shadowColor=col;ctx.shadowBlur=6;
-    ctx.fillText('NCR',0,0);ctx.restore();
+    ctx.globalAlpha=0.8;
+    var txt='* NEW CALIFORNIA REPUBLIC *';
+    var chars=txt.split('');
+    var arc2=Math.PI*2/chars.length;
+    for(var ch=0;ch<chars.length;ch++){
+      ctx.save();ctx.rotate(arc2*ch-Math.PI/2);
+      ctx.translate(0,-R*0.79);
+      ctx.fillText(chars[ch],0,0);
+      ctx.restore();
+    }
+    ctx.globalAlpha=1;ctx.restore();
+
     _drawStateRing(ctx,cx,cy,R,col);
   }
 
