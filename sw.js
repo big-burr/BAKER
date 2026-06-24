@@ -1,5 +1,5 @@
 // BAKER Service Worker — baker-v27
-const CACHE = 'baker-v36';
+const CACHE = 'baker-v37';
 
 const ASSETS = [
   '/BAKER/',
@@ -27,6 +27,9 @@ const ASSETS = [
   '/BAKER/js/mcal.js',
   '/BAKER/js/budget.js',
   '/BAKER/js/strength.js',
+  '/BAKER/js/voice.js',
+  '/BAKER/js/orb.js',
+  '/BAKER/js/panels.js',
 ];
 
 self.addEventListener('install', e => {
