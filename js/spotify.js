@@ -33,7 +33,23 @@ var SP=(function(){
   async function refreshToken(){
     var id=localStorage.getItem(LS.ID),ref=localStorage.getItem(LS.REFRESH);
     if(!ref||!id)return false;
-    try{var r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'refresh_token',refresh_token:ref,client_id:id})});if(!r.ok)return false;saveTokens(await r.json());return true;}catch{return false;}
+    try{
+      var r=await fetch('https://accounts.spotify.com/api/token',{
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:new URLSearchParams({grant_type:'refresh_token',refresh_token:ref,client_id:id})
+      });
+      if(r.status===400||r.status===401){
+        // Invalid refresh token — clear everything and stop polling
+        [LS.TOKEN,LS.REFRESH,LS.EXPIRY,LS.CV].forEach(function(k){localStorage.removeItem(k);});
+        stopPolling();
+        updateNav();
+        console.warn('[SP] Refresh token invalid — re-authorize Spotify in settings');
+        return false;
+      }
+      if(!r.ok)return false;
+      saveTokens(await r.json());return true;
+    }catch(e){return false;}
   }
 
   function saveTokens(d){localStorage.setItem(LS.TOKEN,d.access_token);if(d.refresh_token)localStorage.setItem(LS.REFRESH,d.refresh_token);localStorage.setItem(LS.EXPIRY,Date.now()+d.expires_in*1000);}
