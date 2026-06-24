@@ -82,7 +82,7 @@ var REMINDERS=(function(){
     }
 
     // 4. Update HUD info if open
-    if(typeof HUDINFO!=='undefined')HUDINFO.showPanel&&HUDINFO._render&&HUDINFO._render();
+    if(typeof HUDINFO!=='undefined'&&HUDINFO.refresh)HUDINFO.refresh();
   }
 
   // ── Check loop ────────────────────────────────────────────
