@@ -31,8 +31,8 @@ function _drawArcEdge(ctx,a,b,isHL,baseW){
 
 // ── Draw forest decorations + species silhouettes ────────
 function _drawForest(ctx,W,H){
-  var TYPE_ORDER=['conversation','project','lecture','daily','general'];
-  var USABLE_LEFT=0.06,USABLE_RIGHT=0.94,GAP_FRAC=0.04;
+  var TYPE_ORDER=['conversation','project','lecture','daily','general','system','workout','academic','biometric'];
+  var USABLE_LEFT=0.02,USABLE_RIGHT=0.98,GAP_FRAC=0.025;
   var USABLE_TOP=0.08,USABLE_BOTTOM=0.86;
   var orphans=graphNodes.filter(function(n){return n.orphan;});
   var activeGroups=TYPE_ORDER.filter(function(t){
