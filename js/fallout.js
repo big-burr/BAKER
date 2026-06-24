@@ -36,7 +36,8 @@ var FALLOUT=(function(){
       sans:"'IBM Plex Sans',sans-serif",
       scanlines:false,
       boot:null,
-      icon:null
+      icon:null,
+      voice:null
     },
     pipboy:{
       key:'pipboy',
@@ -59,7 +60,8 @@ var FALLOUT=(function(){
       scanlines:true,
       scanOpacity:50,
       boot:'Pip-Boy 3000 online. All systems nominal, sir.',
-      icon:'pipboy'
+      icon:'pipboy',
+      voice:null
     },
     vaulttec:{
       key:'vaulttec',
@@ -81,7 +83,14 @@ var FALLOUT=(function(){
       sans:"'IBM Plex Sans',sans-serif",
       scanlines:false,
       boot:'Welcome back, Overseer. Your vault awaits.',
-      icon:'vaulttec'
+      icon:'vaulttec',
+      voice:{
+        names:['Daniel','Google UK English Male','Microsoft David','Alex','Tom'],
+        rate:0.88,
+        pitch:0.82,
+        gender:'male',
+        note:'Vault-Tec: warm charming male - The Ghoul / Cooper Howard vibe'
+      }
     },
     enclave:{
       key:'enclave',
@@ -103,7 +112,14 @@ var FALLOUT=(function(){
       sans:"'Share Tech Mono','Courier New',monospace",
       scanlines:false,
       boot:'Enclave Command online. For the preservation of America.',
-      icon:'enclave'
+      icon:'enclave',
+      voice:{
+        names:['Fred','Microsoft Mark','Microsoft David','Google UK English Male','Alex'],
+        rate:0.78,
+        pitch:0.65,
+        gender:'male',
+        note:'Enclave: deep robotic authoritarian - Frank Horrigan / Eden vibe'
+      }
     },
     bos:{
       key:'bos',
@@ -125,7 +141,14 @@ var FALLOUT=(function(){
       sans:"'Cinzel','Palatino Linotype',serif",
       scanlines:false,
       boot:'Ad Victoriam, soldier. The Brotherhood stands ready.',
-      icon:'bos'
+      icon:'bos',
+      voice:{
+        names:['Alex','Microsoft David','Google UK English Male','Daniel','Fred'],
+        rate:0.86,
+        pitch:0.75,
+        gender:'male',
+        note:'BoS: clipped stern formal - Elder Maxson vibe'
+      }
     },
     ncr:{
       key:'ncr',
@@ -147,7 +170,14 @@ var FALLOUT=(function(){
       sans:"'Special Elite','Courier New',monospace",
       scanlines:false,
       boot:'NCR systems online. The Republic will bring order to the wasteland.',
-      icon:'ncr'
+      icon:'ncr',
+      voice:{
+        names:['Samantha','Microsoft Zira','Google US English','Karen','Victoria'],
+        rate:1.05,
+        pitch:1.35,
+        gender:'female',
+        note:'NCR: bright enthusiastic slightly nasal - Yes Man vibe'
+      }
     }
   };
 
@@ -180,6 +210,27 @@ var FALLOUT=(function(){
     if(themeKey==='bos')_loadFont('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
     if(themeKey==='ncr')_loadFont('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
     if(themeKey==='pipboy')_loadFont('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+  }
+
+
+  // ── Voice profile ─────────────────────────────────────────
+  // Sets window._falloutVoiceProfile so speakResponse() picks up the
+  // faction-appropriate voice. Scores available voices by name match,
+  // then falls back by gender. Rate/pitch applied as overrides.
+  function _applyVoiceProfile(themeKey){
+    var t=THEMES[themeKey];
+    if(!t||!t.voice){
+      window._falloutVoiceProfile=null;
+      return;
+    }
+    var vp=t.voice;
+    // Store the profile — speakResponse reads this on each utterance
+    window._falloutVoiceProfile={
+      names:vp.names,
+      rate:vp.rate,
+      pitch:vp.pitch,
+      gender:vp.gender
+    };
   }
 
   // ── Apply theme ───────────────────────────────────────────
@@ -639,11 +690,11 @@ var FALLOUT=(function(){
     if(key==='none'){
       _stopOrbLoop();
       _hideOrbCanvas();
-      // Restore default CSS vars
       _applyTheme('none');
     }else{
       _applyTheme(key);
     }
+    _applyVoiceProfile(key);
 
     // Update settings UI
     _updateSettingsUI();
