@@ -350,8 +350,10 @@ function _layoutForest(W,H){
   TYPE_ORDER.forEach(function(t){groups[t]=[];});
   var orphans=[];
   graphNodes.forEach(function(n){
-    if(n.orphan)orphans.push(n);
-    else groups[n.type].push(n);
+    if(n.orphan){orphans.push(n);return;}
+    // Fall back unknown types to 'general' so they always have a bucket
+    var t=groups[n.type]?n.type:'general';
+    groups[t].push(n);
   });
 
   var activeGroups=TYPE_ORDER.filter(function(t){return groups[t].length>0;});
