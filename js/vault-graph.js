@@ -47,6 +47,8 @@ function spawnBirthParticle(type,targetPath){
       done:false,
       popped:false
     });
+    // Mark target node as freshly born so it renders oversized
+    if(node)node._bornAt=Date.now()+Math.round(1200); // born after particle arrives
   }
   trySpawn();
 }
