@@ -221,6 +221,22 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .spp-ncbtn:hover{background:#1ed760;transform:scale(1.02)}
 .spp-ncbtn:disabled{opacity:.45;cursor:default;transform:none}
 .sp-set-sep{border-top:1px solid var(--border);padding-top:14px;margin-top:14px}
+/* ══ STRENGTH PANEL ══ */
+#strength-panel{position:fixed;top:54px;left:50%;transform:translateX(-50%);width:860px;max-width:calc(100vw - 32px);height:calc(100vh - 78px);max-height:700px;background:rgba(22,22,25,.98);border:1px solid var(--border);border-radius:14px;z-index:200;display:none;flex-direction:column;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.8);backdrop-filter:blur(24px)}
+#strength-panel.str-vis{display:flex}
+.str-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+.str-hdr-title{font-family:var(--mono);font-size:13px;color:var(--accent);letter-spacing:.08em}
+.str-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0 4px;line-height:1}
+.str-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.str-tab{flex:1;padding:10px;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.str-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.str-tab:hover{color:var(--text)}
+.str-body{flex:1;overflow:hidden;position:relative}
+#str-split-content,#str-log-content,#str-map-content,#str-score-content{display:none;height:100%;overflow-y:auto;padding:16px}
+#str-split-content.active,#str-log-content.active,#str-map-content.active,#str-score-content.active{display:block}
+.str-body::-webkit-scrollbar{width:4px}
+.str-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
 .sp-set-hd{font-family:var(--mono);font-size:10px;color:var(--muted);...}.sp-set-status{font-size:11px;color:var(--muted);margin-bottom:7px}
 .sp-set-status.ok{color:var(--green)}
 .sp-set-row{display:flex;gap:6px;margin-bottom:6px}
@@ -510,7 +526,7 @@ body.fallout-mode #graph-tooltip{background:rgba(6,10,6,.97)!important;}
 body.fallout-mode #confirm-popup{background:rgba(6,10,6,.97)!important;}
 body.fallout-mode #spotify-panel,body.fallout-mode #calendar-panel,body.fallout-mode #month-panel,
 body.fallout-mode #vault-panel,body.fallout-mode #vaultchat-panel,body.fallout-mode #graphui-panel,
-body.fallout-mode #budget-panel,body.fallout-mode #daily-brief-panel,body.fallout-mode #vault-health-panel{background:rgba(6,10,6,.97)!important;}
+body.fallout-mode #budget-panel,body.fallout-mode #daily-brief-panel,body.fallout-mode #vault-health-panel,body.fallout-mode #strength-panel{background:rgba(6,10,6,.97)!important;}
 /* Sub-panels that are absolutely positioned overlays inside panels */
 body.fallout-mode #mcal-detail,body.fallout-mode #vp-viewer,body.fallout-mode #vp-create{background:rgba(6,10,6,.99)!important;}
 /* VaultChat input bar and bottom strip */
@@ -581,6 +597,7 @@ body.fallout-mode .orb-status-txt.active,body.fallout-mode .sb-txt{text-shadow:0
     <button class="hbtn" id="brief-nav-btn" onclick="requestBrief()">&#9670; Brief</button>
     <button class="hbtn" id="health-nav-btn" onclick="toggleVaultHealth()">&#9650; Vault</button>
     <button class="hbtn" id="budget-nav-btn" onclick="BUDGET.togglePanel()" title="Budget">&#36; Budget</button>
+    <button class="hbtn" id="strength-nav-btn" onclick="STRENGTH.togglePanel()" title="Strength">&#9651; Strength</button>
     <button class="hbtn" onclick="openSettings()">&#9881; Settings</button>
   </div>
 </nav>
@@ -810,6 +827,25 @@ body.fallout-mode .orb-status-txt.active,body.fallout-mode .sb-txt{text-shadow:0
   <div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-shrink:0;background:rgba(22,22,25,.97);border-radius:0 0 14px 14px">
     <textarea id="vc-input" placeholder="Ask anything about your vault&hellip;" rows="1" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:12px;color:var(--text);outline:none;resize:none;max-height:100px;line-height:1.5;transition:border-color .2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
     <button id="vc-send-btn" style="background:var(--accent);border:none;border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;flex-shrink:0;color:#fff">&#8593;</button>
+  </div>
+</div>
+
+<div id="strength-panel">
+  <div class="str-hdr">
+    <span class="str-hdr-title">&#9651; STRENGTH</span>
+    <button class="str-close" onclick="STRENGTH.hidePanel()">&#215;</button>
+  </div>
+  <div class="str-tabs">
+    <button class="str-tab active" id="str-tab-split" onclick="STRENGTH.switchTab('split')">&#128197; Split</button>
+    <button class="str-tab" id="str-tab-log" onclick="STRENGTH.switchTab('log')">&#9998; Log</button>
+    <button class="str-tab" id="str-tab-map" onclick="STRENGTH.switchTab('map')">&#128134; Map</button>
+    <button class="str-tab" id="str-tab-score" onclick="STRENGTH.switchTab('score')">&#9651; Score</button>
+  </div>
+  <div class="str-body">
+    <div id="str-split-content"></div>
+    <div id="str-log-content" style="display:none"></div>
+    <div id="str-map-content" style="display:none"></div>
+    <div id="str-score-content" style="display:none"></div>
   </div>
 </div>
 <div id="daily-brief-panel">
@@ -1137,6 +1173,7 @@ async function processCommand(txt){
   var vaultResult=VAULTUI.handleVoice(txt);if(vaultResult!==null){speakResponse(vaultResult);return;}
   var graphUIResult=GRAPHUI.handleVoice(txt);if(graphUIResult!==null){speakResponse(graphUIResult);return;}
   var falloutResult=FALLOUT.handleVoiceTheme(txt);if(falloutResult!==null){speakResponse(falloutResult);return;}
+  var strengthResult=STRENGTH.handleVoice(txt);if(strengthResult!==null){speakResponse(strengthResult);return;}
   if(/\b(open|pull up|show|launch|let'?s (open|use|check))\b.*\bmap\b/.test(lower)&&!/\b(fly to|directions to|route to|on (the )?map)\b/.test(lower)){showWidget('url','🗺 Map','map.html','🗺');speakResponse('Opening map, sir.');return;}
   var flyM=lower.match(/(?:fly to|zoom to|navigate to|pull up|show me)\s+(.+?)(?:\s+on (?:the )?map)?$/);
   if(flyM&&(lower.includes('fly to')||lower.includes('zoom to')||lower.includes('on the map')||lower.includes('on map'))){var mapQ=flyM[1].replace(/\s+on\s+(the\s+)?map\s*$/i,'').trim();showWidget('url','🗺 Map','map.html','🗺');mapCmd({cmd:'flyTo',query:mapQ});speakResponse('Flying to '+mapQ+', sir.');return;}
@@ -1200,6 +1237,7 @@ document.getElementById('speech-rate-slider').addEventListener('input',function(
 <script src="js/vault-ui.js"></script>
 <script src="js/budget.js"></script>
 <script src="js/fallout.js"></script>
+<script src="js/strength.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════
 // DAILY BRIEF + VAULT HEALTH + VOICE OPEN NOTE
@@ -1328,6 +1366,8 @@ makeWindowBehavior(document.getElementById('budget-panel'),document.getElementBy
 makeWindowBehavior(document.getElementById('graphui-panel'),document.getElementById('graphui-panel').querySelector('.gui-hdr'),{minW:260,minH:400});
 GRAPHUI.init();
 FALLOUT.init();
+STRENGTH.init();
+makeWindowBehavior(document.getElementById('strength-panel'),document.getElementById('strength-panel').querySelector('.str-hdr'),{minW:640,minH:400});
 (function(){
   var oc=document.getElementById('orb-canvas');var rc=document.getElementById('record-canvas');
   oc.addEventListener('click',handleOrbClick);rc.addEventListener('click',handleOrbClick);
