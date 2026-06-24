@@ -109,9 +109,13 @@ var PLACES=(function(){
     var query='[out:json][timeout:15];('+union+');out center 40;';
     var url='https://overpass-api.de/api/interpreter?data='+encodeURIComponent(query);
 
-    var resp=await fetch(url);
-    var data=await resp.json();
-    return data.elements||[];
+    var controller=new AbortController();
+    var timeout=setTimeout(function(){controller.abort();},12000);
+    try{
+      var resp=await fetch(url,{signal:controller.signal});
+      var data=await resp.json();
+      return data.elements||[];
+    }finally{clearTimeout(timeout);}
   }
 
   // ── OSRM driving distance ─────────────────────────────────
@@ -247,7 +251,11 @@ var PLACES=(function(){
         var cat=CATS[r.category]||CATS.food;
         var distStr=r.distance?(r.distance+' mi'+(r.mins?' · '+r.mins+' min drive':' away')):'';
         var hoursStr=r.hours?'<div style="font-size:9px;color:var(--muted);margin-top:2px;font-family:var(--mono)">'+_esc(r.hours.slice(0,40))+'</div>':'';
-        var mapsUrl='https://maps.apple.com/?daddr='+r.lat+','+r.lon+'&dirflg=d';
+        // Apple Maps on iOS/Mac, Google Maps everywhere else
+      var isApple=/iPad|iPhone|Macintosh/i.test(navigator.userAgent);
+      var mapsUrl=isApple
+        ?'https://maps.apple.com/?daddr='+r.lat+','+r.lon+'&dirflg=d'
+        :'https://www.google.com/maps/dir/?api=1&destination='+r.lat+','+r.lon;
         // Try Google Maps on non-Apple
         listHtml+='<div class="pl-result" data-idx="'+i+'" style="'+
           'display:flex;align-items:center;gap:10px;padding:10px 12px;'+
@@ -335,7 +343,11 @@ var PLACES=(function(){
         html:'<div style="font-size:16px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))">'+cat.icon+'</div>',
         iconSize:[20,20],className:''
       });
-      var mapsUrl='https://maps.apple.com/?daddr='+r.lat+','+r.lon+'&dirflg=d';
+      // Apple Maps on iOS/Mac, Google Maps everywhere else
+      var isApple=/iPad|iPhone|Macintosh/i.test(navigator.userAgent);
+      var mapsUrl=isApple
+        ?'https://maps.apple.com/?daddr='+r.lat+','+r.lon+'&dirflg=d'
+        :'https://www.google.com/maps/dir/?api=1&destination='+r.lat+','+r.lon;
       L.marker([r.lat,r.lon],{icon:icon}).addTo(_map)
         .bindPopup('<div style="font-family:monospace;font-size:11px;min-width:120px">'+
           '<strong>'+r.name+'</strong><br>'+
