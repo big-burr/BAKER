@@ -21,6 +21,10 @@ function _drawTreeSpecies(ctx,type,cx,baseY,slotW,treeH,col){
   else if(type==='daily')        _drawPine(ctx,cx,baseY,slotW,treeH,bark,foliage);
   else if(type==='conversation')  _drawHickory(ctx,cx,baseY,slotW,treeH,bark,foliage);
   else if(type==='project')      _drawGinkgo(ctx,cx,baseY,slotW,treeH,bark,foliage);
+  else if(type==='system')       _drawCypress(ctx,cx,baseY,slotW,treeH,bark,foliage);
+  else if(type==='workout')      _drawRedwood(ctx,cx,baseY,slotW,treeH,bark,foliage);
+  else if(type==='academic')     _drawWillow(ctx,cx,baseY,slotW,treeH,bark,foliage);
+  else if(type==='biometric')    _drawCedar(ctx,cx,baseY,slotW,treeH,bark,foliage);
 }
 
 // ── BIRCH (lecture) ──────────────────────────────────────
@@ -490,7 +494,7 @@ function _drawYggdrasil(ctx,W,H){
   ctx.font='bold 9px IBM Plex Mono, monospace';
   ctx.fillStyle='rgba(232,230,240,0.25)';ctx.textAlign='center';
   ctx.fillText('YGGDRASIL',CX,H*0.06-8);
-  var TYPE_ORDER=['conversation','project','lecture','daily','general'];
+  var TYPE_ORDER=['conversation','project','lecture','daily','general','system','workout','academic','biometric','weekly'];
   var activeTypes=TYPE_ORDER.filter(function(t){
     return graphNodes.some(function(n){return n.type===t&&!n.orphan;});
   });
@@ -547,6 +551,144 @@ function _drawClusterHalos(ctx){
 }
 
 // ── Draw a single node (with leaf sway) ──────────────────
+
+// ── CYPRESS (System notes) ────────────────────────────────
+// Tall, narrow, architectural. Perfect for system/data files.
+// Columnar shape — iconic sentinel silhouette.
+function _drawCypress(ctx,cx,baseY,slotW,treeH,col,foliage){
+  foliage=foliage||col;
+  var tw=slotW*0.045;
+  var trunkH=treeH*0.15;
+  var trunkTop=baseY-trunkH;
+  // Narrow trunk
+  ctx.beginPath();
+  ctx.moveTo(cx-tw,baseY);ctx.lineTo(cx-tw*0.6,trunkTop);
+  ctx.lineTo(cx+tw*0.6,trunkTop);ctx.lineTo(cx+tw,baseY);
+  ctx.closePath();ctx.fillStyle=col;ctx.fill();
+  // Tight columnar foliage — stacked ellipses getting narrower
+  var levels=7;
+  for(var i=0;i<levels;i++){
+    var t=i/levels;
+    var lY=trunkTop-treeH*0.85*t;
+    var lW=slotW*(0.28-t*0.18);
+    var lH=treeH*(0.16-t*0.04);
+    ctx.beginPath();
+    ctx.ellipse(cx,lY,lW,lH,0,0,Math.PI*2);
+    ctx.fillStyle=foliage;ctx.globalAlpha=0.9-t*0.2;ctx.fill();ctx.globalAlpha=1;
+  }
+  // Pointed top
+  ctx.beginPath();
+  ctx.moveTo(cx,trunkTop-treeH*0.92);
+  ctx.lineTo(cx-slotW*0.06,trunkTop-treeH*0.72);
+  ctx.lineTo(cx+slotW*0.06,trunkTop-treeH*0.72);
+  ctx.closePath();ctx.fillStyle=foliage;ctx.fill();
+}
+
+// ── REDWOOD (Workout/Strength notes) ─────────────────────
+// Massive, powerful. Thick trunk, huge spreading crown.
+// The biggest tree — represents strength data.
+function _drawRedwood(ctx,cx,baseY,slotW,treeH,col,foliage){
+  foliage=foliage||col;
+  var tw=slotW*0.14; // very thick trunk
+  var trunkH=treeH*0.55;
+  var trunkTop=baseY-trunkH;
+  // Massive buttressed trunk
+  ctx.beginPath();
+  ctx.moveTo(cx-tw*1.8,baseY);
+  ctx.bezierCurveTo(cx-tw*1.4,baseY-trunkH*0.1,cx-tw,baseY-trunkH*0.3,cx-tw*0.7,trunkTop);
+  ctx.lineTo(cx+tw*0.7,trunkTop);
+  ctx.bezierCurveTo(cx+tw,baseY-trunkH*0.3,cx+tw*1.4,baseY-trunkH*0.1,cx+tw*1.8,baseY);
+  ctx.closePath();ctx.fillStyle=col;ctx.fill();
+  // Bark texture lines
+  for(var i=0;i<5;i++){
+    var lx=cx-tw*0.5+i*tw*0.25;
+    ctx.beginPath();ctx.moveTo(lx,baseY-10);ctx.lineTo(lx+tw*0.1,trunkTop+10);
+    ctx.strokeStyle=foliage;ctx.lineWidth=tw*0.15;ctx.globalAlpha=0.15;ctx.stroke();ctx.globalAlpha=1;
+  }
+  // Huge canopy — multiple massive overlapping ellipses
+  var canopyY=trunkTop-treeH*0.1;
+  [[0,0,0.46,0.38],[slotW*0.28,treeH*0.08,0.32,0.28],[-slotW*0.26,treeH*0.1,0.30,0.26],
+   [slotW*0.14,treeH*0.22,0.26,0.22],[-slotW*0.12,treeH*0.24,0.24,0.20],[0,treeH*0.32,0.22,0.18]
+  ].forEach(function(c){
+    ctx.beginPath();ctx.ellipse(cx+c[0],canopyY-c[1],slotW*c[2],treeH*c[3],0,0,Math.PI*2);
+    ctx.fillStyle=foliage;ctx.globalAlpha=0.85;ctx.fill();ctx.globalAlpha=1;
+  });
+}
+
+// ── WILLOW (Academic notes) ───────────────────────────────
+// Graceful, drooping. Long weeping branches.
+// Represents study and learning — elegant but structured.
+function _drawWillow(ctx,cx,baseY,slotW,treeH,col,foliage){
+  foliage=foliage||col;
+  var tw=slotW*0.06;
+  var trunkH=treeH*0.5;
+  var trunkTop=baseY-trunkH;
+  // Trunk — gentle S-curve
+  ctx.beginPath();
+  ctx.moveTo(cx-tw,baseY);
+  ctx.bezierCurveTo(cx-tw*0.8,baseY-trunkH*0.4,cx+tw*0.6,baseY-trunkH*0.6,cx-tw*0.2,trunkTop);
+  ctx.bezierCurveTo(cx+tw*0.6,baseY-trunkH*0.6,cx+tw*0.8,baseY-trunkH*0.4,cx+tw,baseY);
+  ctx.closePath();ctx.fillStyle=col;ctx.fill();
+  // Crown base
+  ctx.beginPath();ctx.ellipse(cx,trunkTop,slotW*0.28,treeH*0.12,0,0,Math.PI*2);
+  ctx.fillStyle=foliage;ctx.fill();
+  // Weeping branches — long drooping strands
+  var branches=[
+    {sx:cx-slotW*0.22,sy:trunkTop+treeH*0.03,ex:cx-slotW*0.38,ey:trunkTop+treeH*0.48},
+    {sx:cx-slotW*0.12,sy:trunkTop-treeH*0.04,ex:cx-slotW*0.24,ey:trunkTop+treeH*0.52},
+    {sx:cx,sy:trunkTop-treeH*0.08,ex:cx-slotW*0.04,ey:trunkTop+treeH*0.55},
+    {sx:cx+slotW*0.1,sy:trunkTop-treeH*0.04,ex:cx+slotW*0.20,ey:trunkTop+treeH*0.52},
+    {sx:cx+slotW*0.20,sy:trunkTop+treeH*0.02,ex:cx+slotW*0.36,ey:trunkTop+treeH*0.48},
+  ];
+  branches.forEach(function(b){
+    ctx.beginPath();
+    ctx.moveTo(b.sx,b.sy);
+    ctx.bezierCurveTo(b.sx+(b.ex-b.sx)*0.2,b.sy+(b.ey-b.sy)*0.4,
+                      b.sx+(b.ex-b.sx)*0.4,b.sy+(b.ey-b.sy)*0.6,b.ex,b.ey);
+    ctx.strokeStyle=foliage;ctx.lineWidth=tw*0.7;ctx.globalAlpha=0.8;ctx.stroke();
+    // Leaf clusters at ends
+    ctx.beginPath();ctx.arc(b.ex,b.ey,slotW*0.04,0,Math.PI*2);
+    ctx.fillStyle=foliage;ctx.globalAlpha=0.7;ctx.fill();ctx.globalAlpha=1;
+  });
+}
+
+// ── CEDAR (Biometric/health notes) ───────────────────────
+// Dense, layered, symmetrical. Horizontal branch tiers.
+// Represents health data — balanced and regular.
+function _drawCedar(ctx,cx,baseY,slotW,treeH,col,foliage){
+  foliage=foliage||col;
+  var tw=slotW*0.055;
+  var trunkH=treeH*0.75;
+  var trunkTop=baseY-trunkH;
+  // Straight trunk
+  ctx.beginPath();ctx.rect(cx-tw*0.5,trunkTop,tw,trunkH);ctx.fillStyle=col;ctx.fill();
+  // Horizontal tier branches — cedar is known for flat layered boughs
+  var tiers=6;
+  for(var i=0;i<tiers;i++){
+    var t=i/(tiers-1);
+    var tierY=baseY-trunkH*(0.18+t*0.72);
+    var tierW=slotW*(0.46-t*0.34);
+    var tierH=treeH*(0.06+t*0.02);
+    // Main horizontal layer
+    ctx.beginPath();
+    ctx.ellipse(cx,tierY,tierW,tierH*(0.5),0,0,Math.PI*2);
+    ctx.fillStyle=foliage;ctx.globalAlpha=0.85-t*0.1;ctx.fill();ctx.globalAlpha=1;
+    // Drooping tips
+    [-1,1].forEach(function(side){
+      ctx.beginPath();
+      ctx.moveTo(cx+side*tierW*0.7,tierY);
+      ctx.quadraticCurveTo(cx+side*tierW*0.9,tierY+tierH*1.2,cx+side*tierW*0.85,tierY+tierH*2.5);
+      ctx.strokeStyle=foliage;ctx.lineWidth=tw*0.5;ctx.globalAlpha=0.6;ctx.stroke();ctx.globalAlpha=1;
+    });
+  }
+  // Pointed top
+  ctx.beginPath();
+  ctx.moveTo(cx,trunkTop-treeH*0.08);
+  ctx.lineTo(cx-slotW*0.08,trunkTop+treeH*0.05);
+  ctx.lineTo(cx+slotW*0.08,trunkTop+treeH*0.05);
+  ctx.closePath();ctx.fillStyle=foliage;ctx.fill();
+}
+
 function _drawNode(ctx,n,matchedNodes,brightness){
   var isPinned=!!pinnedNodes[n.id];
   var isOrphan=n.orphan;
