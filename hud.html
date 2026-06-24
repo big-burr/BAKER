@@ -221,6 +221,19 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .spp-ncbtn:hover{background:#1ed760;transform:scale(1.02)}
 .spp-ncbtn:disabled{opacity:.45;cursor:default;transform:none}
 .sp-set-sep{border-top:1px solid var(--border);padding-top:14px;margin-top:14px}
+/* ══ BIOMETRICS PANEL ══ */
+#biometrics-panel{position:fixed;top:64px;right:16px;width:400px;max-width:calc(100vw - 32px);height:560px;max-height:calc(100vh - 80px);background:rgba(22,22,25,.98);border:1px solid var(--border);border-radius:14px;z-index:200;display:none;flex-direction:column;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.8);backdrop-filter:blur(24px)}
+#biometrics-panel.bio-vis{display:flex}
+.bio-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.bio-hdr-title{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.08em}
+.bio-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.bio-tab{flex:1;padding:8px;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.bio-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.bio-tab:hover{color:var(--text)}
+#bio-body{flex:1;overflow-y:auto;padding:14px}
+#bio-body::-webkit-scrollbar{width:3px}
+#bio-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
 /* ══ HUD INFO PANEL ══ */
 #hudinfo-panel{position:fixed;top:64px;left:16px;width:220px;background:rgba(15,15,16,.96);border:1px solid var(--border);border-radius:12px;z-index:190;display:none;flex-direction:column;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.7);backdrop-filter:blur(20px)}
 #hudinfo-panel.hi-vis{display:flex}
@@ -613,6 +626,7 @@ body.fallout-mode .orb-status-txt.active,body.fallout-mode .sb-txt{text-shadow:0
     <button class="hbtn" id="graphui-nav-btn" onclick="GRAPHUI.togglePanel()" title="Graph Settings">&#128375; Graph</button>
     <button class="hbtn" id="brief-nav-btn" onclick="requestBrief()">&#9670; Brief</button>
     <button class="hbtn" id="health-nav-btn" onclick="toggleVaultHealth()">&#9650; Vault</button>
+    <button class="hbtn" id="bio-nav-btn" onclick="BIOMETRICS.togglePanel()" title="Biometrics">&#9661; Bio</button>
     <button class="hbtn" id="budget-nav-btn" onclick="BUDGET.togglePanel()" title="Budget">&#36; Budget</button>
     <button class="hbtn" id="strength-nav-btn" onclick="STRENGTH.togglePanel()" title="Strength">&#9651; Strength</button>
     <button class="hbtn" id="hudinfo-nav-btn" onclick="HUDINFO.togglePanel()" title="HUD Info">&#9632; HUD</button>
@@ -877,6 +891,18 @@ body.fallout-mode .orb-status-txt.active,body.fallout-mode .sb-txt{text-shadow:0
     <div class="hi-date">Loading...</div>
   </div>
 </div>
+
+<div id="biometrics-panel">
+  <div class="bio-hdr" id="bio-hdr">
+    <span class="bio-hdr-title">&#9661; BIOMETRICS</span>
+    <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0" onclick="BIOMETRICS.hidePanel()">&#215;</button>
+  </div>
+  <div class="bio-tabs">
+    <button class="bio-tab active" id="bio-tab-log" onclick="BIOMETRICS.switchTab('log')">&#128200; Log</button>
+    <button class="bio-tab" id="bio-tab-trends" onclick="BIOMETRICS.switchTab('trends')">&#128202; Trends</button>
+  </div>
+  <div id="bio-body"></div>
+</div>
 <div id="daily-brief-panel">
   <div class="brief-hdr">
     <span class="brief-title">&#9670; Daily Brief</span>
@@ -1074,6 +1100,7 @@ async function doConnect(handle){
   if(typeof CAL!=='undefined')CAL.onVaultConnected();
   if(typeof VAULTUI!=='undefined')VAULTUI.refresh();
   if(typeof VAULTCHAT!=='undefined')VAULTCHAT.onVaultReady();
+  if(typeof BIOMETRICS!=='undefined')BIOMETRICS.onVaultReady();
 }
 function setVaultBtn(s){var b=document.getElementById('vault-btn');b.className='hbtn'+(s==='on'?' on':'');b.textContent=s==='on'?'⬡ Vault on':s==='scanning'?'⟳ Scanning...':'⬡ Connect Vault';}
 async function scanDir(dir,path){try{for await(var entry of dir.values()){if(entry.name.startsWith('.'))continue;if(entry.kind==='file'&&entry.name.endsWith('.md')){try{var f=await entry.getFile();var content=await f.text();vaultIndex.push({name:entry.name,path:path?path+'/'+entry.name:entry.name,content:content,mtime:f.lastModified});}catch(e){}}else if(entry.kind==='directory'){await scanDir(entry,path?path+'/'+entry.name:entry.name);}}}catch(e){}}
@@ -1089,11 +1116,11 @@ async function scanDir(dir,path){try{for await(var entry of dir.values()){if(ent
 function startConversationMode(){conversationMode=true;conversationHistory=[];document.getElementById('orb-panel').classList.add('conversation-mode');setStatus('💬 Conversation mode — say "bye Baker" or click the orb to end');document.getElementById('orb-status-txt').textContent='💬 Conversation mode';document.getElementById('orb-status-txt').className='orb-status-txt active';}
 function endConversationMode(farewell){conversationMode=false;var historySnapshot=conversationHistory.slice();conversationHistory=[];document.getElementById('orb-panel').classList.remove('conversation-mode');if(voiceActive)stopVoice();function finishExit(){if(farewell){speakResponse(farewell);}else{speechSynthesis.cancel();isSpeaking=false;setOrbState('idle');setStatus('Say "Baker" to begin');document.getElementById('orb-status-txt').textContent='Say "Baker" to begin';document.getElementById('orb-status-txt').className='orb-status-txt';startWakeWord();}}if(historySnapshot.length>=2&&typeof vaultConnected!=='undefined'&&vaultConnected){showConfirmPopup('Save a summary of this conversation to today\'s log?',function(){conversationHistory=historySnapshot;saveConversationSummary().then(function(){conversationHistory=[];finishExit();});},finishExit);}else{finishExit();}}
 function showConfirmPopup(text,onYes,onNo){var popup=document.getElementById('confirm-popup');document.getElementById('confirm-popup-text').textContent=text;popup.classList.add('vis');var yesBtn=document.getElementById('confirm-yes');var noBtn=document.getElementById('confirm-no');function cleanup(){popup.classList.remove('vis');yesBtn.onclick=null;noBtn.onclick=null;}yesBtn.onclick=function(){cleanup();if(onYes)onYes();};noBtn.onclick=function(){cleanup();if(onNo)onNo();};}
-async function saveConversationSummary(){var key=localStorage.getItem('baker_api_key');if(!key||!conversationHistory.length)return false;if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected)return false;try{var transcript=conversationHistory.map(function(m){return(m.role==='user'?'User':'BAKER')+': '+m.content;}).join('\n');var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:80,system:'Summarize this conversation in ONE short sentence (under 15 words) suitable as a bullet point in a daily log. No preamble, just the sentence.',messages:[{role:'user',content:transcript}]})});var data=await resp.json();if(data.error)return false;var summary=data.content.map(function(b){return b.text||'';}).join('').trim();if(!summary)return false;var now=new Date();var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');var timeStr=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');var dir=await vaultHandle.getDirectoryHandle('00-Capture',{create:true});var fname=dateStr+'.md';var fileHandle=await dir.getFileHandle(fname,{create:true});var file=await fileHandle.getFile();var existing=await file.text();var bullet='- '+timeStr+' — '+summary+'\n';var _tmpl='---\ntype: daily\ndate: '+dateStr+'\nweek: \nmood: \nenergy: \n---\n\n# Daily Log — '+dateStr+'\n\n## Top 3\n- \n- \n- \n\n## Notes\n\n## Done\n\n## Tomorrow\n\n## Conversations\n';
+async function saveConversationSummary(){var key=localStorage.getItem('baker_api_key');if(!key||!conversationHistory.length)return false;if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected)return false;try{var transcript=conversationHistory.map(function(m){return(m.role==='user'?'User':'BAKER')+': '+m.content;}).join('\n');var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:80,system:'Summarize this conversation in ONE short sentence (under 15 words) suitable as a bullet point in a daily log. No preamble, just the sentence.',messages:[{role:'user',content:transcript}]})});var data=await resp.json();if(data.error)return false;var summary=data.content.map(function(b){return b.text||'';}).join('').trim();if(!summary)return false;var now=new Date();var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');var timeStr=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');var dir=await vaultHandle.getDirectoryHandle('00-Capture',{create:true});var fname=dateStr+'.md';var fileHandle=await dir.getFileHandle(fname,{create:true});var file=await fileHandle.getFile();var existing=await file.text();var bullet='- '+timeStr+' — '+summary+'\n';var _tmpl='---\ntype: daily\ndate: '+dateStr+'\nweek: \nmood: \nsleep: \nenergy: \n---\n\n# Daily Log — '+dateStr+'\n\n## Top 3\n- \n- \n- \n\n## Notes\n\n## Done\n\n## Tomorrow\n\n## Conversations\n';
 var newContent=existing.trim().length?(existing.trim()+'\n'+bullet):(_tmpl+bullet);var writable=await fileHandle.createWritable();await writable.write(newContent);await writable.close();if(typeof vaultIndex!=='undefined'){var idx=vaultIndex.findIndex(function(n){return n.path==='00-Capture/'+fname;});if(idx>=0)vaultIndex[idx].content=newContent;else vaultIndex.push({name:fname,path:'00-Capture/'+fname,content:newContent});}if(typeof buildGraph==='function'&&typeof vaultConnected!=='undefined'&&vaultConnected){buildGraph();setTimeout(function(){if(typeof spawnBirthParticle==='function')spawnBirthParticle('daily','00-Capture/'+fname);},400);}return true;}catch(e){return false;}}
 var CONVO_EXIT_PHRASES=/\b(bye baker|goodbye baker|bye[,]? baker|that'?s all|that'?ll be all|end conversation|stop talking|we'?re done|i'?m done|talk later)\b/;
 var CONVO_SAVE_PHRASES=/\b(save (this|that|our) conversation|save (this|that) to (my|the) (vault|daily log|notes)|log this conversation|write this down)\b/;
-async function saveConversationToVault(){if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected)return false;try{var now=new Date();var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');var timeStr=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');var dir=await vaultHandle.getDirectoryHandle('00-Capture',{create:true});var fname=dateStr+'.md';var fileHandle=await dir.getFileHandle(fname,{create:true});var file=await fileHandle.getFile();var existing=await file.text();var transcript='\n## Conversation with Baker — '+timeStr+'\n\n';conversationHistory.forEach(function(m){var who=m.role==='user'?'**You:**':'**Baker:**';transcript+=who+' '+m.content+'\n\n';});var _tmpl2='---\ntype: daily\ndate: '+dateStr+'\nweek: \nmood: \nenergy: \n---\n\n# Daily Log — '+dateStr+'\n\n## Top 3\n- \n- \n- \n\n## Notes\n\n## Done\n\n## Tomorrow\n\n## Conversations\n';
+async function saveConversationToVault(){if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected)return false;try{var now=new Date();var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');var timeStr=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');var dir=await vaultHandle.getDirectoryHandle('00-Capture',{create:true});var fname=dateStr+'.md';var fileHandle=await dir.getFileHandle(fname,{create:true});var file=await fileHandle.getFile();var existing=await file.text();var transcript='\n## Conversation with Baker — '+timeStr+'\n\n';conversationHistory.forEach(function(m){var who=m.role==='user'?'**You:**':'**Baker:**';transcript+=who+' '+m.content+'\n\n';});var _tmpl2='---\ntype: daily\ndate: '+dateStr+'\nweek: \nmood: \nsleep: \nenergy: \n---\n\n# Daily Log — '+dateStr+'\n\n## Top 3\n- \n- \n- \n\n## Notes\n\n## Done\n\n## Tomorrow\n\n## Conversations\n';
 var newContent=existing.trim().length?(existing.trim()+'\n'+transcript):(_tmpl2+transcript);var writable=await fileHandle.createWritable();await writable.write(newContent);await writable.close();if(typeof vaultIndex!=='undefined'){var _vi=vaultIndex.findIndex(function(n){return n.path==='00-Capture/'+fname;});if(_vi>=0)vaultIndex[_vi].content=newContent;else vaultIndex.push({name:fname,path:'00-Capture/'+fname,content:newContent});}if(typeof buildGraph==='function'&&typeof vaultConnected!=='undefined'&&vaultConnected){buildGraph();setTimeout(function(){if(typeof spawnBirthParticle==='function')spawnBirthParticle('daily','00-Capture/'+fname);},400);}return true;}catch(e){return false;}}
 async function sendToConversation(txt,key){conversationHistory.push({role:'user',content:txt});var webOn=localStorage.getItem('baker_web_search')==='true';var sys='You are BAKER, an AI assistant modelled after JARVIS from Iron Man, currently in a live spoken conversation with the user. This is a natural back-and-forth dialogue — respond conversationally, ask follow-up questions when helpful, and remember context from earlier in this conversation. Keep responses concise (1-4 spoken sentences) since they are read aloud via text-to-speech. No markdown, no lists, no headers — plain spoken prose only. Address the user as "sir" occasionally but not every sentence. If the user wants to capture notes, ideas, or a journal/daily-log entry from this conversation, acknowledge naturally — note-saving to the vault happens automatically when the conversation ends.';var body={model:'claude-sonnet-4-6',max_tokens:300,system:sys,messages:conversationHistory.slice(-20)};if(webOn)body.tools=[{type:'web_search_20250305',name:'web_search',max_uses:2}];try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});var data=await resp.json();var response=data.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text||'';}).join('').trim();conversationHistory.push({role:'assistant',content:response});speakResponse(response);}catch(e){speakResponse('I encountered a fault, sir.');setOrbState('idle');if(conversationMode)setTimeout(activateListening,ECHO_LOCKOUT_MS);else startWakeWord();}}
 
@@ -1124,6 +1151,7 @@ async function processCommand(txt){
   var graphUIResult=GRAPHUI.handleVoice(txt);if(graphUIResult!==null){speakResponse(graphUIResult);return;}
   var falloutResult=FALLOUT.handleVoiceTheme(txt);if(falloutResult!==null){speakResponse(falloutResult);return;}
   var strengthResult=STRENGTH.handleVoice(txt);if(strengthResult!==null){speakResponse(strengthResult);return;}
+  var bioResult=await BIOMETRICS.handleVoice(txt);if(bioResult!==null){speakResponse(bioResult);return;}
   var reminderResult=await REMINDERS.handleVoice(txt);if(reminderResult!==null){speakResponse(reminderResult);return;}
   var hudinfoResult=HUDINFO.handleVoice(txt);if(hudinfoResult!==null){speakResponse(hudinfoResult);return;}
   if(/\b(open|pull up|show|launch|let'?s (open|use|check))\b.*\bmap\b/.test(lower)&&!/\b(fly to|directions to|route to|on (the )?map)\b/.test(lower)){showWidget('url','🗺 Map','map.html','🗺');speakResponse('Opening map, sir.');return;}
@@ -1167,6 +1195,7 @@ async function sendToBAKER(txt,key){var webOn=localStorage.getItem('baker_web_se
 <script src="js/vault-ui.js"></script>
 <script src="js/budget.js"></script>
 <script src="js/fallout.js"></script>
+<script src="js/biometrics.js"></script>
 <script src="js/panels.js"></script>
 <script src="js/voice.js"></script>
 <script src="js/orb.js"></script>
@@ -1302,6 +1331,8 @@ makeWindowBehavior(document.getElementById('budget-panel'),document.getElementBy
 makeWindowBehavior(document.getElementById('graphui-panel'),document.getElementById('graphui-panel').querySelector('.gui-hdr'),{minW:260,minH:400});
 GRAPHUI.init();
 FALLOUT.init();
+BIOMETRICS.init();
+makeWindowBehavior(document.getElementById('biometrics-panel'),document.getElementById('bio-hdr'),{minW:320,minH:300});
 STRENGTH.init();
 makeWindowBehavior(document.getElementById('strength-panel'),document.getElementById('strength-panel').querySelector('.str-hdr'),{minW:640,minH:400});
 HUDINFO.init();
