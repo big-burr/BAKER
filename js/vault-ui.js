@@ -417,6 +417,7 @@ var VAULTUI=(function(){
     viewerEl.classList.add('vis');
   }
   function closeNote(){
+    currentNoteIdx=null;
     exitEditMode(false);
     viewerEl.classList.remove('vis');
     currentNoteIdx=null;
@@ -461,6 +462,31 @@ var VAULTUI=(function(){
       if(note)viewerContentEl.textContent=note.content;
     }
   }
+  async function _deleteCurrentNote(){
+    if(currentNoteIdx===null)return;
+    var note=vaultIndex[currentNoteIdx];
+    if(!note)return;
+    if(!window.confirm('Delete "'+note.name.replace(/\.md$/,'')+'"? This cannot be undone.'))return;
+    if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected){
+      if(typeof setStatus==='function')setStatus('Vault not connected.');return;
+    }
+    try{
+      var parts=note.path.split('/');
+      var dir=vaultHandle;
+      for(var i=0;i<parts.length-1;i++)dir=await dir.getDirectoryHandle(parts[i]);
+      await dir.removeEntry(parts[parts.length-1]);
+      vaultIndex.splice(currentNoteIdx,1);
+      currentNoteIdx=null;
+      closeNote();
+      renderList(searchInput?searchInput.value:'');
+      if(typeof buildGraph==='function')setTimeout(buildGraph,300);
+      if(typeof setStatus==='function')setStatus('Note deleted.');
+    }catch(e){
+      console.error('[VAULTUI] delete:',e);
+      if(typeof setStatus==='function')setStatus('Could not delete note.');
+    }
+  }
+
   function cancelEdit(){exitEditMode(true);}
 
   async function saveEdit(){
@@ -1007,6 +1033,7 @@ var GRAPHUI=(function(){
 // ══  VAULT CHAT PANEL MODULE (VAULTCHAT)  ══════════════════
 // ═══════════════════════════════════════════════════════════
 var VAULTCHAT=(function(){
+  var VCHAT_KEY='baker_vc_history';
   var history=[];
   var busy=false;
   var currentMode='smart';
@@ -1198,12 +1225,74 @@ var VAULTCHAT=(function(){
     if(/\b(open|pull up|show|launch)\b.*\b(vault chat|chat|ask my vault|query my vault)\b/.test(c)){
       showPanel();return'Opening vault chat, sir.';
     }
+    // "make a note" / "note that" / "add to my notes" — creates a vault note
+    var noteMatch=c.match(/(?:make a note(?: that| about)?|note (?:this|that)|jot (?:this|that)|log this|save (?:this|that) to (?:my )?(?:vault|notes?))[:,]?\s*(.+)/);
+    if(noteMatch){
+      var noteContent=noteMatch[1].trim();
+      if(!noteContent)return'What should I note, sir?';
+      _writeQuickNote(noteContent);
+      return'Noted, sir. I\'ve saved that to your vault.';
+    }
     return null;
+  }
+
+  // Write a quick note to today's daily log under ## Notes
+  async function _writeQuickNote(content){
+    if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected){
+      if(typeof speakResponse==='function')speakResponse('Vault not connected, sir. I cannot save that.');
+      return;
+    }
+    try{
+      var now=new Date();
+      var ds=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+      var ts=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+      var dir=await vaultHandle.getDirectoryHandle('00-Capture',{create:true});
+      var fname=ds+'.md';
+      var fh=await dir.getFileHandle(fname,{create:true});
+      var existing=await(await fh.getFile()).text();
+      // If file is empty/new, create with template
+      if(!existing.trim()){
+        existing='---\ntype: daily\ndate: '+ds+'\nweek: \nmood: \nenergy: \n---\n\n# Daily Log \u2014 '+ds+'\n\n## Top 3\n- \n- \n- \n\n## Notes\n\n## Done\n\n## Tomorrow\n\n## Conversations\n\n## Transactions\n';
+      }
+      var bullet='- '+ts+' \u2014 '+content+'\n';
+      var notesIdx=existing.indexOf('## Notes');
+      if(notesIdx>=0){
+        var insertAt=existing.indexOf('\n',notesIdx)+1;
+        // Skip blank line after header
+        if(existing[insertAt]==='\n')insertAt++;
+        existing=existing.slice(0,insertAt)+bullet+existing.slice(insertAt);
+      }else{
+        existing+='\'\n## Notes\n'+bullet;
+      }
+      var w=await fh.createWritable();
+      await w.write(existing);await w.close();
+      // Refresh vault index
+      if(typeof buildGraph==='function')setTimeout(buildGraph,400);
+    }catch(e){
+      console.error('[VAULTCHAT] _writeQuickNote error:',e);
+    }
   }
 
   function onVaultReady(){buildIDF();}
 
   function init(){
+    // Load persisted history
+    try{
+      var saved=localStorage.getItem(VCHAT_KEY);
+      if(saved){
+        history=JSON.parse(saved);
+        // Rebuild UI from saved history
+        var msgs=_msgs();
+        if(msgs&&history.length){
+          var welcome=document.getElementById('vc-welcome');
+          if(welcome)welcome.remove();
+          history.forEach(function(m){
+            if(m.role==='user')appendMsg('user',m.content);
+            else if(m.role==='assistant')appendMsg('baker',m.content,[]);
+          });
+        }
+      }
+    }catch(e){history=[];}
     var input=_input();
     if(input){
       input.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
