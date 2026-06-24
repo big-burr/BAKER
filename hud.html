@@ -1174,6 +1174,7 @@ requestAnimationFrame(draw);
 })();
 // panels.js, voice.js, orb.js loaded below
 </script>
+<script src="js/vault-sync.js"></script>
 <script src="js/vault-graph.js"></script>
 <script src="js/vault-graph-draw.js"></script>
 <script src="js/vault-graph-trees.js"></script>
@@ -1209,6 +1210,7 @@ async function doConnect(handle){
   if(typeof VAULTUI!=='undefined')VAULTUI.refresh();
   if(typeof VAULTCHAT!=='undefined')VAULTCHAT.onVaultReady();
   if(typeof BIOMETRICS!=='undefined')BIOMETRICS.onVaultReady();
+  if(typeof VAULTSYNC!=='undefined')VAULTSYNC.onVaultConnect();
 }
 function setVaultBtn(s){var b=document.getElementById('vault-btn');b.className='hbtn'+(s==='on'?' on':'');b.textContent=s==='on'?'⬡ Vault on':s==='scanning'?'⟳ Scanning...':'⬡ Connect Vault';}
 async function scanDir(dir,path){try{for await(var entry of dir.values()){if(entry.name.startsWith('.'))continue;if(entry.kind==='file'&&entry.name.endsWith('.md')){try{var f=await entry.getFile();var content=await f.text();vaultIndex.push({name:entry.name,path:path?path+'/'+entry.name:entry.name,content:content,mtime:f.lastModified});}catch(e){}}else if(entry.kind==='directory'){await scanDir(entry,path?path+'/'+entry.name:entry.name);}}}catch(e){}}
@@ -1290,7 +1292,7 @@ var _mapPendingCmd=null;
 window.addEventListener('message',function(e){if(e.data&&e.data.type==='mapReady'&&_mapPendingCmd){var frame=document.getElementById('widget-frame');if(frame&&frame.contentWindow){frame.contentWindow.postMessage(_mapPendingCmd,'*');_mapPendingCmd=null;}}});
 function mapCmd(data){var frame=document.getElementById('widget-frame');if(!frame||!frame.contentWindow)return;frame.contentWindow.postMessage(data,'*');_mapPendingCmd=data;setTimeout(function(){if(_mapPendingCmd===data)_mapPendingCmd=null;},8000);}
 async function findAndShowDatasheet(query,key){setStatus('Searching datasheet: '+query);try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:200,system:'Return ONLY a direct URL to an official manufacturer datasheet PDF for the component named. No explanation. Just the URL.',messages:[{role:'user',content:'Datasheet PDF URL for: '+query}]})});var data=await resp.json();var url=data.content.map(function(b){return b.text||'';}).join('').trim();if(url.startsWith('http')){showWidget('pdf','📄 '+query,url,'📄');speakResponse('Datasheet found, sir.');}else{speakResponse('Could not locate a direct datasheet for '+query+', sir.');setOrbState('idle');startWakeWord();}}catch(e){speakResponse('Datasheet search failed, sir.');setOrbState('idle');startWakeWord();}}
-async function sendToBAKER(txt,key){var webOn=localStorage.getItem('baker_web_search')==='true';var body={model:'claude-sonnet-4-6',max_tokens:300,system:'You are BAKER, an AI assistant modelled after JARVIS from Iron Man. You run on a HUD with these built-in capabilities: map (fly to locations, get directions), Spotify music control, task/calendar management (add/complete/list tasks), vault notes, web search, datasheets. Keep responses to 1-3 spoken sentences — they will be read aloud. No markdown. Be precise and sharp. Address as "sir" when natural. If asked about navigation say to use "fly to [place]" or "directions to [place]". If asked about tasks/reminders say to use "add task [x]" or "what are my tasks".',messages:[{role:'user',content:txt}]};if(webOn)body.tools=[{type:'web_search_20250305',name:'web_search',max_uses:2}];try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});var data=await resp.json();var response=data.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text||'';}).join('').trim();speakResponse(response);}catch(e){speakResponse('I encountered a fault, sir.');setOrbState('idle');startWakeWord();}}
+async function sendToBAKER(txt,key){var webOn=localStorage.getItem('baker_web_search')==='true';var _mem=typeof VAULTSYNC!=='undefined'?VAULTSYNC.getMemoryContext():'';var body={model:'claude-sonnet-4-6',max_tokens:300,system:'You are BAKER, an AI assistant modelled after JARVIS from Iron Man. You run on a HUD with these built-in capabilities: map (fly to locations, get directions), Spotify music control, task/calendar management (add/complete/list tasks), vault notes, web search, datasheets. Keep responses to 1-3 spoken sentences — they will be read aloud. No markdown. Be precise and sharp. Address as "sir" when natural. If asked about navigation say to use "fly to [place]" or "directions to [place]". If asked about tasks/reminders say to use "add task [x]" or "what are my tasks".'+(_mem?'\n\n'+_mem:''),messages:[{role:'user',content:txt}]};if(webOn)body.tools=[{type:'web_search_20250305',name:'web_search',max_uses:2}];try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});var data=await resp.json();var response=data.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text||'';}).join('').trim();speakResponse(response);}catch(e){speakResponse('I encountered a fault, sir.');setOrbState('idle');startWakeWord();}}
 
 
 
@@ -1480,6 +1482,7 @@ BUDGET.init();
 makeWindowBehavior(document.getElementById('budget-panel'),document.getElementById('budget-panel').querySelector('.bp-hdr'),{minW:600,minH:400});
 makeWindowBehavior(document.getElementById('graphui-panel'),document.getElementById('graphui-panel').querySelector('.gui-hdr'),{minW:260,minH:400});
 GRAPHUI.init();
+VAULTSYNC.init();
 FALLOUT.init();
 FOCUS.init();
 ACADEMIC.init();
@@ -1491,6 +1494,22 @@ STRENGTH.init();
 makeWindowBehavior(document.getElementById('strength-panel'),document.getElementById('strength-panel').querySelector('.str-hdr'),{minW:640,minH:400});
 HUDINFO.init();
 REMINDERS.init();
+(function(){
+  var _origAdd=REMINDERS.add;
+  REMINDERS.add=function(text,timeMs){
+    var r=_origAdd.call(REMINDERS,text,timeMs);
+    if(typeof VAULTSYNC!=='undefined')VAULTSYNC.syncReminders(REMINDERS.getAll());
+    return r;
+  };
+})();
+(function(){
+  var _origAdd=REMINDERS.add;
+  REMINDERS.add=function(text,timeMs){
+    var r=_origAdd.call(REMINDERS,text,timeMs);
+    if(typeof VAULTSYNC!=='undefined')VAULTSYNC.syncReminders(REMINDERS.getAll());
+    return r;
+  };
+})();
 FILEDROP.init();
 makeWindowBehavior(document.getElementById('hudinfo-panel'),document.getElementById('hudinfo-hdr'),{minW:180,minH:100});
 // Morning biometric prompt (7am-10am, once per day)
