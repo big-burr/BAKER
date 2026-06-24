@@ -23,6 +23,7 @@ var BIOMETRICS=(function(){
   }
   function _save(){
     try{localStorage.setItem(LS_KEY,JSON.stringify(entries));}catch(e){}
+    if(typeof VAULTSYNC!=='undefined'&&VAULTSYNC.syncBiometrics)VAULTSYNC.syncBiometrics(entries);
   }
 
   function _todayStr(){
