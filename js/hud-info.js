@@ -199,5 +199,5 @@ var HUDINFO=(function(){
     setTimeout(_fetchWeather,2000);
   }
 
-  return{init,showPanel,hidePanel,togglePanel,handleVoice};
+  return{init,showPanel,hidePanel,togglePanel,handleVoice,refresh:_render};
 })();
