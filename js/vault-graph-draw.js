@@ -44,6 +44,7 @@ function _drawForest(ctx,W,H){
            graphNodes.filter(function(n){return n.type===a&&!n.orphan;}).length;
   });
   orderedTypes=_centerLargest(orderedTypes);
+  if(!orderedTypes.length&&!orphans.length)return;
   var numSlots=orderedTypes.length+(orphans.length>0?1:0);
   var totalGap=GAP_FRAC*(numSlots-1);
   var usableW=(USABLE_RIGHT-USABLE_LEFT)-totalGap;
