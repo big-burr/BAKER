@@ -24,6 +24,7 @@ var CAL=(function(){
   }
   function saveLocal(){
     try{localStorage.setItem(LS_KEY,JSON.stringify(tasks));}catch(e){}
+    if(typeof VAULTSYNC!=='undefined'&&VAULTSYNC.syncTasks)VAULTSYNC.syncTasks();
   }
 
   // ── Markdown ↔ tasks ──────────────────────────────────────
@@ -403,9 +404,18 @@ var CAL=(function(){
     if(footer){footer.textContent='✓ Synced to vault';footer.className='cal-footer synced';}
   }
 
+  function importTasks(imported){
+    if(!imported||!imported.length)return;
+    imported.forEach(function(vt){
+      var exists=tasks.some(function(t){return t.text===vt.text;});
+      if(!exists){tasks.push(vt);}
+    });
+    try{localStorage.setItem(LS_KEY,JSON.stringify(tasks));}catch(e){}
+    if(typeof render==='function')render();
+  }
   return{
     init,showPanel,hidePanel,togglePanel,handleVoice,
-    addTask,deleteTask,toggleTask,
+    addTask,deleteTask,toggleTask,importTasks,
     onVaultConnected,
     getTasks:function(){return tasks;},
     refreshAll:render,
