@@ -360,6 +360,7 @@ function _layoutForest(W,H){
   activeGroups.sort(function(a,b){return groups[b].length-groups[a].length;});
   var ordered=_centerLargest(activeGroups);
 
+  if(!ordered.length&&!orphans.length)return; // nothing to lay out
   var numSlots=ordered.length+(orphans.length>0?1:0);
   var totalGap=GAP_FRAC*(numSlots-1);
   var usableW=(USABLE_RIGHT-USABLE_LEFT)-totalGap;
