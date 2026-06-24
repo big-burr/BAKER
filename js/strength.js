@@ -149,6 +149,10 @@ var STRENGTH=(function(){
     if(!data.bodyweight)data.bodyweight=185;
   }
   function _save(){
+    // Prune logs older than 90 days to prevent localStorage bloat
+    var cutoff=new Date();cutoff.setDate(cutoff.getDate()-90);
+    var cs=cutoff.getFullYear()+'-'+String(cutoff.getMonth()+1).padStart(2,'0')+'-'+String(cutoff.getDate()).padStart(2,'0');
+    data.logs=data.logs.filter(function(l){return l.date>=cs;});
     try{localStorage.setItem(LS_KEY,JSON.stringify(data));}catch(e){}
     if(typeof VAULTSYNC!=='undefined'&&VAULTSYNC.syncStrength)VAULTSYNC.syncStrength(data);
   }
