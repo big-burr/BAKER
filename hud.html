@@ -1458,7 +1458,7 @@ function toggleNavRows(){
   btn.title=collapsed?'Expand nav':'Collapse nav';
   // Update all panel tops
   var top=collapsed?'54px':'128px';
-  document.querySelectorAll('#strength-panel,#calendar-panel,#month-panel,#vault-panel,#vaultchat-panel,#graphui-panel,#budget-panel,#biometrics-panel,#academic-panel,#places-panel,#focus-panel,#hudinfo-panel').forEach(function(p){
+  document.querySelectorAll('#strength-panel,#calendar-panel,#month-panel,#vault-panel,#vaultchat-panel,#graphui-panel,#budget-panel,#biometrics-panel,#academic-panel,#places-panel,#focus-panel,#hudinfo-panel,#daily-brief-panel,#vault-health-panel,#spotify-panel').forEach(function(p){
     if(p)p.style.top=top;
   });
   localStorage.setItem('baker_nav_collapsed',collapsed?'1':'0');
