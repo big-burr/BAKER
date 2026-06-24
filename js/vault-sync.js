@@ -34,13 +34,14 @@ var VAULTSYNC=(function(){
       var w=await fh.createWritable();
       await w.write(content);
       await w.close();
-      // Spawn birth particle for this file
+      // Spawn birth particle — this triggers a graph rebuild via spawnBirthParticle
       var fullPath='07-System/'+subpath;
       if(typeof spawnBirthParticle==='function'){
         spawnBirthParticle('system',fullPath);
+      }else if(typeof buildGraph==='function'){
+        // Fallback if particles not available
+        setTimeout(buildGraph,600);
       }
-      // Refresh vault index
-      if(typeof buildGraph==='function')setTimeout(buildGraph,600);
       return true;
     }catch(e){
       console.error('[VAULTSYNC] write error:',subpath,e);
