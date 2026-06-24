@@ -150,6 +150,7 @@ var STRENGTH=(function(){
   }
   function _save(){
     try{localStorage.setItem(LS_KEY,JSON.stringify(data));}catch(e){}
+    if(typeof VAULTSYNC!=='undefined'&&VAULTSYNC.syncStrength)VAULTSYNC.syncStrength(data);
   }
 
   // ── Today's log entry ─────────────────────────────────────
@@ -1088,5 +1089,13 @@ var STRENGTH=(function(){
     _load();
   }
 
-  return{init,showPanel,hidePanel,togglePanel,switchTab,handleVoice};
+  function importData(imported){
+    if(!imported)return;
+    if(imported.split&&imported.split.length)data.split=imported.split;
+    if(imported.bodyweight)data.bodyweight=imported.bodyweight;
+    if(imported.prs&&Object.keys(imported.prs).length)data.prs=Object.assign({},imported.prs,data.prs);
+    try{localStorage.setItem(LS_KEY,JSON.stringify(data));}catch(e){}
+    render();
+  }
+  return{init,showPanel,hidePanel,togglePanel,switchTab,handleVoice,importData};
 })();
