@@ -221,6 +221,23 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .spp-ncbtn:hover{background:#1ed760;transform:scale(1.02)}
 .spp-ncbtn:disabled{opacity:.45;cursor:default;transform:none}
 .sp-set-sep{border-top:1px solid var(--border);padding-top:14px;margin-top:14px}
+/* ══ HUD INFO PANEL ══ */
+#hudinfo-panel{position:fixed;top:64px;left:16px;width:220px;background:rgba(15,15,16,.96);border:1px solid var(--border);border-radius:12px;z-index:190;display:none;flex-direction:column;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.7);backdrop-filter:blur(20px)}
+#hudinfo-panel.hi-vis{display:flex}
+.hi-hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0;cursor:move}
+.hi-hdr-title{font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:.12em;text-transform:uppercase}
+.hi-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0;line-height:1}
+.hi-body{padding:12px;font-family:var(--mono)}
+.hi-time{font-size:22px;font-weight:700;color:var(--accent);letter-spacing:.04em;line-height:1;margin-bottom:3px}
+.hi-date{font-size:9px;color:var(--text);letter-spacing:.04em;margin-bottom:2px}
+.hi-location{font-size:9px;color:var(--muted);margin-bottom:8px}
+.hi-divider{height:1px;background:var(--border);margin:8px 0}
+.hi-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.hi-label{font-size:8px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.hi-val{font-size:10px;color:var(--text);text-align:right}
+.hi-sub{color:var(--muted);font-size:9px}
+.hi-alert{color:var(--amber)}
+
 /* ══ STRENGTH PANEL ══ */
 #strength-panel{position:fixed;top:54px;left:calc(50vw - 430px);width:860px;max-width:calc(100vw - 32px);height:calc(100vh - 78px);max-height:700px;background:rgba(22,22,25,.98);border:1px solid var(--border);border-radius:14px;z-index:200;display:none;flex-direction:column;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.8);backdrop-filter:blur(24px)}
 #strength-panel.str-vis{display:flex}
@@ -598,6 +615,7 @@ body.fallout-mode .orb-status-txt.active,body.fallout-mode .sb-txt{text-shadow:0
     <button class="hbtn" id="health-nav-btn" onclick="toggleVaultHealth()">&#9650; Vault</button>
     <button class="hbtn" id="budget-nav-btn" onclick="BUDGET.togglePanel()" title="Budget">&#36; Budget</button>
     <button class="hbtn" id="strength-nav-btn" onclick="STRENGTH.togglePanel()" title="Strength">&#9651; Strength</button>
+    <button class="hbtn" id="hudinfo-nav-btn" onclick="HUDINFO.togglePanel()" title="HUD Info">&#9632; HUD</button>
     <button class="hbtn" onclick="openSettings()">&#9881; Settings</button>
   </div>
 </nav>
@@ -848,6 +866,17 @@ body.fallout-mode .orb-status-txt.active,body.fallout-mode .sb-txt{text-shadow:0
     <div id="str-score-content" style="display:none"></div>
   </div>
 </div>
+
+<div id="hudinfo-panel">
+  <div class="hi-hdr" id="hudinfo-hdr">
+    <span class="hi-hdr-title">&#9632; HUD STATUS</span>
+    <button class="hi-close" onclick="HUDINFO.hidePanel()">&#215;</button>
+  </div>
+  <div class="hi-body" id="hudinfo-body">
+    <div class="hi-time">--:--:-- --</div>
+    <div class="hi-date">Loading...</div>
+  </div>
+</div>
 <div id="daily-brief-panel">
   <div class="brief-hdr">
     <span class="brief-title">&#9670; Daily Brief</span>
@@ -1095,6 +1124,8 @@ async function processCommand(txt){
   var graphUIResult=GRAPHUI.handleVoice(txt);if(graphUIResult!==null){speakResponse(graphUIResult);return;}
   var falloutResult=FALLOUT.handleVoiceTheme(txt);if(falloutResult!==null){speakResponse(falloutResult);return;}
   var strengthResult=STRENGTH.handleVoice(txt);if(strengthResult!==null){speakResponse(strengthResult);return;}
+  var reminderResult=await REMINDERS.handleVoice(txt);if(reminderResult!==null){speakResponse(reminderResult);return;}
+  var hudinfoResult=HUDINFO.handleVoice(txt);if(hudinfoResult!==null){speakResponse(hudinfoResult);return;}
   if(/\b(open|pull up|show|launch|let'?s (open|use|check))\b.*\bmap\b/.test(lower)&&!/\b(fly to|directions to|route to|on (the )?map)\b/.test(lower)){showWidget('url','🗺 Map','map.html','🗺');speakResponse('Opening map, sir.');return;}
   var flyM=lower.match(/(?:fly to|zoom to|navigate to|pull up|show me)\s+(.+?)(?:\s+on (?:the )?map)?$/);
   if(flyM&&(lower.includes('fly to')||lower.includes('zoom to')||lower.includes('on the map')||lower.includes('on map'))){var mapQ=flyM[1].replace(/\s+on\s+(the\s+)?map\s*$/i,'').trim();showWidget('url','🗺 Map','map.html','🗺');mapCmd({cmd:'flyTo',query:mapQ});speakResponse('Flying to '+mapQ+', sir.');return;}
@@ -1140,6 +1171,9 @@ async function sendToBAKER(txt,key){var webOn=localStorage.getItem('baker_web_se
 <script src="js/voice.js"></script>
 <script src="js/orb.js"></script>
 <script src="js/strength.js"></script>
+<script src="js/hud-info.js"></script>
+<script src="js/reminders.js"></script>
+<script src="js/filedrop.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════
 // DAILY BRIEF + VAULT HEALTH + VOICE OPEN NOTE
@@ -1270,6 +1304,24 @@ GRAPHUI.init();
 FALLOUT.init();
 STRENGTH.init();
 makeWindowBehavior(document.getElementById('strength-panel'),document.getElementById('strength-panel').querySelector('.str-hdr'),{minW:640,minH:400});
+HUDINFO.init();
+REMINDERS.init();
+FILEDROP.init();
+makeWindowBehavior(document.getElementById('hudinfo-panel'),document.getElementById('hudinfo-hdr'),{minW:180,minH:100});
+// Morning biometric prompt (7am-10am, once per day)
+(function(){
+  var lastPrompt=localStorage.getItem('baker_morning_prompt');
+  var today=new Date().toDateString();
+  var hour=new Date().getHours();
+  if(hour>=7&&hour<10&&lastPrompt!==today){
+    localStorage.setItem('baker_morning_prompt',today);
+    setTimeout(function(){
+      if(typeof speakResponse==='function'){
+        speakResponse('Good morning, sir. Quick check-in — how did you sleep, and what is your energy level today?');
+      }
+    },3000);
+  }
+})();
 (function(){
   var oc=document.getElementById('orb-canvas');var rc=document.getElementById('record-canvas');
   oc.addEventListener('click',handleOrbClick);rc.addEventListener('click',handleOrbClick);
