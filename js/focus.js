@@ -301,7 +301,15 @@ var FOCUS=(function(){
     return null;
   }
 
-  function init(){_load();}
+  function init(){
+    _load();
+    // If page becomes visible while BAKER is silenced but timer isn't running, unsilence
+    document.addEventListener('visibilitychange',function(){
+      if(!document.hidden&&_silenced&&!state.running){
+        _unsilenceBAKER();
+      }
+    });
+  }
 
   return{init,showPanel,hidePanel,togglePanel,handleVoice,start,pause,reset};
 })();
