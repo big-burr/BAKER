@@ -17,7 +17,8 @@ var ORPHAN_COLOR='#00e5cc';
 
 // ── Note Birth Particle System ────────────────────────────
 var birthParticles=[];
-var BIRTH_FPS=1000/30;
+var _IS_PHONE=window.innerWidth<768;
+var BIRTH_FPS=_IS_PHONE?1000/15:1000/30;
 
 // Called externally when a note is created
 // type: note type string, targetNodeId: the id of the new node in graphNodes
@@ -517,7 +518,7 @@ function detectType(path,content){
 }
 
 // ── SIMULATION + DRAW LOOP ────────────────────────────────
-var GRAPH_FPS=1000/30,lastGraphFrame=0;
+var GRAPH_FPS=_IS_PHONE?1000/15:1000/30,lastGraphFrame=0;
 function runGraphSim(){
   if(graphAnim){cancelAnimationFrame(graphAnim);graphAnim=null;}
   graphAnim=requestAnimationFrame(function(now){
