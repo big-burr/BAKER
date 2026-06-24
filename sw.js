@@ -1,24 +1,12 @@
-// BAKER Service Worker — baker-v27
+// BAKER Service Worker — baker-v46
 const CACHE = 'baker-v46';
 
 const ASSETS = [
   '/BAKER/',
   '/BAKER/hud.html',
   '/BAKER/index.html',
-  '/BAKER/conversation.html',
-  '/BAKER/analyze.html',
-  '/BAKER/inbox.html',
-  '/BAKER/lecture.html',
-  '/BAKER/weekly.html',
-  '/BAKER/notelinker.html',
-  '/BAKER/vaultgraph.html',
-  '/BAKER/vaultchat.html',
-  '/BAKER/baker-app.js',
-  '/BAKER/map.html',
   '/BAKER/manifest.json',
   '/BAKER/icon.svg',
-  '/BAKER/js/fallout.js',
-  '/BAKER/js/vault-ui.js',
   '/BAKER/js/vault-sync.js',
   '/BAKER/js/vault-graph.js',
   '/BAKER/js/vault-graph-draw.js',
@@ -26,11 +14,13 @@ const ASSETS = [
   '/BAKER/js/spotify.js',
   '/BAKER/js/cal.js',
   '/BAKER/js/mcal.js',
+  '/BAKER/js/vault-ui.js',
   '/BAKER/js/budget.js',
-  '/BAKER/js/strength.js',
+  '/BAKER/js/fallout.js',
+  '/BAKER/js/panels.js',
   '/BAKER/js/voice.js',
   '/BAKER/js/orb.js',
-  '/BAKER/js/panels.js',
+  '/BAKER/js/strength.js',
   '/BAKER/js/hud-info.js',
   '/BAKER/js/reminders.js',
   '/BAKER/js/filedrop.js',
@@ -60,8 +50,12 @@ self.addEventListener('fetch', e => {
     e.request.url.includes('spotify.com') ||
     e.request.url.includes('googleapis.com/css') ||
     e.request.url.includes('nominatim.openstreetmap.org') ||
+    e.request.url.includes('overpass-api.de') ||
     e.request.url.includes('router.project-osrm.org') ||
-    e.request.url.includes('basemaps.cartocdn.com')
+    e.request.url.includes('basemaps.cartocdn.com') ||
+    e.request.url.includes('cdnjs.cloudflare.com') ||
+    e.request.url.includes('open-meteo.com') ||
+    e.request.url.includes('ntfy.sh')
   ) {
     e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
     return;
