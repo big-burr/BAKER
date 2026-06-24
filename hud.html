@@ -38,7 +38,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(15,15,16,.92)
 .status-dot.speaking{background:var(--green);animation:blink .6s ease-in-out infinite}
 .status-dot.thinking{background:var(--amber);animation:blink 1s ease-in-out infinite}
 .nav-right{display:none}
-.nav-rows{border-top:1px solid rgba(46,46,52,.5)}
+.nav-rows{border-top:1px solid rgba(46,46,52,.5);transition:max-height .25s ease,opacity .2s ease;overflow:hidden;max-height:120px;opacity:1}
+.nav-rows.collapsed{max-height:0;opacity:0;border-top:none}
+.nav-toggle{background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 6px;font-family:var(--mono);transition:transform .2s;flex-shrink:0;opacity:.6;line-height:1}
+.nav-toggle:hover{opacity:1}
+.nav-toggle.collapsed{transform:rotate(180deg)}
 .nav-row{display:flex;align-items:center;gap:4px;padding:3px 16px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;min-height:32px}
 .nav-row::-webkit-scrollbar{display:none}
 .nav-row-label{font-family:var(--mono);font-size:8px;color:var(--accent);letter-spacing:.1em;opacity:.7;flex-shrink:0;min-width:38px;text-transform:uppercase}
@@ -644,6 +648,7 @@ body.fallout-mode .orb-status-txt.active,body.fallout-mode .sb-txt{text-shadow:0
       <div class="status-dot standby" id="nav-dot"></div>
       <span id="nav-status-txt">standby</span>
     </div>
+    <button class="nav-toggle" id="nav-toggle-btn" onclick="toggleNavRows()" title="Collapse nav">&#9650;</button>
     <button class="nav-hamburger" id="nav-hamburger" onclick="toggleNavMenu()">&#9776; Menu</button>
   </div>
 
@@ -1419,6 +1424,19 @@ function _voiceOpenNote(query){
 }
 
 // ═══════════════════════════════════════════════════════════
+function toggleNavRows(){
+  var rows=document.querySelector('.nav-rows');
+  var btn=document.getElementById('nav-toggle-btn');
+  var collapsed=rows.classList.toggle('collapsed');
+  btn.classList.toggle('collapsed',collapsed);
+  btn.title=collapsed?'Expand nav':'Collapse nav';
+  // Update all panel tops
+  var top=collapsed?'54px':'128px';
+  document.querySelectorAll('#strength-panel,#calendar-panel,#month-panel,#vault-panel,#vaultchat-panel,#graphui-panel,#budget-panel,#biometrics-panel,#academic-panel,#places-panel,#focus-panel,#hudinfo-panel').forEach(function(p){
+    if(p)p.style.top=top;
+  });
+  localStorage.setItem('baker_nav_collapsed',collapsed?'1':'0');
+}
 function toggleNavMenu(){
   var nav=document.getElementById('main-nav');
   var dd=document.getElementById('nav-dropdown');
@@ -1433,6 +1451,16 @@ function closeNavMenu(){
 document.addEventListener('click',function(e){
   if(!e.target.closest('#main-nav'))closeNavMenu();
 });
+
+// Restore nav collapse state
+(function(){
+  if(localStorage.getItem('baker_nav_collapsed')==='1'){
+    var rows=document.querySelector('.nav-rows');
+    var btn=document.getElementById('nav-toggle-btn');
+    if(rows)rows.classList.add('collapsed');
+    if(btn){btn.classList.add('collapsed');btn.title='Expand nav';}
+  }
+})();
 
 // INIT
 // ═══════════════════════════════════════════════════════════
