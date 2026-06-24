@@ -1,5 +1,5 @@
 // BAKER Service Worker — baker-v27
-const CACHE = 'baker-v43';
+const CACHE = 'baker-v44';
 
 const ASSETS = [
   '/BAKER/',
@@ -19,6 +19,7 @@ const ASSETS = [
   '/BAKER/icon.svg',
   '/BAKER/js/fallout.js',
   '/BAKER/js/vault-ui.js',
+  '/BAKER/js/vault-sync.js',
   '/BAKER/js/vault-graph.js',
   '/BAKER/js/vault-graph-draw.js',
   '/BAKER/js/vault-graph-trees.js',
