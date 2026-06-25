@@ -237,7 +237,7 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ══ FOCUS PANEL ══ */
-#focus-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:300px;background:rgba(22,22,25,.98);border:1px solid var(--border);border-radius:14px;z-index:200;display:none;flex-direction:column;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.8);backdrop-filter:blur(24px)}
+#focus-panel{position:fixed;top:128px;left:calc(50vw - 150px);width:300px;background:rgba(22,22,25,.98);border:1px solid var(--border);border-radius:14px;z-index:200;display:none;flex-direction:column;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.8);backdrop-filter:blur(24px)}
 #focus-panel.foc-vis{display:flex}
 .foc-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
 #focus-body{padding:8px 16px 16px}
@@ -399,7 +399,7 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .mcal-detail-list::-webkit-scrollbar{width:3px}
 .mcal-detail-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 .mcal-detail-empty{padding:32px 16px;text-align:center;color:var(--muted);font-size:12px;line-height:1.6}
-#graphui-panel{position:fixed;top:128px;right:460px;width:300px;height:calc(100vh - 140px);max-height:580px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:visible;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:260px;min-height:300px}
+#graphui-panel{position:fixed;top:128px;right:460px;width:300px;height:calc(100vh - 140px);max-height:680px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:260px;min-height:400px}
 #graphui-panel.gui-vis{display:flex}
 #graphui-panel>div:not(.rh){overflow:hidden;border-radius:14px}
 .gui-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--border);cursor:move;user-select:none;border-radius:14px 14px 0 0;flex-shrink:0}
