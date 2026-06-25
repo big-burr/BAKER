@@ -408,6 +408,8 @@ var VAULTSYNC=(function(){
     init,onVaultConnect,
     syncTasks,syncStrength,syncBudget,syncAcademic,syncBiometrics,syncReminders,
     addMemory,getMemoryContext,readMemory,
-    write:_write,read:_read
+    write:_write,read:_read,
+    _getMemory:function(){return _memory;},
+    _clearMemory:function(){_memory={facts:[]};scheduleWrite(MEMORY_PATH,function(){return _memoryToMd(_memory);});}
   };
 })();
