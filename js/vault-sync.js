@@ -82,20 +82,12 @@ var VAULTSYNC=(function(){
     var now=new Date().toISOString();
     var md='---\ntype: system-tasks\nupdated: '+now+'\n---\n\n# BAKER Tasks\n\n';
     var pending=tasks.filter(function(t){return!t.done;});
-    var done=tasks.filter(function(t){return t.done;});
-    if(pending.length){
-      md+='## Pending\n\n';
-      pending.forEach(function(t){
-        md+='- [ ] '+t.text+(t.due?' `due:'+t.due+'`':'')+'\n';
-      });
-      md+='\n';
-    }
-    if(done.length){
-      md+='## Completed\n\n';
-      done.slice(0,50).forEach(function(t){
-        md+='- [x] '+t.text+(t.due?' `due:'+t.due+'`':'')+'\n';
-      });
-    }
+    // Only show pending in the vault note — keep the node small and relevant
+    if(!pending.length){md+='_No pending tasks._\n';return md;}
+    md+='## Pending\n\n';
+    pending.forEach(function(t){
+      md+='- [ ] '+t.text+(t.due?' `due:'+t.due+'`':'')+'\n';
+    });
     return md;
   }
 
