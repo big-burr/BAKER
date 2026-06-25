@@ -17,13 +17,13 @@ var voiceFinal='',silenceTimer=null,speechRate=0.92;
 var MID_SENTENCE_WORDS=['and','but','so','because','that','which','who','when','where','if','although','however','therefore','then','or','nor','yet','for','as','since','while','though','unless','until','after','before','even'];
 function getSilenceWindow(txt){var trimmed=(txt||'').trim().toLowerCase();var lastWord=trimmed.split(/\s+/).pop().replace(/[.,!?]*/g,'');var base=conversationMode?2200:3000;if(MID_SENTENCE_WORDS.indexOf(lastWord)!==-1)return base+1500;return base;}
 var wakeRec=null;
-var HOT_WORDS=['hey baker','baker','yo baker','ok baker'];
+var HOT_WORDS=['hey baker','chud','foid','JARVIS','Damn','baker','yo baker','ok baker'];
 var speakEndTime=0,ECHO_LOCKOUT_MS=1800;
 var cachedVoices=[];
 var conversationMode=false;
 var conversationHistory=[];
 function loadVoices(){cachedVoices=speechSynthesis.getVoices();}
-function startWakeWord(){var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;stopWakeWord();wakeRec=new SR();wakeRec.continuous=true;wakeRec.interimResults=false;wakeRec.lang='en-US';wakeRec.onresult=function(e){var txt=e.results[e.results.length-1][0].transcript.toLowerCase().trim();if(HOT_WORDS.some(function(w){return txt.includes(w);})){stopWakeWord();activateListening();}};wakeRec.onend=function(){if(!voiceActive&&!isSpeaking)try{wakeRec.start();}catch(e){}};try{wakeRec.start();document.getElementById('wake-status').textContent='👂 listening for wake word';}catch(e){}}
+function startWakeWord(){var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;stopWakeWord();wakeRec=new SR();wakeRec.continuous=true;wakeRec.interimResults=false;wakeRec.lang='en-US';wakeRec.onresult=function(e){var txt=e.results[e.results.length-1][0].transcript.toLowerCase().trim();if(HOT_WORDS.some(function(w){return txt.includes(w);})){stopWakeWord();activateListening();}};wakeRec.onend=function(){if(!voiceActive&&!isSpeaking){try{wakeRec.start();}catch(e){setTimeout(startWakeWord,1000);}}};try{wakeRec.start();document.getElementById('wake-status').textContent='👂 listening for wake word';}catch(e){}}
 function stopWakeWord(){if(wakeRec){wakeRec.stop();wakeRec=null;}document.getElementById('wake-status').textContent='';}
 function handleOrbClick(e){if(orbMusicMode){toggleMusicMode();return;}if(conversationMode){endConversationMode('Goodbye, sir.');return;}if(isSpeaking){stopSpeaking();return;}if(voiceActive){stopVoice();}else{activateListening();}}
 
