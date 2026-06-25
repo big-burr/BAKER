@@ -699,11 +699,11 @@ function _drawNode(ctx,n,matchedNodes,brightness){
   });
   var isMatch=matchedNodes&&matchedNodes[n.id];
   var r=isHv?n.radius*2.2:isCn?n.radius*1.4:isMatch?n.radius*1.8:n.radius;
-  // Born boost — newly created nodes appear large then shrink over 2.5s
+  // Born boost — newly created nodes appear large then shrink over 2s
   if(n._bornAt){
     var _age=(Date.now()-n._bornAt)/1000;
-    if(_age<2.5){
-      var _boost=_age<0.3?4.5:_age<1.0?(4.5-3.5*(_age-0.3)/0.7):(1+3.5*(1-(_age-1.0)/1.5));
+    if(_age<2.0){
+      var _boost=_age<0.2?3.0:_age<0.8?(3.0-2.0*(_age-0.2)/0.6):(1+2.0*(1-(_age-0.8)/1.2));
       r=r*Math.max(1,_boost);
     }else{delete n._bornAt;}
   }
