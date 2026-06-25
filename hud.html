@@ -685,6 +685,11 @@ async function sendToConversation(txt,key){conversationHistory.push({role:'user'
 // COMMAND PROCESSING
 // ═══════════════════════════════════════════════════════════
 async function processCommand(txt){
+  // Lecture mode intercept — route all voice to lecture transcript
+  if(window._lectureMode&&window._lectureCallback){
+    window._lectureCallback(txt);
+    return;
+  }
   var key=localStorage.getItem('baker_api_key');
   if(!key){speakResponse('No API key set, sir. Please open Settings.');return;}
   var lower=txt.toLowerCase().trim();
