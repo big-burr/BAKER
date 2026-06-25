@@ -939,15 +939,9 @@ async function extractMemory(userTxt, bakerTxt, key){
       'Only extract concrete facts: name, location, occupation, goals, preferences, ongoing projects, schedule, physical stats, relationships. '+
       'Do NOT extract: questions, hypotheticals, things BAKER said, already-known facts (see existing memory below), one-time events. '+
       'Format: one fact per line, no bullets, no punctuation at end, 10 words max each. '+
-      'If nothing new, respond with exactly: NONE
-
-'+
-      'Existing memory:
-'+(existing||'(empty)')+'
-
-'+
-      'User said: '+userTxt+'
-'+
+      'If nothing new, respond with exactly: NONE\n\n'+
+      'Existing memory:\n'+(existing||'(empty)')+'\n\n'+
+      'User said: '+userTxt+'\n'+
       'BAKER replied: '+bakerTxt;
 
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
@@ -970,8 +964,7 @@ async function extractMemory(userTxt, bakerTxt, key){
     if(!raw||raw==='NONE'||raw.toLowerCase()==='none')return;
 
     // Parse lines into facts
-    var newFacts=raw.split('
-')
+    var newFacts=raw.split('\n')
       .map(function(l){return l.trim().replace(/^[-•*]\s*/,'');})
       .filter(function(l){return l.length>3&&l.length<120;});
 
@@ -1012,18 +1005,9 @@ async function _checkMemoryCap(key){
 
     var fname='Memory-'+String(archiveNum).padStart(3,'0')+'.md';
     var fh=await dir.getFileHandle(fname,{create:true});
-    var md='---
-type: baker-memory-archive
-archive: '+archiveNum+'
-date: '+new Date().toISOString().slice(0,10)+'
----
-
-';
-    md+='# BAKER Memory Archive '+archiveNum+'
-
-';
-    mem.facts.forEach(function(f){md+='- '+f+'
-';});
+    var md='---\ntype: baker-memory-archive\narchive: '+archiveNum+'\ndate: '+new Date().toISOString().slice(0,10)+'\n---\n\n';
+    md+='# BAKER Memory Archive '+archiveNum+'\n\n';
+    mem.facts.forEach(function(f){md+='- '+f+'\n';});
 
     var w=await fh.createWritable();
     await w.write(md);await w.close();
