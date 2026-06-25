@@ -299,7 +299,7 @@ var STRENGTH=(function(){
         '<rect x="14" y="30" width="8" height="26" rx="3" transform="rotate(-10,18,30)"/>'
       )+
       // Legs
-      '<rect x="-12" y="58" width="10" height="36" rx="3" transform="rotate('+(fresh?0:mid?3:6)+',−7,58)"/>'+
+      '<rect x="-12" y="58" width="10" height="36" rx="3" transform="rotate('+(fresh?0:mid?3:6)+',-7,58)"/>'+
       '<rect x="2" y="58" width="10" height="36" rx="3" transform="rotate('+(fresh?0:mid?-3:-6)+',7,58)"/>'+
       // Feet
       '<rect x="-14" y="91" width="12" height="6" rx="2"/>'+
