@@ -1254,7 +1254,7 @@ var CONVO_EXIT_PHRASES=/\b(bye baker|goodbye baker|bye[,]? baker|that'?s all|tha
 var CONVO_SAVE_PHRASES=/\b(save (this|that|our) conversation|save (this|that) to (my|the) (vault|daily log|notes)|log this conversation|write this down)\b/;
 async function saveConversationToVault(){if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected)return false;try{var now=new Date();var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');var timeStr=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');var dir=await vaultHandle.getDirectoryHandle('00-Capture',{create:true});var fname=dateStr+'.md';var fileHandle=await dir.getFileHandle(fname,{create:true});var file=await fileHandle.getFile();var existing=await file.text();var transcript='\n## Conversation with Baker — '+timeStr+'\n\n';conversationHistory.forEach(function(m){var who=m.role==='user'?'**You:**':'**Baker:**';transcript+=who+' '+m.content+'\n\n';});var _tmpl2='---\ntype: daily\ndate: '+dateStr+'\nweek: \nmood: \nsleep: \nenergy: \n---\n\n# Daily Log — '+dateStr+'\n\n## Top 3\n- \n- \n- \n\n## Notes\n\n## Done\n\n## Tomorrow\n\n## Conversations\n';
 var newContent=existing.trim().length?(existing.trim()+'\n'+transcript):(_tmpl2+transcript);var writable=await fileHandle.createWritable();await writable.write(newContent);await writable.close();if(typeof vaultIndex!=='undefined'){var _vi=vaultIndex.findIndex(function(n){return n.path==='00-Capture/'+fname;});if(_vi>=0)vaultIndex[_vi].content=newContent;else vaultIndex.push({name:fname,path:'00-Capture/'+fname,content:newContent});}if(typeof buildGraph==='function'&&typeof vaultConnected!=='undefined'&&vaultConnected){buildGraph();setTimeout(function(){if(typeof spawnBirthParticle==='function')spawnBirthParticle('daily','00-Capture/'+fname);},400);}return true;}catch(e){return false;}}
-async function sendToConversation(txt,key){conversationHistory.push({role:'user',content:txt});var webOn=localStorage.getItem('baker_web_search')==='true';var sys='You are BAKER, an AI assistant modelled after JARVIS from Iron Man, currently in a live spoken conversation with the user. This is a natural back-and-forth dialogue — respond conversationally, ask follow-up questions when helpful, and remember context from earlier in this conversation. Keep responses concise (1-4 spoken sentences) since they are read aloud via text-to-speech. No markdown, no lists, no headers — plain spoken prose only. Address the user as "sir" occasionally but not every sentence. If the user wants to capture notes, ideas, or a journal/daily-log entry from this conversation, acknowledge naturally — note-saving to the vault happens automatically when the conversation ends.';var body={model:'claude-sonnet-4-6',max_tokens:300,system:sys,messages:conversationHistory.slice(-20)};if(webOn)body.tools=[{type:'web_search_20250305',name:'web_search',max_uses:2}];try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});var data=await resp.json();var response=data.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text||'';}).join('').trim();conversationHistory.push({role:'assistant',content:response});speakResponse(response);}catch(e){speakResponse('I encountered a fault, sir.');setOrbState('idle');if(conversationMode)setTimeout(activateListening,ECHO_LOCKOUT_MS);else startWakeWord();}}
+async function sendToConversation(txt,key){conversationHistory.push({role:'user',content:txt});var webOn=localStorage.getItem('baker_web_search')==='true';var sys='You are BAKER, an AI assistant modelled after JARVIS from Iron Man, currently in a live spoken conversation with the user. This is a natural back-and-forth dialogue — respond conversationally, ask follow-up questions when helpful, and remember context from earlier in this conversation. Keep responses concise (1-4 spoken sentences) since they are read aloud via text-to-speech. No markdown, no lists, no headers — plain spoken prose only. Address the user as "sir" occasionally but not every sentence. If the user wants to capture notes, ideas, or a journal/daily-log entry from this conversation, acknowledge naturally — note-saving to the vault happens automatically when the conversation ends.';var body={model:'claude-sonnet-4-6',max_tokens:300,system:sys,messages:conversationHistory.slice(-20)};if(webOn)body.tools=[{type:'web_search_20250305',name:'web_search',max_uses:2}];try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});var data=await resp.json();var response=data.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text||'';}).join('').trim();conversationHistory.push({role:'assistant',content:response});speakResponse(response);extractMemory(txt,response,key);}catch(e){speakResponse('I encountered a fault, sir.');setOrbState('idle');if(conversationMode)setTimeout(activateListening,ECHO_LOCKOUT_MS);else startWakeWord();}}
 
 // ═══════════════════════════════════════════════════════════
 // COMMAND PROCESSING
@@ -1315,7 +1315,7 @@ var _mapPendingCmd=null;
 window.addEventListener('message',function(e){if(e.data&&e.data.type==='mapReady'&&_mapPendingCmd){var frame=document.getElementById('widget-frame');if(frame&&frame.contentWindow){frame.contentWindow.postMessage(_mapPendingCmd,'*');_mapPendingCmd=null;}}});
 function mapCmd(data){var frame=document.getElementById('widget-frame');if(!frame||!frame.contentWindow)return;frame.contentWindow.postMessage(data,'*');_mapPendingCmd=data;setTimeout(function(){if(_mapPendingCmd===data)_mapPendingCmd=null;},8000);}
 async function findAndShowDatasheet(query,key){setStatus('Searching datasheet: '+query);try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:200,system:'Return ONLY a direct URL to an official manufacturer datasheet PDF for the component named. No explanation. Just the URL.',messages:[{role:'user',content:'Datasheet PDF URL for: '+query}]})});var data=await resp.json();var url=data.content.map(function(b){return b.text||'';}).join('').trim();if(url.startsWith('http')){showWidget('pdf','📄 '+query,url,'📄');speakResponse('Datasheet found, sir.');}else{speakResponse('Could not locate a direct datasheet for '+query+', sir.');setOrbState('idle');startWakeWord();}}catch(e){speakResponse('Datasheet search failed, sir.');setOrbState('idle');startWakeWord();}}
-async function sendToBAKER(txt,key){var webOn=localStorage.getItem('baker_web_search')==='true';var _mem=typeof VAULTSYNC!=='undefined'?VAULTSYNC.getMemoryContext():'';var body={model:'claude-sonnet-4-6',max_tokens:300,system:'You are BAKER, an AI assistant modelled after JARVIS from Iron Man. You run on a HUD with these built-in capabilities: map (fly to locations, get directions), Spotify music control, task/calendar management (add/complete/list tasks), vault notes, web search, datasheets. Keep responses to 1-3 spoken sentences — they will be read aloud. No markdown. Be precise and sharp. Address as "sir" when natural. If asked about navigation say to use "fly to [place]" or "directions to [place]". If asked about tasks/reminders say to use "add task [x]" or "what are my tasks".'+(_mem?'\n\n'+_mem:''),messages:[{role:'user',content:txt}]};if(webOn)body.tools=[{type:'web_search_20250305',name:'web_search',max_uses:2}];try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});var data=await resp.json();var response=data.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text||'';}).join('').trim();speakResponse(response);}catch(e){speakResponse('I encountered a fault, sir.');setOrbState('idle');startWakeWord();}}
+async function sendToBAKER(txt,key){var webOn=localStorage.getItem('baker_web_search')==='true';var _mem=typeof VAULTSYNC!=='undefined'?VAULTSYNC.getMemoryContext():'';var body={model:'claude-sonnet-4-6',max_tokens:300,system:'You are BAKER, an AI assistant modelled after JARVIS from Iron Man. You run on a HUD with these built-in capabilities: map (fly to locations, get directions), Spotify music control, task/calendar management (add/complete/list tasks), vault notes, web search, datasheets. Keep responses to 1-3 spoken sentences — they will be read aloud. No markdown. Be precise and sharp. Address as "sir" when natural. If asked about navigation say to use "fly to [place]" or "directions to [place]". If asked about tasks/reminders say to use "add task [x]" or "what are my tasks".'+(_mem?'\n\n'+_mem:''),messages:[{role:'user',content:txt}]};if(webOn)body.tools=[{type:'web_search_20250305',name:'web_search',max_uses:2}];try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});var data=await resp.json();var response=data.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text||'';}).join('').trim();speakResponse(response);extractMemory(txt,response,key);}catch(e){speakResponse('I encountered a fault, sir.');setOrbState('idle');startWakeWord();}}
 
 
 
@@ -1487,6 +1487,132 @@ document.addEventListener('click',function(e){
     if(btn){btn.classList.add('collapsed');btn.title='Expand nav';}
   }
 })();
+
+
+// ══════════════════════════════════════════════════════════
+// BAKER MEMORY EXTRACTION
+// Runs silently after every response. Extracts personal facts
+// from the exchange and saves to vault via VAULTSYNC.
+// Cap: 50 facts → archive to Memory-NNN.md → start fresh.
+// ══════════════════════════════════════════════════════════
+var _memExtracting=false;
+
+async function extractMemory(userTxt, bakerTxt, key){
+  if(_memExtracting)return; // don't stack extractions
+  if(!key||!userTxt||!bakerTxt)return;
+  if(typeof VAULTSYNC==='undefined')return;
+
+  _memExtracting=true;
+  try{
+    var existing=VAULTSYNC.getMemoryContext();
+    var prompt='You are a memory extraction assistant for BAKER, a personal AI assistant. '+
+      'Given this exchange, extract any NEW personal facts about the user worth remembering long-term. '+
+      'Only extract concrete facts: name, location, occupation, goals, preferences, ongoing projects, schedule, physical stats, relationships. '+
+      'Do NOT extract: questions, hypotheticals, things BAKER said, already-known facts (see existing memory below), one-time events. '+
+      'Format: one fact per line, no bullets, no punctuation at end, 10 words max each. '+
+      'If nothing new, respond with exactly: NONE
+
+'+
+      'Existing memory:
+'+(existing||'(empty)')+'
+
+'+
+      'User said: '+userTxt+'
+'+
+      'BAKER replied: '+bakerTxt;
+
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:150,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+
+    var d=await resp.json();
+    var raw=d.content.map(function(b){return b.text||'';}).join('').trim();
+    if(!raw||raw==='NONE'||raw.toLowerCase()==='none')return;
+
+    // Parse lines into facts
+    var newFacts=raw.split('
+')
+      .map(function(l){return l.trim().replace(/^[-•*]\s*/,'');})
+      .filter(function(l){return l.length>3&&l.length<120;});
+
+    if(!newFacts.length)return;
+
+    // Add each fact via VAULTSYNC
+    newFacts.forEach(function(f){VAULTSYNC.addMemory(f);});
+
+    // Check if cap reached — archive if so
+    _checkMemoryCap(key);
+
+  }catch(e){
+    // Silent fail — memory extraction is non-critical
+    console.debug('[BAKER Memory] extraction skipped:',e.message);
+  }finally{
+    _memExtracting=false;
+  }
+}
+
+async function _checkMemoryCap(key){
+  if(typeof VAULTSYNC==='undefined')return;
+  var mem=VAULTSYNC._getMemory();
+  if(!mem||!mem.facts||mem.facts.length<50)return;
+
+  // Archive current memory to vault as Memory-NNN.md
+  if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected)return;
+  try{
+    // Find next archive number
+    var dir=vaultHandle;
+    dir=await dir.getDirectoryHandle('07-System',{create:true});
+    var archiveNum=1;
+    try{
+      for await(var entry of dir.values()){
+        var m=entry.name.match(/^Memory-(\d+)\.md$/);
+        if(m)archiveNum=Math.max(archiveNum,parseInt(m[1])+1);
+      }
+    }catch(e){}
+
+    var fname='Memory-'+String(archiveNum).padStart(3,'0')+'.md';
+    var fh=await dir.getFileHandle(fname,{create:true});
+    var md='---
+type: baker-memory-archive
+archive: '+archiveNum+'
+date: '+new Date().toISOString().slice(0,10)+'
+---
+
+';
+    md+='# BAKER Memory Archive '+archiveNum+'
+
+';
+    mem.facts.forEach(function(f){md+='- '+f+'
+';});
+
+    var w=await fh.createWritable();
+    await w.write(md);await w.close();
+
+    // Spawn birth particle for archive note
+    if(typeof spawnBirthParticle==='function')
+      spawnBirthParticle('system','07-System/'+fname);
+
+    // Clear active memory and start fresh
+    VAULTSYNC._clearMemory();
+    if(typeof setStatus==='function')
+      setStatus('Memory archived to '+fname+' — starting fresh');
+
+    console.log('[BAKER Memory] Archived '+mem.facts.length+' facts to '+fname);
+  }catch(e){
+    console.error('[BAKER Memory] archive error:',e);
+  }
+}
 
 // INIT
 // ═══════════════════════════════════════════════════════════
