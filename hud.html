@@ -238,6 +238,30 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .spp-ncbtn:hover{background:#1ed760;transform:scale(1.02)}
 .spp-ncbtn:disabled{opacity:.45;cursor:default;transform:none}
 .sp-set-sep{border-top:1px solid var(--border);padding-top:14px;margin-top:14px}
+/* ══ HABITS PANEL ══ */
+#habits-panel{position:fixed;top:128px;left:calc(50vw - 200px);width:400px;max-width:calc(100vw - 32px);height:580px;max-height:calc(100vh - 148px);background:rgba(22,22,25,.98);border:1px solid var(--border);border-radius:14px;z-index:200;display:none;flex-direction:column;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.8);backdrop-filter:blur(24px)}
+#habits-panel.hab-vis{display:flex}
+.hab-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.hab-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.hab-tab{flex:1;padding:8px;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.hab-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+#hab-body{flex:1;overflow-y:auto;padding:14px}
+/* ══ LECTURE PANEL ══ */
+#lecture-panel{position:fixed;top:128px;right:16px;width:420px;max-width:calc(100vw - 32px);height:540px;max-height:calc(100vh - 148px);background:rgba(22,22,25,.98);border:1px solid var(--border);border-radius:14px;z-index:200;display:none;flex-direction:column;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.8);backdrop-filter:blur(24px)}
+#lecture-panel.lec-vis{display:flex}
+.lec-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+#lec-body{flex:1;overflow-y:auto;padding:14px}
+/* ══ WEEKLY PANEL ══ */
+#weekly-panel{position:fixed;top:128px;left:calc(50vw - 240px);width:480px;max-width:calc(100vw - 32px);height:600px;max-height:calc(100vh - 148px);background:rgba(22,22,25,.98);border:1px solid var(--border);border-radius:14px;z-index:200;display:none;flex-direction:column;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.8);backdrop-filter:blur(24px)}
+#weekly-panel.wkly-vis{display:flex}
+.wkly-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+#weekly-body{flex:1;overflow-y:auto;padding:14px}
+/* ══ INBOX PANEL ══ */
+#inbox-panel{position:fixed;top:128px;right:16px;width:380px;max-width:calc(100vw - 32px);height:560px;max-height:calc(100vh - 148px);background:rgba(22,22,25,.98);border:1px solid var(--border);border-radius:14px;z-index:200;display:none;flex-direction:column;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.8);backdrop-filter:blur(24px)}
+#inbox-panel.ib-vis{display:flex}
+.ib-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+#inbox-body{flex:1;overflow-y:auto;padding:14px}
+
 /* ══ PLACES PANEL ══ */
 #places-panel{position:fixed;top:128px;left:calc(50vw - 280px);width:560px;max-width:calc(100vw - 32px);height:calc(100vh - 148px);max-height:680px;background:rgba(22,22,25,.98);border:1px solid var(--border);border-radius:14px;z-index:200;display:none;flex-direction:column;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.8);backdrop-filter:blur(24px)}
 #places-panel.pl-vis{display:flex}
@@ -682,6 +706,7 @@ body.fallout-mode .orb-status-txt.active,body.fallout-mode .sb-txt{text-shadow:0
       <button class="hbtn" id="focus-nav-btn" onclick="FOCUS.togglePanel()">&#9654; Focus</button>
       <button class="hbtn" id="academic-nav-btn" onclick="ACADEMIC.togglePanel()">&#127979; Academic</button>
       <button class="hbtn" id="places-nav-btn" onclick="PLACES.togglePanel()" title="Nearby Places">&#128205; Places</button>
+      <button class="hbtn" id="habits-nav-btn" onclick="HABITS.togglePanel()">&#9711; Habits</button>
     </div>
     <div class="nav-row">
       <span class="nav-row-label">System</span>
@@ -693,6 +718,9 @@ body.fallout-mode .orb-status-txt.active,body.fallout-mode .sb-txt{text-shadow:0
       <span id="sp-nav-lbl">Music</span>
     </button>
       <button class="hbtn" id="hudinfo-nav-btn" onclick="HUDINFO.togglePanel()">&#9632; HUD</button>
+      <button class="hbtn" id="inbox-nav-btn" onclick="INBOX.togglePanel()">&#128228; Inbox</button>
+      <button class="hbtn" id="lecture-nav-btn" onclick="LECTURE.togglePanel()">&#127897; Lecture</button>
+      <button class="hbtn" id="weekly-nav-btn" onclick="WEEKLY.togglePanel()">&#128200; Weekly</button>
       <button class="hbtn" onclick="openSettings()">&#9881; Settings</button>
     </div>
   </div>
@@ -721,6 +749,7 @@ body.fallout-mode .orb-status-txt.active,body.fallout-mode .sb-txt{text-shadow:0
         <button class="hbtn" onclick="FOCUS.togglePanel();closeNavMenu()">&#9654; Focus</button>
         <button class="hbtn" onclick="ACADEMIC.togglePanel();closeNavMenu()">&#127979; Academic</button>
         <button class="hbtn" onclick="PLACES.togglePanel();closeNavMenu()">&#128205; Places</button>
+        <button class="hbtn" onclick="HABITS.togglePanel();closeNavMenu()">&#9711; Habits</button>
       </div>
     </div>
     <div class="nav-dd-group">
@@ -731,6 +760,9 @@ body.fallout-mode .orb-status-txt.active,body.fallout-mode .sb-txt{text-shadow:0
         <button class="hbtn" id="web-search-btn-m" onclick="toggleWebSearch();closeNavMenu()">&#127760; Web</button>
         <button class="hbtn" onclick="SP.togglePanel();closeNavMenu()">&#9654; Music</button>
         <button class="hbtn" onclick="HUDINFO.togglePanel();closeNavMenu()">&#9632; HUD</button>
+        <button class="hbtn" onclick="INBOX.togglePanel();closeNavMenu()">&#128228; Inbox</button>
+        <button class="hbtn" onclick="LECTURE.togglePanel();closeNavMenu()">&#127897; Lecture</button>
+        <button class="hbtn" onclick="WEEKLY.togglePanel();closeNavMenu()">&#128200; Weekly</button>
         <button class="hbtn" onclick="openSettings();closeNavMenu()">&#9881; Settings</button>
       </div>
     </div>
@@ -1033,6 +1065,42 @@ body.fallout-mode .orb-status-txt.active,body.fallout-mode .sb-txt{text-shadow:0
   </div>
   <div id="places-body"><div style="font-family:var(--mono);font-size:11px;color:var(--muted);padding:20px;text-align:center">Open to search nearby places.</div></div>
 </div>
+
+<div id="habits-panel">
+  <div class="hab-hdr" id="habits-hdr">
+    <span style="font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.08em">&#9711; HABITS</span>
+    <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0" onclick="HABITS.hidePanel()">&#215;</button>
+  </div>
+  <div class="hab-tabs">
+    <button class="hab-tab active" id="hab-tab-today" onclick="HABITS.switchTab('today')">&#9711; Today</button>
+    <button class="hab-tab" id="hab-tab-week" onclick="HABITS.switchTab('week')">&#128200; Week</button>
+  </div>
+  <div id="hab-body"></div>
+</div>
+
+<div id="lecture-panel">
+  <div class="lec-hdr" id="lecture-hdr">
+    <span style="font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.08em">&#127897; LECTURE RECORDER</span>
+    <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0" onclick="LECTURE.hidePanel()">&#215;</button>
+  </div>
+  <div id="lec-body"></div>
+</div>
+
+<div id="weekly-panel">
+  <div class="wkly-hdr" id="weekly-hdr">
+    <span style="font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.08em">&#128200; WEEKLY REVIEW</span>
+    <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0" onclick="WEEKLY.hidePanel()">&#215;</button>
+  </div>
+  <div id="weekly-body"></div>
+</div>
+
+<div id="inbox-panel">
+  <div class="ib-hdr" id="inbox-hdr">
+    <span style="font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.08em">&#128228; INBOX</span>
+    <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0" onclick="INBOX.hidePanel()">&#215;</button>
+  </div>
+  <div id="inbox-body"></div>
+</div>
 <div id="daily-brief-panel">
   <div class="brief-hdr">
     <span class="brief-title">&#9670; Daily Brief</span>
@@ -1285,6 +1353,10 @@ async function processCommand(txt){
   var strengthResult=STRENGTH.handleVoice(txt);if(strengthResult!==null){speakResponse(strengthResult);return;}
   var focusResult=FOCUS.handleVoice(txt);if(focusResult!==null){speakResponse(focusResult);return;}
   var placesResult=PLACES.handleVoice(txt);if(placesResult!==null){speakResponse(placesResult);return;}
+  var habitsResult=HABITS.handleVoice(txt);if(habitsResult!==null){speakResponse(habitsResult);return;}
+  var lectureResult=LECTURE.handleVoice(txt);if(lectureResult!==null){speakResponse(lectureResult);return;}
+  var weeklyResult=WEEKLY.handleVoice(txt);if(weeklyResult!==null){speakResponse(weeklyResult);return;}
+  var inboxResult=INBOX.handleVoice(txt);if(inboxResult!==null){speakResponse(inboxResult);return;}
   var acadResult=ACADEMIC.handleVoice(txt);if(acadResult!==null){speakResponse(acadResult);return;}
   var bioResult=await BIOMETRICS.handleVoice(txt);if(bioResult!==null){speakResponse(bioResult);return;}
   var reminderResult=await REMINDERS.handleVoice(txt);if(reminderResult!==null){speakResponse(reminderResult);return;}
@@ -1333,6 +1405,10 @@ async function sendToBAKER(txt,key){var webOn=localStorage.getItem('baker_web_se
 <script src="js/focus.js"></script>
 <script src="js/academic.js"></script>
 <script src="js/places.js"></script>
+<script src="js/habits.js"></script>
+<script src="js/lecture.js"></script>
+<script src="js/weekly.js"></script>
+<script src="js/inbox.js"></script>
 <script src="js/biometrics.js"></script>
 <script src="js/panels.js"></script>
 <script src="js/voice.js"></script>
@@ -1458,7 +1534,7 @@ function toggleNavRows(){
   btn.title=collapsed?'Expand nav':'Collapse nav';
   // Update all panel tops
   var top=collapsed?'54px':'128px';
-  document.querySelectorAll('#strength-panel,#calendar-panel,#month-panel,#vault-panel,#vaultchat-panel,#graphui-panel,#budget-panel,#biometrics-panel,#academic-panel,#places-panel,#focus-panel,#hudinfo-panel,#daily-brief-panel,#vault-health-panel,#spotify-panel').forEach(function(p){
+  document.querySelectorAll('#strength-panel,#calendar-panel,#month-panel,#vault-panel,#vaultchat-panel,#graphui-panel,#budget-panel,#biometrics-panel,#academic-panel,#places-panel,#focus-panel,#hudinfo-panel,#daily-brief-panel,#vault-health-panel,#spotify-panel,#habits-panel,#lecture-panel,#weekly-panel,#inbox-panel').forEach(function(p){
     if(p)p.style.top=top;
   });
   localStorage.setItem('baker_nav_collapsed',collapsed?'1':'0');
@@ -1636,6 +1712,14 @@ VAULTSYNC.init();
 FALLOUT.init();
 FOCUS.init();
 PLACES.init();
+HABITS.init();
+LECTURE.init();
+WEEKLY.init();
+INBOX.init();
+makeWindowBehavior(document.getElementById('habits-panel'),document.getElementById('habits-hdr'),{minW:320,minH:300});
+makeWindowBehavior(document.getElementById('lecture-panel'),document.getElementById('lecture-hdr'),{minW:340,minH:300});
+makeWindowBehavior(document.getElementById('weekly-panel'),document.getElementById('weekly-hdr'),{minW:380,minH:300});
+makeWindowBehavior(document.getElementById('inbox-panel'),document.getElementById('inbox-hdr'),{minW:300,minH:200});
 makeWindowBehavior(document.getElementById('places-panel'),document.getElementById('places-hdr'),{minW:400,minH:400});
 ACADEMIC.init();
 makeWindowBehavior(document.getElementById('focus-panel'),document.getElementById('focus-hdr'),{minW:280,minH:300});
@@ -1674,6 +1758,7 @@ makeWindowBehavior(document.getElementById('hudinfo-panel'),document.getElementB
     setTimeout(function(){
       if(typeof speakResponse==='function'){
         speakResponse('Good morning, sir. Quick check-in — how did you sleep, and what is your energy level today?');
+      if(typeof HABITS!=='undefined')HABITS.checkMorningNudge&&setTimeout(function(){if(typeof HABITS!=='undefined')HABITS.checkMorningNudge();},6000);
       }
     },3000);
   }
