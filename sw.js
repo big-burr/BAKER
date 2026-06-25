@@ -1,5 +1,5 @@
-// BAKER Service Worker — baker-v46
-const CACHE = 'baker-v46';
+// BAKER Service Worker — baker-v48
+const CACHE = 'baker-v48';
 
 const ASSETS = [
   '/BAKER/',
@@ -28,6 +28,10 @@ const ASSETS = [
   '/BAKER/js/focus.js',
   '/BAKER/js/academic.js',
   '/BAKER/js/places.js',
+  '/BAKER/js/habits.js',
+  '/BAKER/js/lecture.js',
+  '/BAKER/js/weekly.js',
+  '/BAKER/js/inbox.js',
 ];
 
 self.addEventListener('install', e => {
