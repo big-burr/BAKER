@@ -85,7 +85,15 @@ var SP=(function(){
   async function next(){await api('/me/player/next'+devParam(),{method:'POST'});setTimeout(poll,900);}
   async function prev(){await api('/me/player/previous'+devParam(),{method:'POST'});setTimeout(poll,900);}
   async function seek(ms){await api('/me/player/seek?position_ms='+Math.round(ms)+devParam().replace('?','&'),{method:'PUT'});}
-  async function setVol(pct){await api('/me/player/volume?volume_percent='+Math.round(pct)+devParam().replace('?','&'),{method:'PUT'});}
+  async function setVol(pct){
+    try{
+      var result=await api('/me/player/volume?volume_percent='+Math.round(pct)+devParam().replace('?','&'),{method:'PUT'});
+      if(result&&result.status===403){
+        var slider=document.getElementById('spp-vol');
+        if(slider){slider.style.opacity='0.3';slider.disabled=true;slider.title='Volume control requires Premium';}
+      }
+    }catch(e){}
+  }
   async function transferTo(devId){localStorage.setItem(LS.DEVICE,devId);await api('/me/player',{method:'PUT',body:JSON.stringify({device_ids:[devId],play:false})});setTimeout(poll,1200);renderDeviceList();}
 
   // ── Fetch ─────────────────────────────────────────────────
