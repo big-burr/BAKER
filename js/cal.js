@@ -23,6 +23,9 @@ var CAL=(function(){
     try{var raw=localStorage.getItem(LS_KEY);if(raw)tasks=JSON.parse(raw);}catch(e){tasks=[];}
   }
   function saveLocal(){
+    // Prune completed tasks older than 48h to keep localStorage lean
+    var cutoff=Date.now()-48*3600*1000;
+    tasks=tasks.filter(function(t){return!t.done||!t.doneAt||t.doneAt>cutoff;});
     try{localStorage.setItem(LS_KEY,JSON.stringify(tasks));}catch(e){}
     if(typeof VAULTSYNC!=='undefined'&&VAULTSYNC.syncTasks)VAULTSYNC.syncTasks();
   }
@@ -132,7 +135,7 @@ var CAL=(function(){
   }
   function toggleTask(id){
     var t=tasks.find(function(x){return x.id===id;});if(!t)return;
-    t.done=!t.done;render();scheduleSave();
+    t.done=!t.done;if(t.done)t.doneAt=Date.now();else delete t.doneAt;render();scheduleSave();
   }
   function deleteTask(id){
     tasks=tasks.filter(function(x){return x.id!==id;});render();scheduleSave();
