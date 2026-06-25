@@ -13,6 +13,7 @@ var PLACES=(function(){
   var LS_KEY='baker_places_v1';
   var PANEL_ID='places-panel';
   var DEFAULT_RADIUS=5; // miles
+  var _currentRadius=5;
   var MILES_PER_METER=0.000621371;
 
   var _map=null;
@@ -91,7 +92,7 @@ var PLACES=(function(){
 
   // ── Overpass query ────────────────────────────────────────
   async function _fetchPlaces(lat,lon,category){
-    var radiusM=Math.round(DEFAULT_RADIUS/MILES_PER_METER);
+    var radiusM=Math.round(_currentRadius/MILES_PER_METER);
     var tags=category==='all'
       ? Object.values(CATS).flatMap(function(c){return c.tags;})
       : (CATS[category]?CATS[category].tags:[]);
@@ -224,7 +225,7 @@ var PLACES=(function(){
     if(!body)return;
 
     // Category filter bar
-    var catBar='<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">'+
+    var catBar='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'+'<span style="font-family:var(--mono);font-size:9px;color:var(--muted);white-space:nowrap">RADIUS</span>'+'<input type="range" id="pl-radius" min="1" max="25" step="1" value="'+_currentRadius+'" '+'style="flex:1;accent-color:var(--accent)">'+'<span id="pl-radius-val" style="font-family:var(--mono);font-size:9px;color:var(--accent);min-width:28px">'+_currentRadius+'mi</span>'+'</div>'+'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">'+
       '<button class="pl-cat-btn'+((_activeCategory==='all')?' active':'')+'" data-cat="all" style="'+_catBtnStyle(_activeCategory==='all','#7c6af7')+'">🗺️ All</button>';
     Object.keys(CATS).forEach(function(k){
       var c=CATS[k];
@@ -284,6 +285,19 @@ var PLACES=(function(){
     // Init map
     _initMap();
 
+    // Radius slider
+    var radSlider=document.getElementById('pl-radius');
+    if(radSlider){
+      radSlider.addEventListener('input',function(){
+        _currentRadius=parseInt(this.value);
+        var lbl=document.getElementById('pl-radius-val');
+        if(lbl)lbl.textContent=_currentRadius+'mi';
+      });
+      radSlider.addEventListener('change',function(){
+        _currentRadius=parseInt(this.value);
+        _search(); // re-search on release
+      });
+    }
     // Category filter events
     body.querySelectorAll('.pl-cat-btn').forEach(function(btn){
       btn.addEventListener('click',function(){
