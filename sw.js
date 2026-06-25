@@ -1,9 +1,10 @@
-// BAKER Service Worker — baker-v48
-const CACHE = 'baker-v48';
+// BAKER Service Worker — baker-v49
+const CACHE = 'baker-v49';
 
 const ASSETS = [
   '/BAKER/',
   '/BAKER/hud.html',
+  '/BAKER/hud.css',
   '/BAKER/index.html',
   '/BAKER/manifest.json',
   '/BAKER/icon.svg',
