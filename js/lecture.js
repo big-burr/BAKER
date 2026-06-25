@@ -20,6 +20,9 @@ var LECTURE=(function(){
 
   function _startSR(){
     if(!_SR)return;
+    // Stop BAKER's wake word first — Chrome only allows one SR at a time
+    if(typeof stopWakeWord==='function')stopWakeWord();
+    if(typeof stopVoice==='function'&&typeof voiceActive!=='undefined'&&voiceActive)stopVoice();
     _srRec=new _SR();
     _srRec.continuous=true;
     _srRec.interimResults=true;
@@ -35,9 +38,17 @@ var LECTURE=(function(){
       _transcript=finalText;
       _updateLiveDisplay();
     };
-    _srRec.onerror=function(){};
-    _srRec.onend=function(){if(_recording)_srRec.start();};
-    _srRec.start();
+    _srRec.onerror=function(e){
+      var status=document.getElementById('lec-status');
+      if(e.error==='not-allowed'){if(status)status.textContent='Mic permission denied';}
+      else if(e.error==='no-speech'){/* silent — expected */}
+      else{if(status)status.textContent='Mic error: '+e.error;}
+    };
+    _srRec.onend=function(){if(_recording)try{_srRec.start();}catch(e){}};
+    try{_srRec.start();}catch(e){
+      var status=document.getElementById('lec-status');
+      if(status)status.textContent='Could not start mic: '+e.message;
+    }
   }
 
   function _stopSR(){
@@ -86,8 +97,17 @@ var LECTURE=(function(){
     if(btn){btn.textContent='⏺ Record';btn.style.borderColor='';btn.style.color='';}
     var status=document.getElementById('lec-status');
     if(status)status.textContent='Processing...';
+    // Restart BAKER wake word after releasing mic
+    setTimeout(function(){
+      if(typeof startWakeWord==='function'&&!_recording){
+        startWakeWord();
+      }
+    },800);
     if(_transcript.trim().length>20)_processTranscript();
-    else if(status)status.textContent='Too short to process';
+    else{
+      if(status)status.textContent=_transcript.trim().length>0?'Too short to process — try speaking louder':'Nothing recorded';
+      // Still restart BAKER even if nothing to process
+    }
   }
 
   async function _processTranscript(){
@@ -189,6 +209,10 @@ var LECTURE=(function(){
   function hidePanel(){
     if(_recording)stopRecording();
     var p=document.getElementById(PANEL_ID);if(p)p.classList.remove('lec-vis');
+    // Always ensure BAKER is listening when lecture panel closes
+    setTimeout(function(){
+      if(typeof startWakeWord==='function')startWakeWord();
+    },1000);
   }
   function togglePanel(){
     var p=document.getElementById(PANEL_ID);if(!p)return;
