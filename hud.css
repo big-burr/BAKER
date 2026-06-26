@@ -401,6 +401,7 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .mcal-detail-empty{padding:32px 16px;text-align:center;color:var(--muted);font-size:12px;line-height:1.6}
 #graphui-panel{position:fixed;top:128px;right:460px;width:300px;height:calc(100vh - 140px);max-height:680px;background:rgba(22,22,25,.97);border:1px solid var(--border);border-radius:14px;z-index:100;display:none;flex-direction:column;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);min-width:260px;min-height:400px}
 #graphui-panel.gui-vis{display:flex}
+#gui-body{overflow-y:auto;flex:1}
 #graphui-panel>div:not(.rh){overflow:hidden;border-radius:14px}
 .gui-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--border);cursor:move;user-select:none;border-radius:14px 14px 0 0;flex-shrink:0}
 .gui-left{display:flex;align-items:center;gap:7px}
