@@ -1,98 +1,213 @@
 // ═══════════════════════════════════════════════════════════
-// ══  STRENGTH MODULE  ══════════════════════════════════════
+// ══  STRENGTH MODULE v2 — Stronger-style  ══════════════════
 // ═══════════════════════════════════════════════════════════
-// Tabs: Split | Log | Map | Score
-// Storage: localStorage baker_strength_v1
-// Vault: weekly workout note to 07-System/Workouts/
-// Units: lbs | week starts Sunday
+// Tabs: Split | Workout | Map | Score
+// Fast set logging, auto-fill last weights, 120s rest timer,
+// exercise history, PR detection, muscle heat map,
+// faction characters, AI recs, vault sync
 // ═══════════════════════════════════════════════════════════
 var STRENGTH=(function(){
 
   var LS_KEY='baker_strength_v1';
   var DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var DAYS_FULL=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var REST_DEFAULT=120; // seconds
 
-  // ── Data schema ───────────────────────────────────────────
-  // data = {
-  //   bodyweight: number (lbs),
-  //   split: [ { day:0-6, name:'Push', exercises:[{name,sets,reps,weight}] } ],
-  //   logs: [ { date:'YYYY-MM-DD', day:0-6, entries:[{exercise,sets:[{reps,weight,done}]}], saved:bool } ],
-  //   prs: { 'Bench Press': { weight:225, reps:5, date:'2026-06-01' } }
-  // }
-  var data={bodyweight:185,split:[],logs:[],prs:{}};
-  var currentTab='split';
-  var currentLogIdx=null; // index into data.logs for today
+  var data={bodyweight:185,split:[],logs:[],prs:{},restTime:REST_DEFAULT};
+  var currentTab='workout';
+  var _restTimer=null;
+  var _restRemaining=0;
+  var _historyExercise=null; // exercise name for history popup
 
-  // ── Muscle groups and their exercises ────────────────────
-  var MUSCLES=[
-    'chest','front-delts','side-delts','rear-delts',
-    'biceps','triceps','forearms',
-    'traps','lats','mid-back','lower-back',
-    'abs','obliques',
-    'quads','hamstrings','glutes','calves'
-  ];
-
-  // Exercise → primary muscles hit
+  // ── Exercise database ─────────────────────────────────────
   var EXERCISE_MUSCLES={
     'Bench Press':['chest','front-delts','triceps'],
     'Incline Bench':['chest','front-delts','triceps'],
     'Decline Bench':['chest','triceps'],
-    'DB Fly':['chest'],
-    'Cable Fly':['chest'],
+    'DB Fly':['chest'],'Cable Fly':['chest'],
     'Overhead Press':['front-delts','side-delts','triceps','traps'],
-    'DB Lateral Raise':['side-delts'],
-    'Cable Lateral Raise':['side-delts'],
-    'Front Raise':['front-delts'],
-    'Face Pull':['rear-delts','traps'],
-    'Tricep Pushdown':['triceps'],
-    'Skull Crusher':['triceps'],
+    'DB Lateral Raise':['side-delts'],'Cable Lateral Raise':['side-delts'],
+    'Front Raise':['front-delts'],'Face Pull':['rear-delts','traps'],
+    'Tricep Pushdown':['triceps'],'Skull Crusher':['triceps'],
     'Close Grip Bench':['triceps','chest'],
     'Deadlift':['lats','traps','lower-back','glutes','hamstrings'],
     'Romanian Deadlift':['hamstrings','glutes','lower-back'],
     'Barbell Row':['lats','mid-back','rear-delts','biceps'],
     'Cable Row':['lats','mid-back','biceps'],
-    'Lat Pulldown':['lats','biceps'],
-    'Pull Up':['lats','biceps','mid-back'],
-    'Chin Up':['biceps','lats'],
-    'Shrug':['traps'],
-    'Barbell Curl':['biceps'],
-    'DB Curl':['biceps'],
+    'Lat Pulldown':['lats','biceps'],'Pull Up':['lats','biceps','mid-back'],
+    'Chin Up':['biceps','lats'],'Shrug':['traps'],
+    'Barbell Curl':['biceps'],'DB Curl':['biceps'],
     'Hammer Curl':['biceps','forearms'],
     'Squat':['quads','glutes','hamstrings'],
-    'Hack Squat':['quads','glutes'],
-    'Leg Press':['quads','glutes','hamstrings'],
-    'Leg Extension':['quads'],
-    'Leg Curl':['hamstrings'],
-    'Hip Thrust':['glutes'],
-    'Lunge':['quads','glutes'],
+    'Hack Squat':['quads','glutes'],'Leg Press':['quads','glutes','hamstrings'],
+    'Leg Extension':['quads'],'Leg Curl':['hamstrings'],
+    'Hip Thrust':['glutes'],'Lunge':['quads','glutes'],
     'Calf Raise':['calves'],
-    'Plank':['abs','obliques'],
-    'Ab Wheel':['abs'],
-    'Cable Crunch':['abs'],
-    'Russian Twist':['obliques'],
+    'Plank':['abs','obliques'],'Ab Wheel':['abs'],
+    'Cable Crunch':['abs'],'Russian Twist':['obliques'],
     'Farmer Carry':['forearms','traps','abs'],
+    'Dips':['chest','triceps'],'Push Up':['chest','triceps'],
+    'Incline DB Press':['chest','front-delts'],
+    'DB Row':['lats','mid-back','biceps'],
+    'Pendlay Row':['lats','mid-back'],
+    'Sumo Deadlift':['glutes','hamstrings','quads'],
+    'Front Squat':['quads','abs'],
+    'Bulgarian Split Squat':['quads','glutes'],
+    'Seated Calf Raise':['calves'],
+    'Preacher Curl':['biceps'],
+    'Concentration Curl':['biceps'],
+    'Overhead Tricep Extension':['triceps'],
+    'Cable Kickback':['triceps'],
+    'Lateral Raise Machine':['side-delts'],
+    'Chest Press Machine':['chest','triceps'],
+    'Leg Press (Single)':['quads','glutes'],
+    'Goblet Squat':['quads','glutes'],
   };
 
-  // ── Soreness model (no API — time-based decay) ─────────────────
-  // After working a muscle, it stays "hot" for 48h, then decays over 24h
-  // Returns 0-1 heat value for a muscle
+  // ── Storage ───────────────────────────────────────────────
+  function _load(){
+    try{var r=localStorage.getItem(LS_KEY);if(r){var d=JSON.parse(r);
+      data.bodyweight=d.bodyweight||185;data.split=d.split||[];
+      data.logs=d.logs||[];data.prs=d.prs||{};data.restTime=d.restTime||REST_DEFAULT;
+    }}catch(e){}
+  }
+  function _save(){
+    var cutoff=new Date();cutoff.setDate(cutoff.getDate()-90);
+    var cs=cutoff.toISOString().slice(0,10);
+    data.logs=data.logs.filter(function(l){return l.date>=cs;});
+    try{localStorage.setItem(LS_KEY,JSON.stringify(data));}catch(e){}
+    if(typeof VAULTSYNC!=='undefined'&&VAULTSYNC.syncStrength)VAULTSYNC.syncStrength(data);
+  }
+
+  function _today(){return new Date().toISOString().slice(0,10);}
+  function _weekStart(){var d=new Date();d.setDate(d.getDate()-d.getDay());return d.toISOString().slice(0,10);}
+  function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+  function _el(id){return document.getElementById(id);}
+
+  // ── Get/create today's workout ────────────────────────────
+  function _getTodayLog(){
+    var today=_today();
+    var log=data.logs.find(function(l){return l.date===today;});
+    if(!log){
+      var dayOfWeek=new Date().getDay();
+      var splitDay=data.split.find(function(s){return s.day===dayOfWeek;});
+      log={date:today,day:dayOfWeek,name:splitDay?splitDay.name:'Workout',entries:[]};
+      // Auto-populate from split with last session weights
+      if(splitDay){
+        log.entries=splitDay.exercises.map(function(ex){
+          var prev=_getLastPerformance(ex.name);
+          var sets=[];
+          for(var i=0;i<ex.sets;i++){
+            sets.push({
+              reps:prev&&prev.sets[i]?prev.sets[i].reps:ex.reps,
+              weight:prev&&prev.sets[i]?prev.sets[i].weight:ex.weight||0,
+              done:false
+            });
+          }
+          return{exercise:ex.name,sets:sets,note:''};
+        });
+      }
+      data.logs.push(log);_save();
+    }
+    return log;
+  }
+
+  // ── Last performance for auto-fill ────────────────────────
+  function _getLastPerformance(exerciseName){
+    var today=_today();
+    for(var i=data.logs.length-1;i>=0;i--){
+      var log=data.logs[i];
+      if(log.date===today)continue;
+      var entry=log.entries.find(function(e){return e.exercise===exerciseName;});
+      if(entry){
+        var doneSets=entry.sets.filter(function(s){return s.done;});
+        if(doneSets.length)return{sets:doneSets,date:log.date};
+      }
+    }
+    return null;
+  }
+
+  // ── Exercise history ──────────────────────────────────────
+  function _getExerciseHistory(name,limit){
+    limit=limit||10;
+    var history=[];
+    for(var i=data.logs.length-1;i>=0;i--){
+      var log=data.logs[i];
+      var entry=log.entries.find(function(e){return e.exercise===name;});
+      if(!entry)continue;
+      var doneSets=entry.sets.filter(function(s){return s.done;});
+      if(!doneSets.length)continue;
+      var bestSet=doneSets.reduce(function(best,s){
+        return(s.weight>best.weight||(s.weight===best.weight&&s.reps>best.reps))?s:best;
+      },doneSets[0]);
+      var totalVol=doneSets.reduce(function(v,s){return v+s.reps*s.weight;},0);
+      history.push({date:log.date,sets:doneSets.length,bestWeight:bestSet.weight,
+        bestReps:bestSet.reps,volume:totalVol});
+      if(history.length>=limit)break;
+    }
+    return history;
+  }
+
+  // ── PR check ──────────────────────────────────────────────
+  function _checkPR(exercise,reps,weight){
+    var existing=data.prs[exercise];
+    if(!existing||weight>existing.weight||(weight===existing.weight&&reps>existing.reps)){
+      data.prs[exercise]={weight:weight,reps:reps,date:_today()};
+      return true;
+    }
+    return false;
+  }
+
+  // ── Rest timer ────────────────────────────────────────────
+  function _startRest(){
+    _stopRest();
+    _restRemaining=data.restTime||REST_DEFAULT;
+    _updateRestDisplay();
+    _restTimer=setInterval(function(){
+      _restRemaining--;
+      if(_restRemaining<=0){_stopRest();_restRemaining=0;}
+      _updateRestDisplay();
+    },1000);
+  }
+  function _stopRest(){
+    if(_restTimer){clearInterval(_restTimer);_restTimer=null;}
+    var el=_el('str-rest-bar');if(el)el.style.display='none';
+  }
+  function _updateRestDisplay(){
+    var el=_el('str-rest-bar');
+    if(!el){
+      var panel=_el('strength-panel');if(!panel)return;
+      el=document.createElement('div');el.id='str-rest-bar';
+      el.style.cssText='position:absolute;bottom:0;left:0;right:0;background:rgba(15,15,16,.95);border-top:1px solid var(--accent);padding:10px 16px;display:flex;align-items:center;gap:12px;z-index:10';
+      panel.appendChild(el);
+    }
+    el.style.display='flex';
+    var pct=Math.max(0,(_restRemaining/(data.restTime||REST_DEFAULT))*100);
+    el.innerHTML=
+      '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.08em;flex-shrink:0">REST</div>'+
+      '<div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden">'+
+        '<div style="height:100%;width:'+pct+'%;background:var(--accent);border-radius:3px;transition:width 1s linear"></div>'+
+      '</div>'+
+      '<div style="font-family:var(--mono);font-size:16px;font-weight:700;color:'+(_restRemaining<=10?'var(--red)':'var(--accent)')+';min-width:38px;text-align:right">'+
+        Math.floor(_restRemaining/60)+':'+String(_restRemaining%60).padStart(2,'0')+'</div>'+
+      '<button onclick="STRENGTH._skipRest()" style="background:none;border:1px solid var(--border);border-radius:4px;padding:3px 10px;font-family:var(--mono);font-size:9px;color:var(--muted);cursor:pointer">Skip</button>';
+  }
+  function _skipRest(){_stopRest();}
+
+  // ── Soreness model (48h decay) ────────────────────────────
   function _muscleHeat(muscle){
-    var now=Date.now();
-    var heat=0;
+    var now=Date.now(),heat=0;
     data.logs.forEach(function(log){
       var logTime=new Date(log.date+'T12:00:00').getTime();
-      var age=(now-logTime)/(1000*3600); // hours ago
-      if(age>96)return; // fully recovered after 4 days
+      var age=(now-logTime)/(1000*3600);
+      if(age>96)return;
       log.entries.forEach(function(entry){
         var muscles=EXERCISE_MUSCLES[entry.exercise]||[];
         if(!muscles.includes(muscle))return;
         var setsCompleted=entry.sets.filter(function(s){return s.done;}).length;
         if(!setsCompleted)return;
-        // Peak at 0h, hold until 48h, decay 48-96h
         var intensity=Math.min(setsCompleted/4,1);
-        var heatVal;
-        if(age<48)heatVal=intensity;
-        else heatVal=intensity*(1-(age-48)/48);
+        var heatVal=age<48?intensity:intensity*(1-(age-48)/48);
         heat=Math.max(heat,Math.max(0,heatVal));
       });
     });
@@ -100,89 +215,23 @@ var STRENGTH=(function(){
   }
 
   // ── Strength Score ────────────────────────────────────────
-  // Based on Wilks-lite: sum of (PR weight / bodyweight ratio) for key lifts
-  // Normalized to 0-1000 scale
   var KEY_LIFTS=['Bench Press','Squat','Deadlift','Overhead Press','Barbell Row'];
-  var STRENGTH_NORMS={
-    'Bench Press':1.5,'Squat':2.0,'Deadlift':2.5,'Overhead Press':0.9,'Barbell Row':1.25
-  };
-  function _calcStrengthScore(){
-    var bw=data.bodyweight||185;
-    var total=0,count=0;
+  var STRENGTH_NORMS={'Bench Press':1.5,'Squat':2.0,'Deadlift':2.5,'Overhead Press':0.9,'Barbell Row':1.25};
+  function _calcScore(){
+    var bw=data.bodyweight||185,total=0,count=0;
     KEY_LIFTS.forEach(function(lift){
-      var pr=data.prs[lift];
-      if(!pr)return;
-      var ratio=pr.weight/bw;
-      var norm=STRENGTH_NORMS[lift]||1.5;
-      total+=(ratio/norm)*200;
-      count++;
+      var pr=data.prs[lift];if(!pr)return;
+      total+=(pr.weight/bw/(STRENGTH_NORMS[lift]||1.5))*200;count++;
     });
     return count?Math.round(total/count):0;
   }
   function _calcWeeklyVolume(){
-    var weekStart=_weekStart();
-    var vol=0;
+    var ws=_weekStart(),vol=0;
     data.logs.forEach(function(log){
-      if(log.date<weekStart)return;
-      log.entries.forEach(function(entry){
-        entry.sets.forEach(function(s){
-          if(s.done)vol+=s.reps*s.weight;
-        });
-      });
+      if(log.date<ws)return;
+      log.entries.forEach(function(e){e.sets.forEach(function(s){if(s.done)vol+=s.reps*s.weight;});});
     });
     return vol;
-  }
-  function _weekStart(){
-    var d=new Date();
-    var day=d.getDay(); // 0=Sun
-    d.setDate(d.getDate()-day);
-    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  }
-
-  // ── Storage ───────────────────────────────────────────────
-  function _load(){
-    try{var r=localStorage.getItem(LS_KEY);if(r)data=JSON.parse(r);}
-    catch(e){data={bodyweight:185,split:[],logs:[],prs:{}};}
-    if(!data.prs)data.prs={};
-    if(!data.split)data.split=[];
-    if(!data.logs)data.logs=[];
-    if(!data.bodyweight)data.bodyweight=185;
-  }
-  function _save(){
-    // Prune logs older than 90 days to prevent localStorage bloat
-    var cutoff=new Date();cutoff.setDate(cutoff.getDate()-90);
-    var cs=cutoff.getFullYear()+'-'+String(cutoff.getMonth()+1).padStart(2,'0')+'-'+String(cutoff.getDate()).padStart(2,'0');
-    data.logs=data.logs.filter(function(l){return l.date>=cs;});
-    try{localStorage.setItem(LS_KEY,JSON.stringify(data));}catch(e){}
-    if(typeof VAULTSYNC!=='undefined'&&VAULTSYNC.syncStrength)VAULTSYNC.syncStrength(data);
-  }
-
-  // ── Today's log entry ─────────────────────────────────────
-  function _todayStr(){
-    var d=new Date();
-    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  }
-  function _getTodayLog(){
-    var today=_todayStr();
-    var log=data.logs.find(function(l){return l.date===today;});
-    if(!log){
-      var dayOfWeek=new Date().getDay();
-      var splitDay=data.split.find(function(s){return s.day===dayOfWeek;});
-      log={
-        date:today,
-        day:dayOfWeek,
-        name:splitDay?splitDay.name:'Workout',
-        entries:splitDay?splitDay.exercises.map(function(ex){
-          return{exercise:ex.name,
-                 targetSets:ex.sets,targetReps:ex.reps,targetWeight:ex.weight||0,
-                 sets:[],note:''};
-        }):[],
-        saved:false
-      };
-      data.logs.push(log);
-      _save();
-    }
-    return log;
   }
 
   // ── Vault save ────────────────────────────────────────────
@@ -190,446 +239,114 @@ var STRENGTH=(function(){
     if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected)return false;
     try{
       var ws=_weekStart();
-      var weekEnd=new Date(ws);weekEnd.setDate(weekEnd.getDate()+6);
-      var we=weekEnd.getFullYear()+'-'+String(weekEnd.getMonth()+1).padStart(2,'0')+'-'+String(weekEnd.getDate()).padStart(2,'0');
-      // Get this week's logs
-      var weekLogs=data.logs.filter(function(l){return l.date>=ws&&l.date<=we;});
+      var we=new Date(ws);we.setDate(we.getDate()+6);
+      var weStr=we.toISOString().slice(0,10);
+      var weekLogs=data.logs.filter(function(l){return l.date>=ws&&l.date<=weStr;});
       if(!weekLogs.length)return false;
-
-      var md='---\ntype: workout-week\ndate: '+ws+'\n---\n\n';
-      md+='# Workout Week — '+ws+' to '+we+'\n\n';
-      md+='**Strength Score:** '+_calcStrengthScore()+' | **Weekly Volume:** '+_calcWeeklyVolume().toLocaleString()+' lbs\n\n';
-
+      var md='---\ntype: workout-week\ndate: '+ws+'\n---\n\n# Workout Week '+ws+' to '+weStr+'\n\n';
+      md+='**Score:** '+_calcScore()+' | **Volume:** '+_calcWeeklyVolume().toLocaleString()+' lbs\n\n';
       weekLogs.forEach(function(log){
-        md+='## '+DAYS_FULL[log.day]+' — '+log.name+' ('+log.date+')\n\n';
-        if(!log.entries.length){md+='_Rest day_\n\n';return;}
+        md+='## '+DAYS_FULL[log.day]+' — '+(log.name||'Rest')+' ('+log.date+')\n\n';
+        if(!log.entries.length){md+='_Rest_\n\n';return;}
         log.entries.forEach(function(entry){
-          var doneSets=entry.sets.filter(function(s){return s.done;});
-          if(!doneSets.length)return;
+          var done=entry.sets.filter(function(s){return s.done;});
+          if(!done.length)return;
           md+='**'+entry.exercise+'**\n';
-          doneSets.forEach(function(s,i){
-            md+='- Set '+(i+1)+': '+s.reps+' reps × '+s.weight+'lbs\n';
-          });
-          if(entry.note)md+='  _'+entry.note+'_\n';
+          done.forEach(function(s,i){md+='- Set '+(i+1)+': '+s.reps+' x '+s.weight+'lbs\n';});
           md+='\n';
         });
       });
-
-      // PRs this week
-      var weekPRs=[];
-      weekLogs.forEach(function(log){
-        log.entries.forEach(function(entry){
-          var pr=data.prs[entry.exercise];
-          if(pr&&pr.date>=ws)weekPRs.push(entry.exercise+': '+pr.weight+'lbs × '+pr.reps);
-        });
-      });
-      if(weekPRs.length){md+='## PRs This Week\n\n';weekPRs.forEach(function(p){md+='- '+p+'\n';});md+='\n';}
-
       var dir=vaultHandle;
       dir=await dir.getDirectoryHandle('07-System',{create:true});
       dir=await dir.getDirectoryHandle('Workouts',{create:true});
-      var fname='workout-week-'+ws+'.md';
-      var fh=await dir.getFileHandle(fname,{create:true});
-      var w=await fh.createWritable();
-      await w.write(md);await w.close();
+      var fh=await dir.getFileHandle('workout-week-'+ws+'.md',{create:true});
+      var w=await fh.createWritable();await w.write(md);await w.close();
+      if(typeof spawnBirthParticle==='function')spawnBirthParticle('workout','07-System/Workouts/workout-week-'+ws+'.md');
       return true;
-    }catch(e){console.error('[STRENGTH] vault save:',e);return false;}
-  }
-
-  // ── PR tracking ───────────────────────────────────────────
-  function _checkPR(exercise,reps,weight){
-    var existing=data.prs[exercise];
-    // PR if heavier, or same weight for more reps
-    if(!existing||weight>existing.weight||(weight===existing.weight&&reps>existing.reps)){
-      data.prs[exercise]={weight:weight,reps:reps,date:_todayStr()};
-      return true;
-    }
-    return false;
+    }catch(e){return false;}
   }
 
   // ── Faction character SVG ─────────────────────────────────
-  function _getFactionChar(theme,recoveryScore){
-    // recoveryScore: 0=destroyed, 1=fresh
-    var col='var(--accent)';
-    var dark='var(--bg)';
-    var fresh=recoveryScore>0.6;
-    var mid=recoveryScore>0.3;
-
-    // Pose offsets based on recovery
-    var bodyY=fresh?0:mid?4:10;      // slumping
-    var headTilt=fresh?0:mid?5:12;   // head drooping
-    var armAngle=fresh?-15:mid?5:25; // arms hanging
-
-    if(theme==='pipboy'||theme==='vaulttec'){
-      // Vault Boy - thumbs up if fresh, arms down if tired
-      return _vaultBoySVG(col,dark,fresh,mid,bodyY,headTilt);
-    }else if(theme==='enclave'){
-      return _hellFireSVG(col,dark,fresh,mid,bodyY);
-    }else if(theme==='bos'){
-      return _t60SVG(col,dark,fresh,mid,bodyY);
-    }else if(theme==='ncr'){
-      return _ncrRangerSVG(col,dark,fresh,mid,bodyY);
-    }else{
-      // Default: human silhouette
-      return _humanSVG(col,dark,fresh,mid,bodyY,headTilt);
-    }
+  function _getFactionChar(theme,recovery){
+    var col='var(--accent)',dark='var(--bg)';
+    var fresh=recovery>0.6,mid=recovery>0.3;
+    if(theme==='pipboy'||theme==='vaulttec')return _vaultBoySVG(col,dark,fresh,mid);
+    if(theme==='enclave')return _armorSVG(col,dark,fresh,'enclave');
+    if(theme==='bos')return _armorSVG(col,dark,fresh,'bos');
+    if(theme==='ncr')return _rangerSVG(col,dark,fresh);
+    return _humanSVG(col,dark,fresh,mid);
   }
-
-  function _humanSVG(col,dark,fresh,mid,bodyY,headTilt){
-    return '<svg viewBox="0 0 80 160" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">'+
-      '<g transform="translate(40,'+(bodyY)+')" fill="'+col+'" opacity="0.9">'+
-      // Head
-      '<circle cx="0" cy="'+(8+headTilt*0.3)+'" r="10" opacity="0.95"/>'+
-      // Neck
-      '<rect x="-3" y="17" width="6" height="7"/>'+
-      // Torso
-      '<rect x="-12" y="24" width="24" height="32" rx="3"/>'+
-      // Arms
-      (fresh?
-        // Arms slightly raised
-        '<rect x="-22" y="24" width="8" height="28" rx="3" transform="rotate(-8,-18,24)"/>'+
-        '<rect x="14" y="24" width="8" height="28" rx="3" transform="rotate(8,18,24)"/>'
-        :mid?
-        // Arms hanging
-        '<rect x="-22" y="28" width="8" height="26" rx="3"/>'+
-        '<rect x="14" y="28" width="8" height="26" rx="3"/>'
-        :
-        // Arms slumped forward
-        '<rect x="-22" y="30" width="8" height="26" rx="3" transform="rotate(10,-18,30)"/>'+
-        '<rect x="14" y="30" width="8" height="26" rx="3" transform="rotate(-10,18,30)"/>'
-      )+
-      // Legs
-      '<rect x="-12" y="58" width="10" height="36" rx="3" transform="rotate('+(fresh?0:mid?3:6)+',-7,58)"/>'+
-      '<rect x="2" y="58" width="10" height="36" rx="3" transform="rotate('+(fresh?0:mid?-3:-6)+',7,58)"/>'+
-      // Feet
-      '<rect x="-14" y="91" width="12" height="6" rx="2"/>'+
-      '<rect x="2" y="91" width="12" height="6" rx="2"/>'+
+  function _humanSVG(c,d,f,m){
+    return '<svg viewBox="0 0 80 140" xmlns="http://www.w3.org/2000/svg"><g transform="translate(40,0)" fill="'+c+'" opacity="0.9">'+
+      '<circle cx="0" cy="12" r="10"/>'+
+      '<rect x="-3" y="21" width="6" height="7"/>'+
+      '<rect x="-12" y="28" width="24" height="30" rx="3"/>'+
+      '<rect x="-20" y="28" width="8" height="26" rx="3" transform="rotate('+(f?-8:m?2:10)+' -16 28)"/>'+
+      '<rect x="12" y="28" width="8" height="26" rx="3" transform="rotate('+(f?8:m?-2:-10)+' 16 28)"/>'+
+      '<rect x="-10" y="60" width="9" height="34" rx="3"/>'+
+      '<rect x="1" y="60" width="9" height="34" rx="3"/>'+
+      '</g></svg>';
+  }
+  function _vaultBoySVG(c,d,f,m){
+    return '<svg viewBox="0 0 80 140" xmlns="http://www.w3.org/2000/svg"><g transform="translate(40,0)">'+
+      '<circle cx="0" cy="10" r="12" fill="'+c+'"/>'+
+      '<circle cx="-4" cy="8" r="3" fill="'+d+'"/><circle cx="4" cy="8" r="3" fill="'+d+'"/>'+
+      (f?'<path d="M-4 15 Q0 19 4 15" stroke="'+d+'" stroke-width="1.5" fill="none"/>':'<path d="M-3 16 Q0 13 3 16" stroke="'+d+'" stroke-width="1.5" fill="none"/>')+
+      '<rect x="-13" y="23" width="26" height="28" rx="4" fill="'+c+'"/>'+
+      (f?'<g transform="rotate(-45 -20 24)"><rect x="-20" y="23" width="8" height="20" rx="3" fill="'+c+'"/></g><circle cx="-26" cy="14" r="5" fill="'+c+'"/><rect x="-28" y="10" width="4" height="8" rx="2" fill="'+c+'"/>':
+      '<rect x="-22" y="26" width="8" height="22" rx="3" fill="'+c+'"/>')+
+      '<rect x="14" y="26" width="8" height="22" rx="3" fill="'+c+'"/>'+
+      '<rect x="-12" y="51" width="11" height="28" rx="3" fill="'+c+'"/>'+
+      '<rect x="1" y="51" width="11" height="28" rx="3" fill="'+c+'"/>'+
+      '<rect x="-14" y="76" width="13" height="7" rx="2" fill="'+c+'"/>'+
+      '<rect x="1" y="76" width="13" height="7" rx="2" fill="'+c+'"/>'+
+      '</g></svg>';
+  }
+  function _armorSVG(c,d,f,type){
+    var helmet=type==='enclave'?
+      '<rect x="-13" y="0" width="26" height="22" rx="8" fill="'+c+'"/><rect x="-10" y="5" width="20" height="8" rx="3" fill="'+d+'" opacity="0.8"/><rect x="-2" y="-6" width="4" height="7" rx="1" fill="'+c+'"/>':
+      '<rect x="-12" y="0" width="24" height="22" rx="6" fill="'+c+'"/><rect x="-10" y="5" width="20" height="4" rx="2" fill="'+d+'"/><rect x="-5" y="5" width="10" height="12" rx="2" fill="'+d+'"/>';
+    return '<svg viewBox="0 0 80 140" xmlns="http://www.w3.org/2000/svg"><g transform="translate(40,2)">'+helmet+
+      '<rect x="-17" y="27" width="34" height="34" rx="5" fill="'+c+'"/>'+
+      '<ellipse cx="-20" cy="29" rx="8" ry="6" fill="'+c+'"/>'+
+      '<ellipse cx="20" cy="29" rx="8" ry="6" fill="'+c+'"/>'+
+      '<rect x="-25" y="30" width="10" height="26" rx="4" fill="'+c+'" transform="rotate('+(f?-3:8)+' -20 30)"/>'+
+      '<rect x="15" y="30" width="10" height="26" rx="4" fill="'+c+'" transform="rotate('+(f?3:-8)+' 20 30)"/>'+
+      '<rect x="-14" y="62" width="12" height="30" rx="4" fill="'+c+'"/>'+
+      '<rect x="2" y="62" width="12" height="30" rx="4" fill="'+c+'"/>'+
+      '<rect x="-16" y="89" width="14" height="8" rx="3" fill="'+c+'"/>'+
+      '<rect x="2" y="89" width="14" height="8" rx="3" fill="'+c+'"/>'+
+      '</g></svg>';
+  }
+  function _rangerSVG(c,d,f){
+    return '<svg viewBox="0 0 80 140" xmlns="http://www.w3.org/2000/svg"><g transform="translate(40,2)">'+
+      '<circle cx="0" cy="10" r="13" fill="'+c+'"/>'+
+      '<circle cx="-5" cy="8" r="5" fill="'+d+'"/><circle cx="5" cy="8" r="5" fill="'+d+'"/>'+
+      '<rect x="-14" y="2" width="28" height="3" rx="1" fill="'+c+'" opacity="0.6"/>'+
+      '<rect x="-5" y="16" width="10" height="5" rx="2" fill="'+c+'"/>'+
+      '<rect x="-13" y="27" width="26" height="36" rx="4" fill="'+c+'"/>'+
+      '<rect x="-20" y="27" width="8" height="28" rx="3" fill="'+c+'" transform="rotate('+(f?-8:6)+' -16 27)"/>'+
+      '<rect x="12" y="27" width="8" height="28" rx="3" fill="'+c+'" transform="rotate('+(f?8:-6)+' 16 27)"/>'+
+      '<path d="M-13 63 L-16 85 L-6 85 L0 73 L6 85 L16 85 L13 63 Z" fill="'+c+'"/>'+
+      '<rect x="-12" y="85" width="11" height="7" rx="2" fill="'+c+'"/>'+
+      '<rect x="1" y="85" width="11" height="7" rx="2" fill="'+c+'"/>'+
       '</g></svg>';
   }
 
-  function _vaultBoySVG(col,dark,fresh,mid,bodyY,headTilt){
-    return '<svg viewBox="0 0 80 160" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">'+
-      '<g transform="translate(40,'+(bodyY)+')">'+
-      // Head with big eyes
-      '<circle cx="'+(headTilt*0.3)+'" cy="8" r="12" fill="'+col+'" opacity="0.95"/>'+
-      // Eyes
-      '<circle cx="'+(headTilt*0.3-4)+'" cy="6" r="3" fill="'+dark+'"/>'+
-      '<circle cx="'+(headTilt*0.3+4)+'" cy="6" r="3" fill="'+dark+'"/>'+
-      '<circle cx="'+(headTilt*0.3-3)+'" cy="5" r="1.2" fill="'+col+'"/>'+
-      '<circle cx="'+(headTilt*0.3+5)+'" cy="5" r="1.2" fill="'+col+'"/>'+
-      // Smile or frown
-      (fresh?
-        '<path d="M'+(headTilt*0.3-4)+' 13 Q'+(headTilt*0.3)+' 17 '+(headTilt*0.3+4)+' 13" stroke="'+dark+'" stroke-width="1.5" fill="none" stroke-linecap="round"/>'
-        :
-        '<path d="M'+(headTilt*0.3-3)+' 15 Q'+(headTilt*0.3)+' 12 '+(headTilt*0.3+3)+' 15" stroke="'+dark+'" stroke-width="1.5" fill="none" stroke-linecap="round"/>'
-      )+
-      // Pip-Boy suit body
-      '<rect x="-13" y="21" width="26" height="30" rx="4" fill="'+col+'"/>'+
-      // Pip-Boy wrist device on left arm
-      (fresh?
-        // Thumbs up arm
-        '<g transform="rotate(-45,-20,22)"><rect x="-20" y="21" width="8" height="22" rx="3" fill="'+col+'"/></g>'+
-        '<circle cx="-26" cy="12" r="5" fill="'+col+'"/>'+  // thumb up fist
-        '<rect x="-28" y="8" width="4" height="8" rx="2" fill="'+col+'"/>'  // thumb
-        :
-        // Arm down
-        '<rect x="-22" y="24" width="8" height="24" rx="3" fill="'+col+'"/>'+
-        '<rect x="-24" y="46" width="10" height="6" rx="2" fill="'+col+'"/>'
-      )+
-      // Right arm
-      '<rect x="14" y="24" width="8" height="24" rx="3" fill="'+col+'"/>'+
-      // Legs
-      '<rect x="-12" y="51" width="11" height="30" rx="3" fill="'+col+'"/>'+
-      '<rect x="1" y="51" width="11" height="30" rx="3" fill="'+col+'"/>'+
-      // Boots
-      '<rect x="-14" y="78" width="13" height="8" rx="2" fill="'+col+'"/>'+
-      '<rect x="1" y="78" width="13" height="8" rx="2" fill="'+col+'"/>'+
-      // Pip-Boy on wrist detail
-      '<rect x="-24" y="32" width="10" height="8" rx="2" fill="'+dark+'" opacity="0.6"/>'+
-      '<circle cx="-19" cy="36" r="2.5" fill="'+col+'" opacity="0.8"/>'+
-      '</g></svg>';
-  }
-
-  function _hellFireSVG(col,dark,fresh,mid,bodyY){
-    // Enclave Hellfire armor - bulky, intimidating
-    return '<svg viewBox="0 0 80 160" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">'+
-      '<g transform="translate(40,'+(bodyY)+')">'+
-      // Helmet - rounded top, visor
-      '<rect x="-13" y="-2" width="26" height="22" rx="8" fill="'+col+'"/>'+
-      '<rect x="-10" y="4" width="20" height="10" rx="3" fill="'+dark+'" opacity="0.8"/>'+
-      // Helmet antenna/crest
-      '<rect x="-2" y="-8" width="4" height="8" rx="1" fill="'+col+'"/>'+
-      // Visor glow
-      '<rect x="-9" y="5" width="18" height="8" rx="2" fill="'+col+'" opacity="'+(fresh?'0.6':'0.2')+'"/>'+
-      // Neck/collar
-      '<rect x="-8" y="19" width="16" height="6" rx="2" fill="'+col+'"/>'+
-      // Massive torso armor
-      '<rect x="-17" y="25" width="34" height="36" rx="5" fill="'+col+'"/>'+
-      // Chest detail lines
-      '<rect x="-14" y="29" width="28" height="2" rx="1" fill="'+dark+'" opacity="0.4"/>'+
-      '<rect x="-14" y="35" width="28" height="2" rx="1" fill="'+dark+'" opacity="0.4"/>'+
-      // Shoulder pauldrons
-      '<ellipse cx="-20" cy="27" rx="8" ry="6" fill="'+col+'"/>'+
-      '<ellipse cx="20" cy="27" rx="8" ry="6" fill="'+col+'"/>'+
-      // Arms - bulky
-      '<rect x="-26" y="26" width="10" height="26" rx="4" fill="'+col+'" transform="rotate('+(fresh?-5:mid?3:10)+','+-21+',26)"/>'+
-      '<rect x="16" y="26" width="10" height="26" rx="4" fill="'+col+'" transform="rotate('+(fresh?5:mid?-3:-10)+',21,26)"/>'+
-      // Gauntlets
-      '<rect x="-27" y="50" width="12" height="8" rx="3" fill="'+col+'" opacity="0.85"/>'+
-      '<rect x="15" y="50" width="12" height="8" rx="3" fill="'+col+'" opacity="0.85"/>'+
-      // Legs - bulky
-      '<rect x="-15" y="61" width="13" height="32" rx="4" fill="'+col+'"/>'+
-      '<rect x="2" y="61" width="13" height="32" rx="4" fill="'+col+'"/>'+
-      // Boots
-      '<rect x="-17" y="90" width="15" height="8" rx="3" fill="'+col+'"/>'+
-      '<rect x="2" y="90" width="15" height="8" rx="3" fill="'+col+'"/>'+
-      // Incinerator on back/hip (signature weapon hint)
-      '<rect x="17" y="45" width="6" height="18" rx="2" fill="'+col+'" opacity="0.5"/>'+
-      '</g></svg>';
-  }
-
-  function _t60SVG(col,dark,fresh,mid,bodyY){
-    // Brotherhood T-60 power armor
-    return '<svg viewBox="0 0 80 160" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">'+
-      '<g transform="translate(40,'+(bodyY)+')">'+
-      // T-60 helmet - distinctive T-shape visor
-      '<rect x="-12" y="-2" width="24" height="24" rx="6" fill="'+col+'"/>'+
-      // T-shaped visor
-      '<rect x="-10" y="3" width="20" height="5" rx="2" fill="'+dark+'" opacity="0.9"/>'+
-      '<rect x="-5" y="3" width="10" height="14" rx="2" fill="'+dark+'" opacity="0.9"/>'+
-      // Visor light
-      '<rect x="-9" y="4" width="18" height="3" rx="1" fill="'+col+'" opacity="'+(fresh?'0.7':'0.15')+'"/>'+
-      // Neck
-      '<rect x="-7" y="21" width="14" height="5" rx="2" fill="'+col+'"/>'+
-      // Chest - BoS emblem shape
-      '<rect x="-16" y="26" width="32" height="34" rx="5" fill="'+col+'"/>'+
-      // Chest cross detail
-      '<rect x="-14" y="31" width="28" height="3" rx="1" fill="'+dark+'" opacity="0.35"/>'+
-      '<rect x="-3" y="28" width="6" height="28" rx="1" fill="'+dark+'" opacity="0.25"/>'+
-      // Shoulder pauldrons - larger than Hellfire, more angular
-      '<rect x="-26" y="23" width="12" height="8" rx="3" fill="'+col+'"/>'+
-      '<rect x="14" y="23" width="12" height="8" rx="3" fill="'+col+'"/>'+
-      // Arms
-      '<rect x="-25" y="30" width="10" height="28" rx="4" fill="'+col+'" transform="rotate('+(fresh?-3:mid?4:10)+','+-20+',30)"/>'+
-      '<rect x="15" y="30" width="10" height="28" rx="4" fill="'+col+'" transform="rotate('+(fresh?3:mid?-4:-10)+',20,30)"/>'+
-      // Forearm detail / vents
-      '<rect x="-24" y="44" width="9" height="3" rx="1" fill="'+dark+'" opacity="0.4"/>'+
-      '<rect x="15" y="44" width="9" height="3" rx="1" fill="'+dark+'" opacity="0.4"/>'+
-      // Gauntlets
-      '<rect x="-26" y="56" width="12" height="7" rx="3" fill="'+col+'"/>'+
-      '<rect x="14" y="56" width="12" height="7" rx="3" fill="'+col+'"/>'+
-      // Legs
-      '<rect x="-14" y="60" width="12" height="32" rx="4" fill="'+col+'"/>'+
-      '<rect x="2" y="60" width="12" height="32" rx="4" fill="'+col+'"/>'+
-      // Knee pads
-      '<rect x="-14" y="73" width="12" height="6" rx="2" fill="'+col+'" opacity="0.7"/>'+
-      '<rect x="2" y="73" width="12" height="6" rx="2" fill="'+col+'" opacity="0.7"/>'+
-      // Boots
-      '<rect x="-16" y="89" width="14" height="8" rx="3" fill="'+col+'"/>'+
-      '<rect x="2" y="89" width="14" height="8" rx="3" fill="'+col+'"/>'+
-      '</g></svg>';
-  }
-
-  function _ncrRangerSVG(col,dark,fresh,mid,bodyY){
-    // NCR Veteran Ranger - iconic helmet + duster
-    return '<svg viewBox="0 0 80 160" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">'+
-      '<g transform="translate(40,'+(bodyY)+')">'+
-      // Gas mask helmet - round with goggle eyes
-      '<circle cx="0" cy="8" r="13" fill="'+col+'"/>'+
-      // Goggle eyes
-      '<circle cx="-5" cy="6" r="5" fill="'+dark+'" opacity="0.9"/>'+
-      '<circle cx="5" cy="6" r="5" fill="'+dark+'" opacity="0.9"/>'+
-      '<circle cx="-5" cy="6" r="3.5" fill="'+col+'" opacity="'+(fresh?'0.5':'0.15')+'"/>'+
-      '<circle cx="5" cy="6" r="3.5" fill="'+col+'" opacity="'+(fresh?'0.5':'0.15')+'"/>'+
-      // Goggle bridge
-      '<rect x="-1" y="4" width="2" height="4" fill="'+col+'"/>'+
-      // Gas mask filter/mouth piece
-      '<rect x="-5" y="14" width="10" height="6" rx="2" fill="'+col+'" opacity="0.85"/>'+
-      '<circle cx="-3" cy="17" r="1.5" fill="'+dark+'" opacity="0.6"/>'+
-      '<circle cx="3" cy="17" r="1.5" fill="'+dark+'" opacity="0.6"/>'+
-      // Ranger hat brim hint
-      '<rect x="-14" y="0" width="28" height="3" rx="1" fill="'+col+'" opacity="0.6"/>'+
-      // Neck/collar
-      '<rect x="-5" y="20" width="10" height="5" rx="2" fill="'+col+'"/>'+
-      // Duster coat body - long and flowing
-      '<rect x="-13" y="25" width="26" height="38" rx="4" fill="'+col+'"/>'+
-      // Coat lapels
-      '<path d="M-13 25 L-5 32 L0 27 L5 32 L13 25" stroke="'+dark+'" stroke-width="1" fill="none" opacity="0.5"/>'+
-      // Badge/star on chest
-      '<polygon points="0,28 1.5,32 5,32 2.5,34.5 3.5,38 0,36 -3.5,38 -2.5,34.5 -5,32 -1.5,32" fill="'+dark+'" opacity="0.7"/>'+
-      // Arms in duster sleeves
-      '<rect x="-20" y="25" width="8" height="30" rx="3" fill="'+col+'" transform="rotate('+(fresh?-8:mid?2:10)+','+-16+',25)"/>'+
-      '<rect x="12" y="25" width="8" height="30" rx="3" fill="'+col+'" transform="rotate('+(fresh?8:mid?-2:-10)+',16,25)"/>'+
-      // Gloves
-      '<rect x="-21" y="52" width="9" height="6" rx="2" fill="'+col+'" opacity="0.75"/>'+
-      '<rect x="12" y="52" width="9" height="6" rx="2" fill="'+col+'" opacity="0.75"/>'+
-      // Duster bottom flare
-      '<path d="M-13 63 L-16 85 L-8 85 L0 75 L8 85 L16 85 L13 63 Z" fill="'+col+'"/>'+
-      // Legs under duster
-      '<rect x="-10" y="63" width="9" height="25" rx="3" fill="'+col+'" opacity="0.7"/>'+
-      '<rect x="1" y="63" width="9" height="25" rx="3" fill="'+col+'" opacity="0.7"/>'+
-      // Boots
-      '<rect x="-12" y="85" width="11" height="7" rx="2" fill="'+col+'"/>'+
-      '<rect x="1" y="85" width="11" height="7" rx="2" fill="'+col+'"/>'+
-      // Holster hint
-      '<rect x="13" y="50" width="4" height="14" rx="1" fill="'+col+'" opacity="0.5"/>'+
-      '</g></svg>';
-  }
-
-  // ── Heat map SVG body ─────────────────────────────────────
-  function _heatColor(heat,theme){
-    // Map heat (0-1) to a color
-    if(heat<0.01)return'rgba(255,255,255,0.04)';
-    // Use accent color at varying opacity
-    var alpha=0.15+heat*0.75;
-    if(theme==='pipboy'||theme==='pipboy')return'rgba(57,255,20,'+alpha.toFixed(2)+')';
-    if(theme==='enclave')return'rgba(200,30,0,'+alpha.toFixed(2)+')';
-    if(theme==='bos')return'rgba(200,160,60,'+alpha.toFixed(2)+')';
-    if(theme==='ncr')return'rgba(200,160,90,'+alpha.toFixed(2)+')';
-    if(theme==='vaulttec')return'rgba(245,196,0,'+alpha.toFixed(2)+')';
-    return'rgba(124,106,247,'+alpha.toFixed(2)+')';
-  }
-
-  // Simplified front body map with clickable muscle regions
-  function _buildHeatMap(){
-    var theme=typeof FALLOUT!=='undefined'?FALLOUT.getTheme():'none';
-    var muscles={
-      chest:_muscleHeat('chest'),
-      'front-delts':_muscleHeat('front-delts'),
-      'side-delts':_muscleHeat('side-delts'),
-      biceps:_muscleHeat('biceps'),
-      triceps:_muscleHeat('triceps'),
-      forearms:_muscleHeat('forearms'),
-      abs:_muscleHeat('abs'),
-      quads:_muscleHeat('quads'),
-      calves:_muscleHeat('calves'),
-      lats:_muscleHeat('lats'),
-      traps:_muscleHeat('traps'),
-      hamstrings:_muscleHeat('hamstrings'),
-      glutes:_muscleHeat('glutes'),
-    };
-    var c=function(m){return _heatColor(muscles[m]||0,theme);};
-    var acc='var(--accent)';
-
-    // Overall recovery 0-1
-    var totalHeat=Object.values(muscles).reduce(function(s,v){return s+v;},0)/Object.keys(muscles).length;
-    var recovery=1-totalHeat;
-
-    return {svg:
-      '<svg viewBox="0 0 200 340" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-height:300px">'+
-      '<defs>'+
-      '<radialGradient id="bg-grad" cx="50%" cy="50%" r="50%">'+
-      '<stop offset="0%" stop-color="var(--surface2)"/>'+
-      '<stop offset="100%" stop-color="var(--bg)"/>'+
-      '</radialGradient></defs>'+
-      '<rect width="200" height="340" fill="url(#bg-grad)" rx="8"/>'+
-
-      // ── FRONT VIEW ──
-      '<text x="52" y="15" font-size="8" fill="var(--muted)" font-family="var(--mono)" text-anchor="middle">FRONT</text>'+
-      '<text x="152" y="15" font-size="8" fill="var(--muted)" font-family="var(--mono)" text-anchor="middle">BACK</text>'+
-      '<line x1="100" y1="10" x2="100" y2="330" stroke="var(--border)" stroke-width="1" opacity="0.4"/>'+
-
-      // HEAD FRONT
-      '<ellipse cx="52" cy="32" rx="14" ry="16" fill="var(--surface2)" stroke="'+acc+'" stroke-width="0.8" opacity="0.6"/>'+
-      // NECK
-      '<rect x="47" y="47" width="10" height="8" rx="2" fill="var(--surface2)" stroke="'+acc+'" stroke-width="0.6" opacity="0.5"/>'+
-      // TRAPS (front)
-      '<ellipse cx="35" cy="56" rx="10" ry="6" fill="'+c('traps')+'" stroke="'+acc+'" stroke-width="0.7" data-muscle="traps" style="cursor:pointer"/>'+
-      '<ellipse cx="69" cy="56" rx="10" ry="6" fill="'+c('traps')+'" stroke="'+acc+'" stroke-width="0.7" data-muscle="traps" style="cursor:pointer"/>'+
-      // CHEST
-      '<ellipse cx="44" cy="72" rx="15" ry="12" fill="'+c('chest')+'" stroke="'+acc+'" stroke-width="0.8" data-muscle="chest" style="cursor:pointer"/>'+
-      '<ellipse cx="60" cy="72" rx="15" ry="12" fill="'+c('chest')+'" stroke="'+acc+'" stroke-width="0.8" data-muscle="chest" style="cursor:pointer"/>'+
-      // FRONT DELTS
-      '<circle cx="31" cy="63" r="7" fill="'+c('front-delts')+'" stroke="'+acc+'" stroke-width="0.7" data-muscle="front-delts" style="cursor:pointer"/>'+
-      '<circle cx="73" cy="63" r="7" fill="'+c('front-delts')+'" stroke="'+acc+'" stroke-width="0.7" data-muscle="front-delts" style="cursor:pointer"/>'+
-      // SIDE DELTS
-      '<ellipse cx="25" cy="70" rx="5" ry="9" fill="'+c('side-delts')+'" stroke="'+acc+'" stroke-width="0.7" data-muscle="side-delts" style="cursor:pointer"/>'+
-      '<ellipse cx="79" cy="70" rx="5" ry="9" fill="'+c('side-delts')+'" stroke="'+acc+'" stroke-width="0.7" data-muscle="side-delts" style="cursor:pointer"/>'+
-      // BICEPS
-      '<ellipse cx="23" cy="88" rx="5" ry="11" fill="'+c('biceps')+'" stroke="'+acc+'" stroke-width="0.7" data-muscle="biceps" style="cursor:pointer"/>'+
-      '<ellipse cx="81" cy="88" rx="5" ry="11" fill="'+c('biceps')+'" stroke="'+acc+'" stroke-width="0.7" data-muscle="biceps" style="cursor:pointer"/>'+
-      // TRICEPS (visible on sides)
-      '<ellipse cx="19" cy="90" rx="4" ry="9" fill="'+c('triceps')+'" stroke="'+acc+'" stroke-width="0.6" opacity="0.7" data-muscle="triceps" style="cursor:pointer"/>'+
-      '<ellipse cx="85" cy="90" rx="4" ry="9" fill="'+c('triceps')+'" stroke="'+acc+'" stroke-width="0.6" opacity="0.7" data-muscle="triceps" style="cursor:pointer"/>'+
-      // FOREARMS
-      '<ellipse cx="21" cy="108" rx="4" ry="10" fill="'+c('forearms')+'" stroke="'+acc+'" stroke-width="0.6" data-muscle="forearms" style="cursor:pointer"/>'+
-      '<ellipse cx="83" cy="108" rx="4" ry="10" fill="'+c('forearms')+'" stroke="'+acc+'" stroke-width="0.6" data-muscle="forearms" style="cursor:pointer"/>'+
-      // ABS
-      '<rect x="42" y="85" width="20" height="36" rx="4" fill="'+c('abs')+'" stroke="'+acc+'" stroke-width="0.8" data-muscle="abs" style="cursor:pointer"/>'+
-      // Abs grid lines
-      '<line x1="42" y1="97" x2="62" y2="97" stroke="'+acc+'" stroke-width="0.5" opacity="0.3"/>'+
-      '<line x1="42" y1="109" x2="62" y2="109" stroke="'+acc+'" stroke-width="0.5" opacity="0.3"/>'+
-      '<line x1="52" y1="85" x2="52" y2="121" stroke="'+acc+'" stroke-width="0.5" opacity="0.3"/>'+
-      // QUADS
-      '<ellipse cx="43" cy="148" rx="12" ry="24" fill="'+c('quads')+'" stroke="'+acc+'" stroke-width="0.8" data-muscle="quads" style="cursor:pointer"/>'+
-      '<ellipse cx="61" cy="148" rx="12" ry="24" fill="'+c('quads')+'" stroke="'+acc+'" stroke-width="0.8" data-muscle="quads" style="cursor:pointer"/>'+
-      // CALVES FRONT
-      '<ellipse cx="43" cy="195" rx="8" ry="15" fill="'+c('calves')+'" stroke="'+acc+'" stroke-width="0.7" data-muscle="calves" style="cursor:pointer"/>'+
-      '<ellipse cx="61" cy="195" rx="8" ry="15" fill="'+c('calves')+'" stroke="'+acc+'" stroke-width="0.7" data-muscle="calves" style="cursor:pointer"/>'+
-      // Feet
-      '<ellipse cx="41" cy="215" rx="9" ry="4" fill="var(--surface2)" stroke="'+acc+'" stroke-width="0.6" opacity="0.5"/>'+
-      '<ellipse cx="63" cy="215" rx="9" ry="4" fill="var(--surface2)" stroke="'+acc+'" stroke-width="0.6" opacity="0.5"/>'+
-
-      // ── BACK VIEW ──
-      // HEAD BACK
-      '<ellipse cx="152" cy="32" rx="14" ry="16" fill="var(--surface2)" stroke="'+acc+'" stroke-width="0.8" opacity="0.6"/>'+
-      // NECK BACK
-      '<rect x="147" y="47" width="10" height="8" rx="2" fill="var(--surface2)" stroke="'+acc+'" stroke-width="0.6" opacity="0.5"/>'+
-      // TRAPS (back - prominent)
-      '<ellipse cx="152" cy="60" rx="22" ry="10" fill="'+c('traps')+'" stroke="'+acc+'" stroke-width="0.8" data-muscle="traps" style="cursor:pointer"/>'+
-      // REAR DELTS
-      '<circle cx="131" cy="63" r="7" fill="'+c('rear-delts')+'" stroke="'+acc+'" stroke-width="0.7" data-muscle="rear-delts" style="cursor:pointer"/>'+
-      '<circle cx="173" cy="63" r="7" fill="'+c('rear-delts')+'" stroke="'+acc+'" stroke-width="0.7" data-muscle="rear-delts" style="cursor:pointer"/>'+
-      // LATS
-      '<ellipse cx="138" cy="85" rx="12" ry="18" fill="'+c('lats')+'" stroke="'+acc+'" stroke-width="0.8" data-muscle="lats" style="cursor:pointer"/>'+
-      '<ellipse cx="166" cy="85" rx="12" ry="18" fill="'+c('lats')+'" stroke="'+acc+'" stroke-width="0.8" data-muscle="lats" style="cursor:pointer"/>'+
-      // MID BACK / RHOMBOIDS
-      '<rect x="142" y="75" width="20" height="20" rx="3" fill="'+c('mid-back')+'" stroke="'+acc+'" stroke-width="0.7" data-muscle="mid-back" style="cursor:pointer"/>'+
-      // LOWER BACK / ERECTORS
-      '<rect x="143" y="97" width="18" height="18" rx="3" fill="'+c('lower-back')+'" stroke="'+acc+'" stroke-width="0.7" data-muscle="lower-back" style="cursor:pointer"/>'+
-      // TRICEPS BACK
-      '<ellipse cx="125" cy="88" rx="5" ry="11" fill="'+c('triceps')+'" stroke="'+acc+'" stroke-width="0.7" data-muscle="triceps" style="cursor:pointer"/>'+
-      '<ellipse cx="179" cy="88" rx="5" ry="11" fill="'+c('triceps')+'" stroke="'+acc+'" stroke-width="0.7" data-muscle="triceps" style="cursor:pointer"/>'+
-      // FOREARMS BACK
-      '<ellipse cx="123" cy="108" rx="4" ry="10" fill="'+c('forearms')+'" stroke="'+acc+'" stroke-width="0.6" data-muscle="forearms" style="cursor:pointer"/>'+
-      '<ellipse cx="181" cy="108" rx="4" ry="10" fill="'+c('forearms')+'" stroke="'+acc+'" stroke-width="0.6" data-muscle="forearms" style="cursor:pointer"/>'+
-      // GLUTES
-      '<ellipse cx="143" cy="128" rx="14" ry="13" fill="'+c('glutes')+'" stroke="'+acc+'" stroke-width="0.8" data-muscle="glutes" style="cursor:pointer"/>'+
-      '<ellipse cx="161" cy="128" rx="14" ry="13" fill="'+c('glutes')+'" stroke="'+acc+'" stroke-width="0.8" data-muscle="glutes" style="cursor:pointer"/>'+
-      // HAMSTRINGS
-      '<ellipse cx="143" cy="158" rx="12" ry="22" fill="'+c('hamstrings')+'" stroke="'+acc+'" stroke-width="0.8" data-muscle="hamstrings" style="cursor:pointer"/>'+
-      '<ellipse cx="161" cy="158" rx="12" ry="22" fill="'+c('hamstrings')+'" stroke="'+acc+'" stroke-width="0.8" data-muscle="hamstrings" style="cursor:pointer"/>'+
-      // CALVES BACK
-      '<ellipse cx="143" cy="195" rx="8" ry="15" fill="'+c('calves')+'" stroke="'+acc+'" stroke-width="0.7" data-muscle="calves" style="cursor:pointer"/>'+
-      '<ellipse cx="161" cy="195" rx="8" ry="15" fill="'+c('calves')+'" stroke="'+acc+'" stroke-width="0.7" data-muscle="calves" style="cursor:pointer"/>'+
-      // Feet back
-      '<ellipse cx="141" cy="215" rx="9" ry="4" fill="var(--surface2)" stroke="'+acc+'" stroke-width="0.6" opacity="0.5"/>'+
-      '<ellipse cx="163" cy="215" rx="9" ry="4" fill="var(--surface2)" stroke="'+acc+'" stroke-width="0.6" opacity="0.5"/>'+
-
-      // Tooltips via title
-      '</svg>',
-      recovery:recovery
-    };
-  }
-
-  // ── Render functions ──────────────────────────────────────
-  function _el(id){return document.getElementById(id);}
-  function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-
+  // ═══════════════════════════════════════════════════════════
+  // RENDER
+  // ═══════════════════════════════════════════════════════════
   function render(){
     var panel=_el('strength-panel');
     if(!panel||!panel.classList.contains('str-vis'))return;
+    ['split','workout','map','score'].forEach(function(t){
+      var btn=_el('str-tab-'+t);if(btn)btn.classList.toggle('active',t===currentTab);
+      var content=_el('str-'+t+'-content');if(content)content.style.display=(t===currentTab?'block':'none');
+    });
     if(currentTab==='split')_renderSplit();
-    else if(currentTab==='log')_renderLog();
+    else if(currentTab==='workout')_renderWorkout();
     else if(currentTab==='map')_renderMap();
     else if(currentTab==='score')_renderScore();
-    // Update tab active state
-    ['split','log','map','score'].forEach(function(t){
-      var btn=_el('str-tab-'+t);
-      if(btn)btn.classList.toggle('active',t===currentTab);
-      var content=_el('str-'+t+'-content');
-      if(content)content.classList.toggle('active',t===currentTab);
-    });
   }
 
   // ── SPLIT TAB ─────────────────────────────────────────────
@@ -637,469 +354,434 @@ var STRENGTH=(function(){
     var el=_el('str-split-content');if(!el)return;
     var today=new Date().getDay();
     var html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'+
-      '<span style="font-family:var(--mono);font-size:11px;color:var(--muted)">Weekly Split — tap a day to edit</span>'+
+      '<span style="font-family:var(--mono);font-size:10px;color:var(--muted)">Tap a day to edit your split</span>'+
       '<div style="display:flex;gap:6px;align-items:center">'+
-      '<label style="font-size:11px;color:var(--muted);font-family:var(--mono)">Bodyweight:</label>'+
-      '<input id="str-bw-input" type="number" value="'+data.bodyweight+'" min="50" max="500" step="0.5" style="width:60px;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none"> lbs'+
+        '<label style="font-size:10px;color:var(--muted);font-family:var(--mono)">BW:</label>'+
+        '<input id="str-bw" type="number" value="'+data.bodyweight+'" min="50" max="500" step="0.5" '+
+        'style="width:55px;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-family:var(--mono);font-size:10px;color:var(--text);outline:none"> lbs'+
       '</div></div>';
-
-    // Week grid
-    html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:16px">';
+    html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:14px">';
     for(var d=0;d<7;d++){
       var splitDay=data.split.find(function(s){return s.day===d;});
       var isToday=d===today;
-      html+='<div class="str-day-card'+(isToday?' today':'')+'" data-day="'+d+'" style="'+
-        'background:var(--surface'+(isToday?'':'2')+');border:1px solid '+(isToday?'var(--accent)':'var(--border)')+';'+
-        'border-radius:6px;padding:8px 4px;cursor:pointer;text-align:center;transition:all .15s">'+
-        '<div style="font-family:var(--mono);font-size:9px;color:'+(isToday?'var(--accent)':'var(--muted)')+';letter-spacing:.08em">'+DAYS[d]+'</div>'+
-        '<div style="font-size:10px;color:var(--text);margin-top:4px;line-height:1.3">'+(splitDay?_esc(splitDay.name):'<span style="color:var(--muted);font-size:9px">REST</span>')+'</div>'+
-        (splitDay?'<div style="font-size:9px;color:var(--muted);margin-top:2px">'+splitDay.exercises.length+' ex</div>':'')+'</div>';
+      html+='<div class="str-day-card" data-day="'+d+'" style="background:var(--surface'+(isToday?'':'2')+');border:1px solid '+(isToday?'var(--accent)':'var(--border)')+';border-radius:6px;padding:8px 4px;cursor:pointer;text-align:center;transition:all .15s">'+
+        '<div style="font-family:var(--mono);font-size:9px;color:'+(isToday?'var(--accent)':'var(--muted)')+'">'+DAYS[d]+'</div>'+
+        '<div style="font-size:10px;color:var(--text);margin-top:3px">'+(splitDay?_esc(splitDay.name):'<span style="color:var(--muted);font-size:9px">REST</span>')+'</div>'+
+        (splitDay?'<div style="font-size:8px;color:var(--muted);margin-top:2px">'+splitDay.exercises.length+' ex</div>':'')+'</div>';
     }
-    html+='</div>';
-
-    // Edit panel for selected day
-    html+='<div id="str-day-editor" style="display:none"></div>';
-
+    html+='</div><div id="str-day-editor" style="display:none"></div>';
     el.innerHTML=html;
-
-    // Bodyweight save
-    var bwInput=_el('str-bw-input');
-    if(bwInput)bwInput.addEventListener('change',function(){
-      data.bodyweight=parseFloat(this.value)||185;
-      _save();
-    });
-
-    // Day card clicks
+    _el('str-bw').addEventListener('change',function(){data.bodyweight=parseFloat(this.value)||185;_save();});
     el.querySelectorAll('.str-day-card').forEach(function(card){
-      card.addEventListener('click',function(){
-        _showDayEditor(parseInt(card.dataset.day));
-      });
+      card.addEventListener('click',function(){_showDayEditor(parseInt(card.dataset.day));});
     });
   }
 
   function _showDayEditor(dayIdx){
     var ed=_el('str-day-editor');if(!ed)return;
     var splitDay=data.split.find(function(s){return s.day===dayIdx;});
-    var isRest=!splitDay;
-    var exercises=splitDay?splitDay.exercises:[];
-
-    var exList=exercises.map(function(ex,i){
-      return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px">'+
-        '<input value="'+_esc(ex.name)+'" data-exidx="'+i+'" data-field="name" placeholder="Exercise" '+
-        'style="flex:1;background:none;border:none;outline:none;font-family:var(--mono);font-size:11px;color:var(--text)">'+
-        '<input type="number" value="'+ex.sets+'" data-exidx="'+i+'" data-field="sets" min="1" max="20" '+
-        'style="width:36px;background:none;border:1px solid var(--border);border-radius:3px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--muted);padding:2px"> sets'+
-        '<input type="number" value="'+ex.reps+'" data-exidx="'+i+'" data-field="reps" min="1" max="100" '+
-        'style="width:36px;background:none;border:1px solid var(--border);border-radius:3px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--muted);padding:2px"> reps'+
-        '<input type="number" value="'+(ex.weight||0)+'" data-exidx="'+i+'" data-field="weight" min="0" max="2000" step="5" '+
-        'style="width:46px;background:none;border:1px solid var(--border);border-radius:3px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--muted);padding:2px"> lbs'+
-        '<button data-rmidx="'+i+'" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 4px">&#215;</button>'+
-        '</div>';
-    }).join('');
-
+    var exercises=splitDay?JSON.parse(JSON.stringify(splitDay.exercises)):[];
     ed.style.display='block';
-    ed.innerHTML='<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-top:4px">'+
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">'+
-      '<span style="font-family:var(--mono);font-size:11px;color:var(--accent)">'+DAYS_FULL[dayIdx]+'</span>'+
-      '<input id="str-day-name" value="'+(isRest?'':_esc(splitDay.name))+'" placeholder="Day name (e.g. Push)" '+
-      'style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none">'+
-      '<button id="str-day-rest" style="background:none;border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-family:var(--mono);font-size:10px;color:var(--muted);cursor:pointer">'+
-      (isRest?'Mark Active':'Mark REST')+'</button></div>'+
-      '<div id="str-ex-list">'+(isRest?'<div style="color:var(--muted);font-size:11px;font-family:var(--mono);padding:8px">Rest day — mark active to add exercises.</div>':exList)+'</div>'+
-      (!isRest?'<button id="str-add-ex" style="background:none;border:1px dashed var(--border);border-radius:4px;padding:5px 10px;font-family:var(--mono);font-size:10px;color:var(--muted);cursor:pointer;width:100%;margin-top:6px">+ Add exercise</button>':'')+
-      '<button id="str-day-save" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:4px;padding:6px 16px;font-family:var(--mono);font-size:11px;color:var(--accent);cursor:pointer;margin-top:10px;float:right">Save Day</button>'+
-      '</div>';
-
-    // Wire events
-    var saveBtn=_el('str-day-save');
-    if(saveBtn)saveBtn.addEventListener('click',function(){_saveDayEditor(dayIdx,exercises);});
-
-    var restBtn=_el('str-day-rest');
-    if(restBtn)restBtn.addEventListener('click',function(){
-      data.split=data.split.filter(function(s){return s.day!==dayIdx;});
-      _save();ed.style.display='none';_renderSplit();
-    });
-
-    var addBtn=_el('str-add-ex');
-    if(addBtn)addBtn.addEventListener('click',function(){
-      exercises.push({name:'',sets:3,reps:5,weight:0});
-      _showDayEditor(dayIdx);
-    });
-
-    // Remove exercise
-    ed.querySelectorAll('[data-rmidx]').forEach(function(btn){
-      btn.addEventListener('click',function(){
-        exercises.splice(parseInt(btn.dataset.rmidx),1);
-        _showDayEditor(dayIdx);
+    function _rebuildEditor(){
+      var exList=exercises.map(function(ex,i){
+        return '<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:7px 9px">'+
+          '<input value="'+_esc(ex.name)+'" data-i="'+i+'" data-f="name" list="str-ex-list" placeholder="Exercise" style="flex:1;background:none;border:none;font-family:var(--mono);font-size:10px;color:var(--text);outline:none;min-width:0">'+
+          '<input type="number" value="'+ex.sets+'" data-i="'+i+'" data-f="sets" min="1" max="20" style="width:32px;background:none;border:1px solid var(--border);border-radius:3px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--muted);padding:2px;outline:none">'+
+          '<span style="font-size:9px;color:var(--muted)">×</span>'+
+          '<input type="number" value="'+ex.reps+'" data-i="'+i+'" data-f="reps" min="1" max="100" style="width:32px;background:none;border:1px solid var(--border);border-radius:3px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--muted);padding:2px;outline:none">'+
+          '<span style="font-size:9px;color:var(--muted)">@</span>'+
+          '<input type="number" value="'+(ex.weight||0)+'" data-i="'+i+'" data-f="weight" min="0" max="2000" step="5" style="width:44px;background:none;border:1px solid var(--border);border-radius:3px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--muted);padding:2px;outline:none">'+
+          '<button data-rm="'+i+'" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 2px">×</button>'+
+          '</div>';
+      }).join('');
+      ed.innerHTML='<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px">'+
+        '<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">'+
+          '<span style="font-family:var(--mono);font-size:11px;color:var(--accent)">'+DAYS_FULL[dayIdx]+'</span>'+
+          '<input id="str-day-name" value="'+(splitDay?_esc(splitDay.name):'')+'" placeholder="Day name" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-family:var(--mono);font-size:10px;color:var(--text);outline:none">'+
+        '</div>'+
+        '<datalist id="str-ex-list">'+Object.keys(EXERCISE_MUSCLES).map(function(e){return'<option value="'+e+'">';}).join('')+'</datalist>'+
+        exList+
+        '<div style="display:flex;gap:6px;margin-top:8px">'+
+          '<button id="str-add-ex" style="flex:1;background:none;border:1px dashed var(--border);border-radius:4px;padding:5px;font-family:var(--mono);font-size:10px;color:var(--muted);cursor:pointer">+ Exercise</button>'+
+          '<button id="str-save-day" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:4px;padding:5px 14px;font-family:var(--mono);font-size:10px;color:var(--accent);cursor:pointer">Save</button>'+
+          '<button id="str-rest-day" style="background:none;border:1px solid var(--border);border-radius:4px;padding:5px 10px;font-family:var(--mono);font-size:10px;color:var(--muted);cursor:pointer">REST</button>'+
+        '</div></div>';
+      // Bind
+      ed.querySelectorAll('[data-f]').forEach(function(inp){
+        inp.addEventListener('change',function(){var i=parseInt(inp.dataset.i),f=inp.dataset.f;
+          if(f==='name')exercises[i].name=inp.value;else exercises[i][f]=parseFloat(inp.value)||0;});
       });
-    });
-
-    // Field edits
-    ed.querySelectorAll('[data-exidx]').forEach(function(inp){
-      inp.addEventListener('change',function(){
-        var i=parseInt(inp.dataset.exidx);
-        var f=inp.dataset.field;
-        if(f==='name')exercises[i].name=inp.value;
-        else exercises[i][f]=parseFloat(inp.value)||0;
+      ed.querySelectorAll('[data-rm]').forEach(function(b){
+        b.addEventListener('click',function(){exercises.splice(parseInt(b.dataset.rm),1);_rebuildEditor();});
       });
-    });
-  }
-
-  function _saveDayEditor(dayIdx,exercises){
-    var nameInp=_el('str-day-name');
-    var name=nameInp?nameInp.value.trim():'';
-    if(!name&&exercises.length===0){
-      data.split=data.split.filter(function(s){return s.day!==dayIdx;});
-    }else{
-      var existing=data.split.find(function(s){return s.day===dayIdx;});
-      var filtered=exercises.filter(function(ex){return ex.name.trim();});
-      if(existing){existing.name=name||existing.name;existing.exercises=filtered;}
-      else{data.split.push({day:dayIdx,name:name||DAYS_FULL[dayIdx],exercises:filtered});}
+      _el('str-add-ex').addEventListener('click',function(){
+        exercises.push({name:'',sets:3,reps:5,weight:0});_rebuildEditor();
+      });
+      _el('str-save-day').addEventListener('click',function(){
+        var name=(_el('str-day-name')||{}).value||'';
+        var filtered=exercises.filter(function(e){return e.name.trim();});
+        data.split=data.split.filter(function(s){return s.day!==dayIdx;});
+        if(filtered.length)data.split.push({day:dayIdx,name:name.trim()||DAYS_FULL[dayIdx],exercises:filtered});
+        _save();ed.style.display='none';_renderSplit();
+      });
+      _el('str-rest-day').addEventListener('click',function(){
+        data.split=data.split.filter(function(s){return s.day!==dayIdx;});
+        _save();ed.style.display='none';_renderSplit();
+      });
     }
-    _save();
-    _el('str-day-editor').style.display='none';
-    _renderSplit();
+    _rebuildEditor();
   }
 
-  // ── LOG TAB ───────────────────────────────────────────────
-  function _renderLog(){
-    var el=_el('str-log-content');if(!el)return;
+  // ── WORKOUT TAB (Stronger-style) ──────────────────────────
+  function _renderWorkout(){
+    var el=_el('str-workout-content');if(!el)return;
     var log=_getTodayLog();
-    var today=new Date();
-    var dayName=log.name||DAYS_FULL[today.getDay()];
-    var splitDay=data.split.find(function(s){return s.day===today.getDay();});
-    var isRest=!splitDay;
+    var splitDay=data.split.find(function(s){return s.day===new Date().getDay();});
+    var isRest=!splitDay&&!log.entries.length;
+    var doneSets=0,totalSets=0;
+    log.entries.forEach(function(e){e.sets.forEach(function(s){totalSets++;if(s.done)doneSets++;});});
 
-    var html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
-      '<div>'+
-      '<div style="font-family:var(--mono);font-size:13px;color:var(--accent)">'+_esc(dayName)+'</div>'+
-      '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px">'+log.date+'</div>'+
-      '</div>'+
+    var html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'+
+      '<div><div style="font-family:var(--mono);font-size:13px;color:var(--accent)">'+_esc(log.name||'Workout')+'</div>'+
+      '<div style="font-family:var(--mono);font-size:9px;color:var(--muted)">'+log.date+' · '+doneSets+'/'+totalSets+' sets</div></div>'+
       '<div style="display:flex;gap:6px">'+
-      '<button id="str-ai-rec" style="background:none;border:1px solid var(--accent-dim);border-radius:4px;padding:5px 10px;font-family:var(--mono);font-size:10px;color:var(--accent);cursor:pointer">&#9670; AI Recs</button>'+
-      '<button id="str-save-vault" style="background:none;border:1px solid var(--border);border-radius:4px;padding:5px 10px;font-family:var(--mono);font-size:10px;color:var(--muted);cursor:pointer">&#128190; Save Week</button>'+
+        '<button id="str-ai-btn" style="background:none;border:1px solid var(--accent-dim);border-radius:4px;padding:4px 8px;font-family:var(--mono);font-size:9px;color:var(--accent);cursor:pointer">◆ AI</button>'+
+        '<button id="str-save-week" style="background:none;border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-family:var(--mono);font-size:9px;color:var(--muted);cursor:pointer">💾</button>'+
       '</div></div>';
 
     if(isRest){
-      html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center">'+
-        '<div style="font-size:24px;margin-bottom:8px">&#127774;</div>'+
+      html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;text-align:center">'+
+        '<div style="font-size:24px;margin-bottom:8px">🌙</div>'+
         '<div style="font-family:var(--mono);font-size:12px;color:var(--accent);margin-bottom:8px">Rest Day</div>'+
-        '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.6">Active recovery suggestions:</div>'+
-        '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px;line-height:1.8">'+
-        '&#8226; 20-30 min walk or light cardio<br>'+
-        '&#8226; Foam rolling — focus on soreness<br>'+
-        '&#8226; Mobility work — hips, thoracic spine<br>'+
-        '&#8226; Hydration + protein target<br>'+
-        '&#8226; Sleep 8h for muscle repair'+
-        '</div></div>';
+        '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.8">'+
+        '• 20-30 min walk or light cardio<br>• Foam rolling + mobility<br>• Hydrate + hit protein target<br>• Sleep 8h for recovery</div></div>';
     }else{
-      // Exercise log entries
-      if(!log.entries.length){
-        html+='<div style="color:var(--muted);font-family:var(--mono);font-size:11px;padding:12px">No exercises yet. Add your split in the Split tab, or add manually:</div>';
-      }
-      html+='<div id="str-entries-list">';
+      // Exercise cards
       log.entries.forEach(function(entry,ei){
+        var prev=_getLastPerformance(entry.exercise);
         var doneCount=entry.sets.filter(function(s){return s.done;}).length;
-        var isPR=false;
+        var muscles=(EXERCISE_MUSCLES[entry.exercise]||[]).join(', ');
+
         html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px">'+
-          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'+
-          '<span style="font-family:var(--mono);font-size:12px;color:var(--text)">'+_esc(entry.exercise)+'</span>'+
-          '<span style="font-family:var(--mono);font-size:10px;color:var(--muted)">'+doneCount+'/'+entry.sets.length+' sets</span>'+
+          // Exercise header
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'+
+            '<div style="cursor:pointer" data-hist="'+_esc(entry.exercise)+'">'+
+              '<span style="font-family:var(--mono);font-size:12px;color:var(--text);font-weight:500">'+_esc(entry.exercise)+'</span>'+
+              (muscles?'<div style="font-family:var(--mono);font-size:8px;color:var(--muted);margin-top:1px">'+muscles+'</div>':'')+
+            '</div>'+
+            '<span style="font-family:var(--mono);font-size:10px;color:var(--muted)">'+doneCount+'/'+entry.sets.length+'</span>'+
           '</div>'+
-          // Target
-          (entry.targetSets?'<div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:6px">Target: '+entry.targetSets+'×'+entry.targetReps+' @ '+entry.targetWeight+'lbs</div>':'')+
-          // Set rows
-          '<div id="str-sets-'+ei+'">';
-        entry.sets.forEach(function(s,si){
-          html+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'+
-            '<button class="str-set-done" data-ei="'+ei+'" data-si="'+si+'" style="'+
-            'width:22px;height:22px;border-radius:50%;border:1.5px solid '+(s.done?'var(--green)':'var(--border)')+';'+
-            'background:'+(s.done?'rgba(74,222,128,.15)':'none')+';cursor:pointer;font-size:11px;flex-shrink:0">'+
-            (s.done?'&#10003;':'')+'</button>'+
-            '<span style="font-family:var(--mono);font-size:10px;color:var(--muted);width:40px">Set '+(si+1)+'</span>'+
-            '<input type="number" value="'+s.reps+'" min="0" max="100" class="str-set-reps" data-ei="'+ei+'" data-si="'+si+'" '+
-            'style="width:38px;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:2px 4px;font-family:var(--mono);font-size:11px;color:var(--text);text-align:center;outline:none"> reps '+
-            '<input type="number" value="'+s.weight+'" min="0" max="2000" step="2.5" class="str-set-weight" data-ei="'+ei+'" data-si="'+si+'" '+
-            'style="width:52px;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:2px 4px;font-family:var(--mono);font-size:11px;color:var(--text);text-align:center;outline:none"> lbs'+
-            '</div>';
-        });
-        html+='</div>'+
-          '<button class="str-add-set" data-ei="'+ei+'" style="background:none;border:1px dashed var(--border);border-radius:3px;padding:3px 8px;font-family:var(--mono);font-size:9px;color:var(--muted);cursor:pointer;margin-top:4px">+ Set</button>'+
+          // Previous performance
+          (prev?'<div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:8px;padding:4px 6px;background:var(--bg);border-radius:3px">Last ('+prev.date.slice(5)+'): '+
+            prev.sets.map(function(s,i){return s.weight+'×'+s.reps;}).join(' · ')+'</div>':'')+
+          // Set header
+          '<div style="display:flex;gap:4px;padding:0 4px;margin-bottom:4px">'+
+            '<span style="width:24px"></span>'+
+            '<span style="flex:1;font-family:var(--mono);font-size:8px;color:var(--muted);text-align:center">WEIGHT</span>'+
+            '<span style="flex:1;font-family:var(--mono);font-size:8px;color:var(--muted);text-align:center">REPS</span>'+
+            '<span style="width:28px"></span>'+
           '</div>';
+        // Set rows
+        entry.sets.forEach(function(s,si){
+          html+='<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;padding:2px 4px;border-radius:4px;background:'+(s.done?'rgba(74,222,128,.06)':'none')+'">'+
+            '<span style="font-family:var(--mono);font-size:9px;color:var(--muted);width:24px;text-align:center">'+(si+1)+'</span>'+
+            '<input type="number" value="'+s.weight+'" data-ei="'+ei+'" data-si="'+si+'" data-f="weight" min="0" max="2000" step="2.5" '+
+              'style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:6px 4px;font-family:var(--mono);font-size:12px;color:var(--text);text-align:center;outline:none;font-weight:600">'+
+            '<input type="number" value="'+s.reps+'" data-ei="'+ei+'" data-si="'+si+'" data-f="reps" min="0" max="200" '+
+              'style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:6px 4px;font-family:var(--mono);font-size:12px;color:var(--text);text-align:center;outline:none;font-weight:600">'+
+            '<button class="str-done-btn" data-ei="'+ei+'" data-si="'+si+'" style="width:28px;height:28px;border-radius:50%;border:2px solid '+(s.done?'var(--green)':'var(--border)')+';background:'+(s.done?'rgba(74,222,128,.15)':'none')+';cursor:pointer;font-size:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center">'+
+              (s.done?'✓':'')+'</button>'+
+          '</div>';
+        });
+        // Add set button
+        html+='<button class="str-add-set" data-ei="'+ei+'" style="background:none;border:1px dashed var(--border);border-radius:3px;padding:3px;font-family:var(--mono);font-size:9px;color:var(--muted);cursor:pointer;width:100%;margin-top:4px">+ Set</button>';
+        html+='</div>';
       });
-      html+='</div>';
-
       // Add custom exercise
-      html+='<div style="display:flex;gap:6px;margin-top:8px">'+
-        '<input id="str-custom-ex" list="str-ex-datalist" placeholder="Add exercise..." '+
-        'style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none">'+
-        '<button id="str-custom-add" style="background:none;border:1px solid var(--border);border-radius:4px;padding:6px 12px;font-family:var(--mono);font-size:10px;color:var(--muted);cursor:pointer">Add</button>'+
+      html+='<div style="display:flex;gap:5px;margin-top:6px">'+
+        '<input id="str-custom-ex" list="str-workout-list" placeholder="Add exercise..." style="flex:1;background:var(--bg);border:1px dashed var(--border);border-radius:4px;padding:6px 10px;font-family:var(--mono);font-size:10px;color:var(--text);outline:none">'+
+        '<button id="str-custom-add" style="background:none;border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-family:var(--mono);font-size:10px;color:var(--muted);cursor:pointer">+</button>'+
         '</div>'+
-        '<datalist id="str-ex-datalist">'+
-        Object.keys(EXERCISE_MUSCLES).map(function(ex){return'<option value="'+_esc(ex)+'">';}).join('')+
-        '</datalist>';
+        '<datalist id="str-workout-list">'+Object.keys(EXERCISE_MUSCLES).map(function(e){return'<option value="'+e+'">';}).join('')+'</datalist>';
     }
-
+    html+='<div id="str-rest-bar" style="display:none"></div>';
     el.innerHTML=html;
-    _bindLogEvents(log);
+    _bindWorkout(log);
   }
 
-  function _bindLogEvents(log){
-    // AI recommendations button
-    var aiBtn=_el('str-ai-rec');
-    if(aiBtn)aiBtn.addEventListener('click',function(){_getAIRecs(log);});
-
-    // Save week to vault
-    var svBtn=_el('str-save-vault');
-    if(svBtn)svBtn.addEventListener('click',async function(){
-      svBtn.textContent='Saving...';
-      var ok=await _saveWeekToVault();
-      svBtn.textContent=ok?'&#10003; Saved':'&#9888; Failed';
-      setTimeout(function(){svBtn.textContent='&#128190; Save Week';},2000);
-    });
-
-    // Set done toggles
-    document.querySelectorAll('.str-set-done').forEach(function(btn){
+  function _bindWorkout(log){
+    // Done buttons
+    document.querySelectorAll('.str-done-btn').forEach(function(btn){
       btn.addEventListener('click',function(){
         var ei=parseInt(btn.dataset.ei),si=parseInt(btn.dataset.si);
-        log.entries[ei].sets[si].done=!log.entries[ei].sets[si].done;
-        // Check PR
-        var entry=log.entries[ei];
-        var s=entry.sets[si];
-        if(s.done&&s.weight>0)_checkPR(entry.exercise,s.reps,s.weight);
-        _save();_renderLog();
+        var s=log.entries[ei].sets[si];
+        // Read current values from inputs
+        var wInp=document.querySelector('[data-ei="'+ei+'"][data-si="'+si+'"][data-f="weight"]');
+        var rInp=document.querySelector('[data-ei="'+ei+'"][data-si="'+si+'"][data-f="reps"]');
+        if(wInp)s.weight=parseFloat(wInp.value)||0;
+        if(rInp)s.reps=parseInt(rInp.value)||0;
+        s.done=!s.done;
+        if(s.done){
+          var isPR=_checkPR(log.entries[ei].exercise,s.reps,s.weight);
+          if(isPR)_showPRPopup(log.entries[ei].exercise,s.weight,s.reps);
+          _startRest();
+        }
+        _save();_renderWorkout();
       });
     });
-
-    // Set reps/weight inputs
-    document.querySelectorAll('.str-set-reps').forEach(function(inp){
+    // Weight/rep inputs
+    document.querySelectorAll('[data-f="weight"],[data-f="reps"]').forEach(function(inp){
       inp.addEventListener('change',function(){
-        var ei=parseInt(inp.dataset.ei),si=parseInt(inp.dataset.si);
-        log.entries[ei].sets[si].reps=parseInt(inp.value)||0;
+        var ei=parseInt(inp.dataset.ei),si=parseInt(inp.dataset.si),f=inp.dataset.f;
+        if(f==='weight')log.entries[ei].sets[si].weight=parseFloat(inp.value)||0;
+        else log.entries[ei].sets[si].reps=parseInt(inp.value)||0;
         _save();
       });
     });
-    document.querySelectorAll('.str-set-weight').forEach(function(inp){
-      inp.addEventListener('change',function(){
-        var ei=parseInt(inp.dataset.ei),si=parseInt(inp.dataset.si);
-        log.entries[ei].sets[si].weight=parseFloat(inp.value)||0;
-        _save();
-      });
-    });
-
     // Add set
     document.querySelectorAll('.str-add-set').forEach(function(btn){
       btn.addEventListener('click',function(){
         var ei=parseInt(btn.dataset.ei);
-        var prev=log.entries[ei].sets.slice(-1)[0];
-        log.entries[ei].sets.push({reps:prev?prev.reps:5,weight:prev?prev.weight:0,done:false});
-        _save();_renderLog();
+        var last=log.entries[ei].sets.slice(-1)[0];
+        log.entries[ei].sets.push({reps:last?last.reps:5,weight:last?last.weight:0,done:false});
+        _save();_renderWorkout();
       });
     });
-
-    // Add custom exercise
-    var customAdd=_el('str-custom-add');
-    if(customAdd)customAdd.addEventListener('click',function(){
-      var inp=_el('str-custom-ex');
-      var name=(inp?inp.value.trim():'');
+    // Custom exercise
+    var addBtn=_el('str-custom-add');
+    if(addBtn)addBtn.addEventListener('click',function(){
+      var inp=_el('str-custom-ex');var name=inp?inp.value.trim():'';
       if(!name)return;
-      log.entries.push({exercise:name,sets:[{reps:5,weight:0,done:false}],note:''});
-      _save();inp.value='';_renderLog();
+      var prev=_getLastPerformance(name);
+      log.entries.push({exercise:name,sets:[{reps:prev?prev.sets[0].reps:5,weight:prev?prev.sets[0].weight:0,done:false}],note:''});
+      if(inp)inp.value='';_save();_renderWorkout();
     });
+    // Exercise history on name click
+    document.querySelectorAll('[data-hist]').forEach(function(el){
+      el.addEventListener('click',function(){_showHistory(el.dataset.hist);});
+    });
+    // AI + Save week
+    var aiBtn=_el('str-ai-btn');if(aiBtn)aiBtn.addEventListener('click',function(){_getAIRecs(log);});
+    var svBtn=_el('str-save-week');if(svBtn)svBtn.addEventListener('click',async function(){
+      svBtn.textContent='...';var ok=await _saveWeekToVault();svBtn.textContent=ok?'✓':'⚠';
+      setTimeout(function(){svBtn.textContent='💾';},2000);
+    });
+  }
+
+  // ── PR celebration ────────────────────────────────────────
+  function _showPRPopup(exercise,weight,reps){
+    var existing=document.getElementById('str-pr-popup');if(existing)existing.remove();
+    var popup=document.createElement('div');popup.id='str-pr-popup';
+    popup.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:50;background:var(--surface);border:2px solid var(--green);border-radius:12px;padding:24px 32px;text-align:center;box-shadow:0 8px 32px rgba(74,222,128,.3)';
+    popup.innerHTML='<div style="font-size:32px;margin-bottom:8px">🏆</div>'+
+      '<div style="font-family:var(--mono);font-size:14px;color:var(--green);font-weight:700;letter-spacing:.08em;margin-bottom:6px">NEW PR!</div>'+
+      '<div style="font-family:var(--mono);font-size:12px;color:var(--text)">'+_esc(exercise)+'</div>'+
+      '<div style="font-family:var(--mono);font-size:18px;color:var(--accent);font-weight:700;margin-top:4px">'+weight+' lbs × '+reps+'</div>';
+    _el('strength-panel').appendChild(popup);
+    setTimeout(function(){if(popup.parentNode)popup.remove();},3000);
+  }
+
+  // ── Exercise history popup ────────────────────────────────
+  function _showHistory(name){
+    var hist=_getExerciseHistory(name,8);
+    var existing=document.getElementById('str-hist-popup');if(existing)existing.remove();
+    var popup=document.createElement('div');popup.id='str-hist-popup';
+    popup.style.cssText='position:absolute;inset:0;z-index:50;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px';
+    var pr=data.prs[name];
+    var rows=hist.length?hist.map(function(h){
+      return '<tr><td style="padding:4px 8px;color:var(--muted)">'+h.date.slice(5)+'</td>'+
+        '<td style="padding:4px;text-align:center;color:var(--text)">'+h.bestWeight+'</td>'+
+        '<td style="padding:4px;text-align:center;color:var(--text)">'+h.bestReps+'</td>'+
+        '<td style="padding:4px;text-align:center;color:var(--muted)">'+h.sets+'</td>'+
+        '<td style="padding:4px;text-align:right;color:var(--muted)">'+h.volume.toLocaleString()+'</td></tr>';
+    }).join(''):'<tr><td colspan="5" style="padding:12px;text-align:center;color:var(--muted)">No history yet</td></tr>';
+    popup.innerHTML='<div style="background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:16px;width:100%;max-width:360px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'+
+        '<span style="font-family:var(--mono);font-size:12px;color:var(--accent)">'+_esc(name)+'</span>'+
+        '<button id="str-hist-close" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px">×</button>'+
+      '</div>'+
+      (pr?'<div style="font-family:var(--mono);font-size:10px;color:var(--green);margin-bottom:10px">PR: '+pr.weight+'lbs × '+pr.reps+' ('+pr.date+')</div>':'')+
+      '<table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:10px">'+
+        '<thead><tr style="border-bottom:1px solid var(--border)">'+
+          '<th style="text-align:left;padding:4px 8px;color:var(--muted);font-weight:normal">Date</th>'+
+          '<th style="text-align:center;padding:4px;color:var(--muted);font-weight:normal">Best</th>'+
+          '<th style="text-align:center;padding:4px;color:var(--muted);font-weight:normal">Reps</th>'+
+          '<th style="text-align:center;padding:4px;color:var(--muted);font-weight:normal">Sets</th>'+
+          '<th style="text-align:right;padding:4px;color:var(--muted);font-weight:normal">Vol</th></tr></thead>'+
+        '<tbody>'+rows+'</tbody></table></div>';
+    _el('strength-panel').appendChild(popup);
+    _el('str-hist-close').addEventListener('click',function(){popup.remove();});
+    popup.addEventListener('click',function(e){if(e.target===popup)popup.remove();});
   }
 
   // ── AI Recommendations ────────────────────────────────────
   async function _getAIRecs(log){
-    var key=localStorage.getItem('baker_api_key');
-    if(!key){if(typeof speakResponse==='function')speakResponse('No API key, sir.');return;}
-    var recDiv=_el('str-ai-rec');
-    if(recDiv){recDiv.textContent='Thinking...';recDiv.disabled=true;}
-
-    // Build context
-    var recentLogs=data.logs.slice(-7).map(function(l){
+    var key=localStorage.getItem('baker_api_key');if(!key)return;
+    var btn=_el('str-ai-btn');if(btn){btn.textContent='...';btn.disabled=true;}
+    var recent=data.logs.slice(-5).map(function(l){
       return l.name+' ('+l.date+'): '+l.entries.map(function(e){
-        var done=e.sets.filter(function(s){return s.done;});
-        return e.exercise+' '+done.length+'×'+( done[0]?done[0].reps+'@'+done[0].weight+'lbs':'');
+        var d=e.sets.filter(function(s){return s.done;});
+        return e.exercise+' '+d.length+'x'+(d[0]?d[0].reps+'@'+d[0].weight:'');
       }).join(', ');
-    }).join('\n');
-
+    }).join('\\n');
     var prs=Object.entries(data.prs).map(function(kv){return kv[0]+': '+kv[1].weight+'lbs×'+kv[1].reps;}).join(', ');
-    var todayExercises=log.entries.map(function(e){return e.exercise+'('+e.targetSets+'×'+e.targetReps+'@'+e.targetWeight+'lbs)';}).join(', ');
-    var prompt='You are BAKER, a strength training assistant. The user follows a custom strength split (heavy, low reps) and has access to both gym and home equipment. Units: lbs. Bodyweight: '+data.bodyweight+'lbs.\n\nToday ('+DAYS_FULL[log.day]+' — '+log.name+'): '+todayExercises+'\nRecent training:\n'+recentLogs+'\nPRs: '+prs+'\n\nGive 3-5 specific, actionable workout recommendations for today. Focus on weight selection, technique cues, and progression. Keep it concise — 2-3 sentences per rec. No markdown headers. JARVIS tone.';
-
     try{
       var resp=await fetch('https://api.anthropic.com/v1/messages',{
         method:'POST',
         headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-        body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,messages:[{role:'user',content:prompt}]})
+        body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,
+          messages:[{role:'user',content:'BAKER strength coach. User trains for strength (heavy, low reps), '+data.bodyweight+'lbs BW. Today: '+log.name+'. Recent:\\n'+recent+'\\nPRs: '+prs+'\\n\\nGive 3-4 specific recs for today. Weight selection, cues, progression. Concise, JARVIS tone.'}]})
       });
-      var d=await resp.json();
-      var text=d.content.map(function(b){return b.text||'';}).join('').trim();
-      // Show in a modal/overlay
+      var d=await resp.json();var text=d.content.map(function(b){return b.text||'';}).join('');
       _showRecModal(text);
-    }catch(e){if(typeof speakResponse==='function')speakResponse('Could not get recommendations, sir.');}
-    finally{if(recDiv){recDiv.textContent='&#9670; AI Recs';recDiv.disabled=false;}}
+    }catch(e){}
+    if(btn){btn.textContent='◆ AI';btn.disabled=false;}
   }
-
   function _showRecModal(text){
-    var existing=_el('str-rec-modal');if(existing)existing.remove();
-    var modal=document.createElement('div');
-    modal.id='str-rec-modal';
-    modal.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.85);z-index:50;display:flex;align-items:center;justify-content:center;padding:20px;border-radius:14px';
-    modal.innerHTML='<div style="background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:20px;max-width:500px;width:100%;max-height:80%;overflow-y:auto">'+
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'+
-      '<span style="font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.1em">&#9670; BAKER RECOMMENDATIONS</span>'+
-      '<button id="str-rec-close" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px">&#215;</button>'+
-      '</div>'+
-      '<div style="font-family:var(--mono);font-size:11px;color:var(--text);line-height:1.8;white-space:pre-wrap">'+_esc(text)+'</div>'+
-      '</div>';
-    _el('strength-panel').appendChild(modal);
-    _el('str-rec-close').addEventListener('click',function(){modal.remove();});
+    var ex=document.getElementById('str-rec-modal');if(ex)ex.remove();
+    var m=document.createElement('div');m.id='str-rec-modal';
+    m.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.85);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px';
+    m.innerHTML='<div style="background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:16px;max-width:440px;width:100%;max-height:80%;overflow-y:auto">'+
+      '<div style="display:flex;justify-content:space-between;margin-bottom:10px"><span style="font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:.1em">◆ RECOMMENDATIONS</span>'+
+      '<button id="str-rec-close" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px">×</button></div>'+
+      '<div style="font-family:var(--mono);font-size:10px;color:var(--text);line-height:1.8;white-space:pre-wrap">'+_esc(text)+'</div></div>';
+    _el('strength-panel').appendChild(m);
+    _el('str-rec-close').addEventListener('click',function(){m.remove();});
+    m.addEventListener('click',function(e){if(e.target===m)m.remove();});
   }
 
   // ── MAP TAB ───────────────────────────────────────────────
   function _renderMap(){
     var el=_el('str-map-content');if(!el)return;
     var theme=typeof FALLOUT!=='undefined'?FALLOUT.getTheme():'none';
-    var mapData=_buildHeatMap();
-    var recovery=mapData.recovery;
+    function hc(m){
+      var h=_muscleHeat(m);if(h<0.01)return'rgba(255,255,255,0.04)';
+      var a=0.15+h*0.75;
+      if(theme==='pipboy')return'rgba(57,255,20,'+a.toFixed(2)+')';
+      if(theme==='enclave')return'rgba(200,30,0,'+a.toFixed(2)+')';
+      if(theme==='bos')return'rgba(200,160,60,'+a.toFixed(2)+')';
+      if(theme==='ncr')return'rgba(200,160,90,'+a.toFixed(2)+')';
+      if(theme==='vaulttec')return'rgba(245,196,0,'+a.toFixed(2)+')';
+      return'rgba(124,106,247,'+a.toFixed(2)+')';
+    }
+    var totalHeat=0,count=0;
+    ['chest','front-delts','side-delts','biceps','triceps','abs','quads','calves','lats','traps','hamstrings','glutes'].forEach(function(m){totalHeat+=_muscleHeat(m);count++;});
+    var recovery=1-(totalHeat/count);
+    var acc='var(--accent)';
 
-    el.innerHTML='<div style="display:flex;gap:16px;height:100%">'+
-      // Left: character
-      '<div style="width:100px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:8px">'+
-      '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.08em;text-align:center">RECOVERY</div>'+
-      '<div style="width:90px;height:130px">'+_getFactionChar(theme,recovery)+'</div>'+
-      '<div style="font-family:var(--mono);font-size:10px;color:var(--accent);text-align:center">'+Math.round(recovery*100)+'%</div>'+
-      '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);text-align:center">'+
-      (recovery>0.75?'Fresh':'recovery>0.5'?'Good':recovery>0.25?'Fatigued':'Destroyed')+'</div>'+
-      // Heat legend
-      '<div style="margin-top:8px;width:80px">'+
-      '<div style="font-family:var(--mono);font-size:8px;color:var(--muted);margin-bottom:4px">SORENESS</div>'+
-      '<div style="height:8px;border-radius:4px;background:linear-gradient(to right,rgba(255,255,255,0.04),var(--accent));border:1px solid var(--border)"></div>'+
-      '<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:7px;color:var(--muted);margin-top:2px"><span>None</span><span>Peak</span></div>'+
-      '</div>'+
-      '</div>'+
-      // Right: heat map
-      '<div style="flex:1;overflow:auto" id="str-heatmap-wrap">'+
-      mapData.svg+
-      '</div>'+
-      '</div>';
-
-    // Muscle tooltips
-    el.querySelectorAll('[data-muscle]').forEach(function(el){
-      el.addEventListener('mouseenter',function(e){
-        var muscle=el.dataset.muscle;
-        var heat=_muscleHeat(muscle);
-        var tip=_el('str-muscle-tip');
-        if(!tip){tip=document.createElement('div');tip.id='str-muscle-tip';
-          tip.style.cssText='position:fixed;background:var(--surface);border:1px solid var(--accent);border-radius:4px;padding:4px 8px;font-family:var(--mono);font-size:10px;color:var(--text);z-index:9999;pointer-events:none';
-          document.body.appendChild(tip);}
-        tip.textContent=muscle.replace(/-/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();})+' — '+(heat>0.6?'Very Sore':heat>0.3?'Sore':heat>0.1?'Slightly Sore':'Fresh');
-        tip.style.left=(e.clientX+10)+'px';tip.style.top=(e.clientY-20)+'px';tip.style.display='block';
-      });
-      el.addEventListener('mouseleave',function(){var t=_el('str-muscle-tip');if(t)t.style.display='none';});
-    });
+    el.innerHTML='<div style="display:flex;gap:14px">'+
+      '<div style="width:90px;flex-shrink:0;text-align:center">'+
+        '<div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.08em;margin-bottom:4px">RECOVERY</div>'+
+        '<div style="width:80px;height:120px;margin:0 auto">'+_getFactionChar(theme,recovery)+'</div>'+
+        '<div style="font-family:var(--mono);font-size:11px;color:var(--accent);margin-top:4px">'+Math.round(recovery*100)+'%</div>'+
+        '<div style="font-family:var(--mono);font-size:8px;color:var(--muted)">'+
+          (recovery>0.75?'Fresh':recovery>0.5?'Good':recovery>0.25?'Fatigued':'Destroyed')+'</div>'+
+        '<div style="margin-top:10px;width:70px;margin-left:auto;margin-right:auto">'+
+          '<div style="font-family:var(--mono);font-size:7px;color:var(--muted);margin-bottom:3px">SORENESS</div>'+
+          '<div style="height:6px;border-radius:3px;background:linear-gradient(to right,rgba(255,255,255,0.04),'+acc+');border:1px solid var(--border)"></div>'+
+          '<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:6px;color:var(--muted);margin-top:1px"><span>None</span><span>Peak</span></div>'+
+        '</div></div>'+
+      '<div style="flex:1;overflow:auto">'+
+        '<svg viewBox="0 0 200 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-height:380px">'+
+        '<text x="52" y="14" font-size="7" fill="var(--muted)" font-family="var(--mono)" text-anchor="middle">FRONT</text>'+
+        '<text x="152" y="14" font-size="7" fill="var(--muted)" font-family="var(--mono)" text-anchor="middle">BACK</text>'+
+        '<line x1="100" y1="10" x2="100" y2="310" stroke="var(--border)" stroke-width="1" opacity="0.3"/>'+
+        // FRONT: head, traps, chest, delts, biceps, triceps, forearms, abs, quads, calves
+        '<ellipse cx="52" cy="30" rx="12" ry="14" fill="var(--surface2)" stroke="'+acc+'" stroke-width="0.6" opacity="0.5"/>'+
+        '<ellipse cx="35" cy="52" rx="9" ry="5" fill="'+hc('traps')+'" stroke="'+acc+'" stroke-width="0.6"/>'+
+        '<ellipse cx="69" cy="52" rx="9" ry="5" fill="'+hc('traps')+'" stroke="'+acc+'" stroke-width="0.6"/>'+
+        '<ellipse cx="44" cy="68" rx="14" ry="11" fill="'+hc('chest')+'" stroke="'+acc+'" stroke-width="0.7"/>'+
+        '<ellipse cx="60" cy="68" rx="14" ry="11" fill="'+hc('chest')+'" stroke="'+acc+'" stroke-width="0.7"/>'+
+        '<circle cx="30" cy="60" r="6" fill="'+hc('front-delts')+'" stroke="'+acc+'" stroke-width="0.6"/>'+
+        '<circle cx="74" cy="60" r="6" fill="'+hc('front-delts')+'" stroke="'+acc+'" stroke-width="0.6"/>'+
+        '<ellipse cx="24" cy="60" rx="4" ry="8" fill="'+hc('side-delts')+'" stroke="'+acc+'" stroke-width="0.5"/>'+
+        '<ellipse cx="80" cy="60" rx="4" ry="8" fill="'+hc('side-delts')+'" stroke="'+acc+'" stroke-width="0.5"/>'+
+        '<ellipse cx="22" cy="84" rx="5" ry="10" fill="'+hc('biceps')+'" stroke="'+acc+'" stroke-width="0.6"/>'+
+        '<ellipse cx="82" cy="84" rx="5" ry="10" fill="'+hc('biceps')+'" stroke="'+acc+'" stroke-width="0.6"/>'+
+        '<ellipse cx="20" cy="104" rx="4" ry="9" fill="'+hc('forearms')+'" stroke="'+acc+'" stroke-width="0.5"/>'+
+        '<ellipse cx="84" cy="104" rx="4" ry="9" fill="'+hc('forearms')+'" stroke="'+acc+'" stroke-width="0.5"/>'+
+        '<rect x="42" y="82" width="20" height="32" rx="3" fill="'+hc('abs')+'" stroke="'+acc+'" stroke-width="0.7"/>'+
+        '<line x1="42" y1="94" x2="62" y2="94" stroke="'+acc+'" stroke-width="0.4" opacity="0.3"/>'+
+        '<line x1="42" y1="106" x2="62" y2="106" stroke="'+acc+'" stroke-width="0.4" opacity="0.3"/>'+
+        '<line x1="52" y1="82" x2="52" y2="114" stroke="'+acc+'" stroke-width="0.4" opacity="0.3"/>'+
+        '<ellipse cx="43" cy="140" rx="11" ry="22" fill="'+hc('quads')+'" stroke="'+acc+'" stroke-width="0.7"/>'+
+        '<ellipse cx="61" cy="140" rx="11" ry="22" fill="'+hc('quads')+'" stroke="'+acc+'" stroke-width="0.7"/>'+
+        '<ellipse cx="43" cy="185" rx="7" ry="14" fill="'+hc('calves')+'" stroke="'+acc+'" stroke-width="0.6"/>'+
+        '<ellipse cx="61" cy="185" rx="7" ry="14" fill="'+hc('calves')+'" stroke="'+acc+'" stroke-width="0.6"/>'+
+        // BACK: traps, lats, mid-back, lower-back, rear-delts, triceps, glutes, hamstrings, calves
+        '<ellipse cx="152" cy="30" rx="12" ry="14" fill="var(--surface2)" stroke="'+acc+'" stroke-width="0.6" opacity="0.5"/>'+
+        '<ellipse cx="152" cy="56" rx="20" ry="9" fill="'+hc('traps')+'" stroke="'+acc+'" stroke-width="0.7"/>'+
+        '<circle cx="132" cy="60" r="6" fill="'+hc('rear-delts')+'" stroke="'+acc+'" stroke-width="0.6"/>'+
+        '<circle cx="172" cy="60" r="6" fill="'+hc('rear-delts')+'" stroke="'+acc+'" stroke-width="0.6"/>'+
+        '<ellipse cx="140" cy="82" rx="11" ry="16" fill="'+hc('lats')+'" stroke="'+acc+'" stroke-width="0.7"/>'+
+        '<ellipse cx="164" cy="82" rx="11" ry="16" fill="'+hc('lats')+'" stroke="'+acc+'" stroke-width="0.7"/>'+
+        '<rect x="143" y="73" width="18" height="18" rx="3" fill="'+hc('mid-back')+'" stroke="'+acc+'" stroke-width="0.6"/>'+
+        '<rect x="144" y="93" width="16" height="16" rx="3" fill="'+hc('lower-back')+'" stroke="'+acc+'" stroke-width="0.6"/>'+
+        '<ellipse cx="126" cy="84" rx="4" ry="10" fill="'+hc('triceps')+'" stroke="'+acc+'" stroke-width="0.6"/>'+
+        '<ellipse cx="178" cy="84" rx="4" ry="10" fill="'+hc('triceps')+'" stroke="'+acc+'" stroke-width="0.6"/>'+
+        '<ellipse cx="143" cy="122" rx="12" ry="11" fill="'+hc('glutes')+'" stroke="'+acc+'" stroke-width="0.7"/>'+
+        '<ellipse cx="161" cy="122" rx="12" ry="11" fill="'+hc('glutes')+'" stroke="'+acc+'" stroke-width="0.7"/>'+
+        '<ellipse cx="143" cy="150" rx="10" ry="20" fill="'+hc('hamstrings')+'" stroke="'+acc+'" stroke-width="0.7"/>'+
+        '<ellipse cx="161" cy="150" rx="10" ry="20" fill="'+hc('hamstrings')+'" stroke="'+acc+'" stroke-width="0.7"/>'+
+        '<ellipse cx="143" cy="185" rx="7" ry="14" fill="'+hc('calves')+'" stroke="'+acc+'" stroke-width="0.6"/>'+
+        '<ellipse cx="161" cy="185" rx="7" ry="14" fill="'+hc('calves')+'" stroke="'+acc+'" stroke-width="0.6"/>'+
+        '</svg></div></div>';
   }
 
   // ── SCORE TAB ─────────────────────────────────────────────
   function _renderScore(){
     var el=_el('str-score-content');if(!el)return;
-    var score=_calcStrengthScore();
-    var volume=_calcWeeklyVolume();
-    var bw=data.bodyweight;
+    var score=_calcScore(),vol=_calcWeeklyVolume(),bw=data.bodyweight;
     var scoreColor=score>=800?'var(--green)':score>=600?'var(--amber)':score>=400?'var(--blue)':'var(--muted)';
     var scoreLbl=score>=900?'Elite':score>=800?'Advanced':score>=600?'Intermediate':score>=400?'Novice':'Beginner';
 
-    var html='<div style="text-align:center;padding:16px 0 24px">'+
-      '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.12em;margin-bottom:8px">STRENGTH SCORE</div>'+
-      '<div style="font-size:56px;font-weight:700;color:'+scoreColor+';font-family:var(--mono);line-height:1;text-shadow:0 0 20px '+scoreColor+'44">'+score+'</div>'+
-      '<div style="font-family:var(--mono);font-size:12px;color:'+scoreColor+';margin-top:6px;letter-spacing:.1em">'+scoreLbl+'</div>'+
-      '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px">based on '+bw+'lbs bodyweight</div>'+
-      '</div>'+
-
-      // Weekly volume
-      '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px;text-align:center">'+
-      '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;margin-bottom:6px">WEEKLY VOLUME</div>'+
-      '<div style="font-size:24px;font-weight:700;color:var(--accent);font-family:var(--mono)">'+volume.toLocaleString()+' <span style="font-size:13px">lbs</span></div>'+
-      '</div>'+
-
-      // Per-lift PRs and ratios
-      '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;margin-bottom:8px">LIFT PRs & STRENGTH RATIOS</div>'+
-      '<div style="display:flex;flex-direction:column;gap:6px">';
-
+    var html='<div style="text-align:center;padding:12px 0 20px">'+
+      '<div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.12em;margin-bottom:6px">STRENGTH SCORE</div>'+
+      '<div style="font-size:48px;font-weight:700;color:'+scoreColor+';font-family:var(--mono);line-height:1;text-shadow:0 0 16px '+scoreColor+'44">'+score+'</div>'+
+      '<div style="font-family:var(--mono);font-size:11px;color:'+scoreColor+';margin-top:4px;letter-spacing:.1em">'+scoreLbl+'</div>'+
+      '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:3px">'+bw+'lbs BW</div></div>'+
+      '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;text-align:center">'+
+        '<div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.1em;margin-bottom:4px">WEEKLY VOLUME</div>'+
+        '<div style="font-size:20px;font-weight:700;color:var(--accent);font-family:var(--mono)">'+vol.toLocaleString()+' <span style="font-size:11px">lbs</span></div></div>'+
+      '<div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.1em;margin-bottom:6px">LIFT PRs & RATIOS</div>';
     KEY_LIFTS.forEach(function(lift){
-      var pr=data.prs[lift];
-      var norm=STRENGTH_NORMS[lift]||1.5;
+      var pr=data.prs[lift],norm=STRENGTH_NORMS[lift]||1.5;
       var ratio=pr?(pr.weight/bw):0;
       var pct=Math.min(100,Math.round((ratio/norm)*100));
       var barColor=pct>=100?'var(--green)':pct>=75?'var(--accent)':pct>=50?'var(--amber)':'var(--muted)';
-      html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px">'+
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
-        '<span style="font-size:11px;color:var(--text)">'+lift+'</span>'+
-        '<div style="text-align:right">'+
-        (pr?'<span style="font-family:var(--mono);font-size:11px;color:var(--accent)">'+pr.weight+'lbs × '+pr.reps+'</span>':'<span style="font-family:var(--mono);font-size:10px;color:var(--muted)">No PR yet</span>')+
-        '</div></div>'+
-        '<div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">'+
-        '<div style="height:100%;width:'+pct+'%;background:'+barColor+';border-radius:2px;transition:width .5s ease"></div>'+
+      html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px">'+
+        '<div style="display:flex;justify-content:space-between;margin-bottom:4px">'+
+          '<span style="font-size:10px;color:var(--text)">'+lift+'</span>'+
+          (pr?'<span style="font-family:var(--mono);font-size:10px;color:var(--accent)">'+pr.weight+'×'+pr.reps+'</span>':'<span style="font-size:9px;color:var(--muted)">—</span>')+
         '</div>'+
-        '<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:3px">'+
-        '<span>'+ratio.toFixed(2)+'× BW</span><span>Target: '+norm+'× ('+Math.round(norm*bw)+'lbs)</span></div>'+
-        '</div>';
+        '<div style="height:3px;background:var(--border);border-radius:2px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+barColor+';border-radius:2px"></div></div>'+
+        '<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:8px;color:var(--muted);margin-top:2px">'+
+          '<span>'+ratio.toFixed(2)+'× BW</span><span>Target: '+norm+'× ('+Math.round(norm*bw)+')</span></div></div>';
     });
-    html+='</div>';
-
     el.innerHTML=html;
   }
 
-  // ── Panel show/hide ───────────────────────────────────────
-  function showPanel(){
-    var p=_el('strength-panel');
-    p.classList.add('str-vis');
-    if(p._wbNormalise)p._wbNormalise();
-    render();
-  }
-  function hidePanel(){_el('strength-panel').classList.remove('str-vis');}
-  function togglePanel(){
-    var p=_el('strength-panel');
-    p.classList.toggle('str-vis');
-    if(p.classList.contains('str-vis')){if(p._wbNormalise)p._wbNormalise();render();}
-  }
-  function switchTab(tab){
-    currentTab=tab;render();
-  }
-
-  // ── Voice ─────────────────────────────────────────────────
+  // ── Panel ─────────────────────────────────────────────────
+  function showPanel(){var p=_el('strength-panel');if(!p)return;p.classList.add('str-vis');if(p._wbNormalise)p._wbNormalise();render();}
+  function hidePanel(){_el('strength-panel').classList.remove('str-vis');_stopRest();}
+  function togglePanel(){var p=_el('strength-panel');p.classList.toggle('str-vis');if(p.classList.contains('str-vis')){if(p._wbNormalise)p._wbNormalise();render();}}
+  function switchTab(tab){currentTab=tab;render();}
   function handleVoice(cmd){
-    var c=cmd.toLowerCase().trim();
-    if(/\b(open|pull up|show|launch)\b.*\b(strength|workout|gym|training|lifts?)\b/.test(c)){
-      showPanel();return"Here's your strength panel, sir.";
-    }
-    if(/\b(log|open)\b.*\b(workout|session|training)\b/.test(c)){
-      showPanel();switchTab('log');return"Here's today's workout log, sir.";
-    }
-    if(/\b(muscle map|heat map|recovery)\b/.test(c)){
-      showPanel();switchTab('map');return"Here's your muscle recovery map, sir.";
-    }
-    if(/\bstrength score\b/.test(c)){
-      showPanel();switchTab('score');
-      var score=_calcStrengthScore();
-      return'Your strength score is '+score+', sir.';
-    }
+    var c=cmd.toLowerCase();
+    if(/\b(open|show|launch)\b.*\b(strength|workout|gym|training)\b/.test(c)){showPanel();return'Strength panel open, sir.';}
+    if(/\b(log|start)\b.*\bworkout\b/.test(c)){showPanel();switchTab('workout');return"Today's workout, sir.";}
+    if(/\b(muscle map|heat map|recovery)\b/.test(c)){showPanel();switchTab('map');return'Recovery map, sir.';}
+    if(/\bstrength score\b/.test(c)){showPanel();switchTab('score');return'Score is '+_calcScore()+', sir.';}
     return null;
   }
-
-  // ── Init ──────────────────────────────────────────────────
-  function init(){
-    _load();
-  }
-
   function importData(imported){
     if(!imported)return;
     if(imported.split&&imported.split.length)data.split=imported.split;
     if(imported.bodyweight)data.bodyweight=imported.bodyweight;
-    if(imported.prs&&Object.keys(imported.prs).length)data.prs=Object.assign({},imported.prs,data.prs);
-    try{localStorage.setItem(LS_KEY,JSON.stringify(data));}catch(e){}
-    render();
+    if(imported.prs)data.prs=Object.assign({},imported.prs,data.prs);
+    _save();render();
   }
-  return{init,showPanel,hidePanel,togglePanel,switchTab,handleVoice,importData};
+  function init(){_load();}
+
+  return{init,showPanel,hidePanel,togglePanel,switchTab,handleVoice,importData,_skipRest:_skipRest};
 })();
