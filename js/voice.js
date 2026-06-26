@@ -17,7 +17,7 @@ var voiceFinal='',silenceTimer=null,speechRate=0.92;
 var MID_SENTENCE_WORDS=['and','but','so','because','that','which','who','when','where','if','although','however','therefore','then','or','nor','yet','for','as','since','while','though','unless','until','after','before','even'];
 function getSilenceWindow(txt){var trimmed=(txt||'').trim().toLowerCase();var lastWord=trimmed.split(/\s+/).pop().replace(/[.,!?]*/g,'');var base=conversationMode?2200:3000;if(MID_SENTENCE_WORDS.indexOf(lastWord)!==-1)return base+1500;return base;}
 var wakeRec=null;
-var HOT_WORDS=['hey baker','chud','foid','JARVIS','Damn','baker','yo baker','ok baker'];
+var HOT_WORDS=['hey baker','chud','foid','JARVIS' 'clanker','pip boy','goul','president','Maxom','Damn','baker','yo baker','ok baker'];
 var speakEndTime=0,ECHO_LOCKOUT_MS=1800;
 var cachedVoices=[];
 var conversationMode=false;
