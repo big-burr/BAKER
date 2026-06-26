@@ -86,14 +86,14 @@ var HABITS=(function(){
     var nudgeKey='baker_habits_nudge_'+_today();
     if(localStorage.getItem(nudgeKey))return;
     var h=new Date().getHours();
-    if(h<8||h>11)return;
+    if(h<7||h>11)return;
     var todayLog=data.log[_today()]||{};
     var anyDone=data.habits.some(function(h){return todayLog[h.id];});
     if(!anyDone){
       localStorage.setItem(nudgeKey,'1');
       setTimeout(function(){
         if(typeof speakResponse==='function')
-          speakResponse("Don't forget your habits, sir.");
+          speakResponse("Don't forget your habits, sir burris.");
       },4000);
     }
   }
