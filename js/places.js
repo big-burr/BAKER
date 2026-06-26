@@ -93,25 +93,30 @@ var PLACES=(function(){
   // ── Overpass query ────────────────────────────────────────
   async function _fetchPlaces(lat,lon,category){
     var radiusM=Math.round(_currentRadius/MILES_PER_METER);
-    var tags=category==='all'
-      ? Object.values(CATS).flatMap(function(c){return c.tags;})
-      : (CATS[category]?CATS[category].tags:[]);
+    var tags;
+    if(category==='all'){
+      // For 'all', use broad amenity/shop queries — faster than listing every tag
+      tags=['amenity=restaurant','amenity=fast_food','amenity=cafe','amenity=fuel',
+            'amenity=pharmacy','amenity=library','amenity=university','amenity=college',
+            'leisure=fitness_centre','shop=coffee','amenity=hospital','amenity=clinic',
+            'amenity=pub','amenity=bar','shop=deli','amenity=gym'];
+    }else{
+      tags=CATS[category]?CATS[category].tags:[];
+    }
 
-    // Deduplicate tags
     tags=[...new Set(tags)];
 
-    // Build Overpass union query
     var union=tags.map(function(t){
       var parts=t.split('=');
       return 'node["'+parts[0]+'"="'+parts[1]+'"](around:'+radiusM+','+lat+','+lon+');'+
              'way["'+parts[0]+'"="'+parts[1]+'"](around:'+radiusM+','+lat+','+lon+');';
     }).join('');
 
-    var query='[out:json][timeout:15];('+union+');out center 40;';
+    var query='[out:json][timeout:25];('+union+');out center 50;';
     var url='https://overpass-api.de/api/interpreter?data='+encodeURIComponent(query);
 
     var controller=new AbortController();
-    var timeout=setTimeout(function(){controller.abort();},12000);
+    var timeout=setTimeout(function(){controller.abort();},25000);
     try{
       var resp=await fetch(url,{signal:controller.signal});
       var data=await resp.json();
@@ -124,7 +129,7 @@ var PLACES=(function(){
     try{
       var url='https://router.project-osrm.org/route/v1/driving/'+
         fromLon+','+fromLat+';'+toLon+','+toLat+'?overview=false';
-      var resp=await fetch(url,{signal:AbortSignal.timeout(4000)});
+      var resp=await fetch(url,{signal:AbortSignal.timeout(6000)});
       var data=await resp.json();
       if(data.routes&&data.routes[0]){
         var meters=data.routes[0].distance;
