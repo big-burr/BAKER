@@ -410,11 +410,18 @@ var CAL=(function(){
   function importTasks(imported){
     if(!imported||!imported.length)return;
     imported.forEach(function(vt){
-      var exists=tasks.some(function(t){return t.text===vt.text;});
+      // Strip due: tag from text if present
+      var cleanText=vt.text.replace(/\s*`due:[^`]*`/g,'').replace(/\s+due\s*$/i,'').trim();
+      if(!cleanText)return;
+      vt.text=cleanText;
+      // Dedup by clean text (ignore case)
+      var exists=tasks.some(function(t){
+        var tClean=t.text.replace(/\s*`due:[^`]*`/g,'').trim().toLowerCase();
+        return tClean===cleanText.toLowerCase();
+      });
       if(!exists){tasks.push(vt);}
     });
     try{localStorage.setItem(LS_KEY,JSON.stringify(tasks));}catch(e){}
-    if(typeof render==='function')render();
   }
   return{
     init,showPanel,hidePanel,togglePanel,handleVoice,
