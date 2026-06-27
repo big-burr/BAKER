@@ -784,4 +784,176 @@ var STRENGTH=(function(){
   function init(){_load();}
 
   return{init,showPanel,hidePanel,togglePanel,switchTab,handleVoice,importData,_skipRest:_skipRest};
-})();
+})();  // ── MAP TAB ───────────────────────────────────────────────────
+  function _renderMap(){
+    var el=_el('str-map-content');if(!el)return;
+    var theme=typeof FALLOUT!=='undefined'?FALLOUT.getTheme():'none';
+    function hc(m){
+      var h=_muscleHeat(m);
+      if(h<0.01)return null; // transparent — show base body
+      var a=Math.min(0.95,0.25+h*0.7);
+      if(theme==='pipboy')return'rgba(57,255,20,'+a.toFixed(2)+')';
+      if(theme==='enclave')return'rgba(220,40,20,'+a.toFixed(2)+')';
+      if(theme==='bos')return'rgba(210,170,50,'+a.toFixed(2)+')';
+      if(theme==='ncr')return'rgba(210,160,80,'+a.toFixed(2)+')';
+      if(theme==='vaulttec')return'rgba(245,196,0,'+a.toFixed(2)+')';
+      // Default: cool→warm gradient (blue→orange→red)
+      if(h<0.33)return'rgba(96,165,250,'+a.toFixed(2)+')';
+      if(h<0.66)return'rgba(251,146,60,'+a.toFixed(2)+')';
+      return'rgba(248,113,113,'+a.toFixed(2)+')';
+    }
+    function hcOrBase(m){return hc(m)||'rgba(255,255,255,0.06)';}
+
+    var totalHeat=0,count=0;
+    ['chest','front-delts','side-delts','biceps','triceps','abs','quads','calves','lats','traps','hamstrings','glutes'].forEach(function(m){totalHeat+=_muscleHeat(m);count++;});
+    var recovery=1-(totalHeat/count);
+    var recColor=recovery>0.75?'var(--green)':recovery>0.4?'var(--amber)':'var(--red)';
+    var accCol='var(--accent)';
+
+    // Build legend entries for muscles with heat
+    var legendItems=[
+      {m:'chest',label:'Chest'},{m:'front-delts',label:'Front Delt'},{m:'side-delts',label:'Side Delt'},
+      {m:'rear-delts',label:'Rear Delt'},{m:'traps',label:'Traps'},{m:'lats',label:'Lats'},
+      {m:'mid-back',label:'Mid Back'},{m:'lower-back',label:'Lower Back'},
+      {m:'biceps',label:'Biceps'},{m:'triceps',label:'Triceps'},{m:'forearms',label:'Forearms'},
+      {m:'abs',label:'Abs'},{m:'obliques',label:'Obliques'},
+      {m:'glutes',label:'Glutes'},{m:'quads',label:'Quads'},
+      {m:'hamstrings',label:'Hamstrings'},{m:'calves',label:'Calves'}
+    ].filter(function(item){return _muscleHeat(item.m)>0.01;});
+
+    var legend=legendItems.length?
+      '<div style="display:flex;flex-wrap:wrap;gap:4px;padding:8px 0;border-top:1px solid var(--border)">'+
+      legendItems.map(function(item){
+        var h=_muscleHeat(item.m);
+        var col=hc(item.m);
+        return'<div style="display:flex;align-items:center;gap:3px;font-family:var(--mono);font-size:9px;color:var(--text)">'+
+          '<div style="width:8px;height:8px;border-radius:2px;background:'+col+'"></div>'+
+          item.label+' '+Math.round(h*100)+'%</div>';
+      }).join('')+'</div>':'';
+
+    el.innerHTML=
+      '<div style="display:flex;gap:10px;align-items:flex-start">'+
+      // Character + stats
+      '<div style="width:80px;flex-shrink:0;text-align:center">'+
+        '<div style="width:72px;height:108px;margin:0 auto">'+_getFactionChar(theme,recovery)+'</div>'+
+        '<div style="font-family:var(--mono);font-size:18px;font-weight:700;color:'+recColor+';margin-top:4px">'+Math.round(recovery*100)+'%</div>'+
+        '<div style="font-family:var(--mono);font-size:8px;color:var(--muted)">'+(recovery>0.75?'Fresh':recovery>0.5?'Good':recovery>0.25?'Sore':'Toasted')+'</div>'+
+      '</div>'+
+      // Body maps
+      '<div style="flex:1;min-width:0">'+
+        '<div style="display:flex;justify-content:center;gap:4px">'+
+          '<div style="text-align:center"><div style="font-family:var(--mono);font-size:7px;color:var(--muted);letter-spacing:.08em;margin-bottom:3px">FRONT</div>'+
+            _bodyFront(hcOrBase,accCol)+'</div>'+
+          '<div style="text-align:center"><div style="font-family:var(--mono);font-size:7px;color:var(--muted);letter-spacing:.08em;margin-bottom:3px">BACK</div>'+
+            _bodyBack(hcOrBase,accCol)+'</div>'+
+        '</div>'+
+        legend+
+      '</div></div>';
+  }
+
+  function _bodyFront(hcOrBase,acc){
+    // Detailed front body with anatomically shaped regions
+    return'<svg viewBox="0 0 120 280" xmlns="http://www.w3.org/2000/svg" style="height:240px;width:auto">'+
+      '<defs><filter id="mblur"><feGaussianBlur in="SourceGraphic" stdDeviation="2"/></filter></defs>'+
+      // Body silhouette base
+      '<g opacity="0.15" fill="white">'+
+        // Head
+        '<ellipse cx="60" cy="24" rx="14" ry="18"/>'+
+        // Neck
+        '<rect x="55" y="40" width="10" height="8" rx="3"/>'+
+        // Torso
+        '<path d="M35 50 Q28 55 26 80 L24 130 Q24 140 36 140 L84 140 Q96 140 96 130 L94 80 Q92 55 85 50 Z"/>'+
+        // Upper arms
+        '<path d="M26 55 Q15 58 13 80 Q11 100 16 108 Q20 116 26 112 Q30 95 34 72 Z"/>'+
+        '<path d="M94 55 Q105 58 107 80 Q109 100 104 108 Q100 116 94 112 Q90 95 86 72 Z"/>'+
+        // Lower arms
+        '<path d="M16 110 Q10 118 11 138 Q12 154 18 156 Q24 158 26 148 Q24 130 22 112 Z"/>'+
+        '<path d="M104 110 Q110 118 109 138 Q108 154 102 156 Q96 158 94 148 Q96 130 98 112 Z"/>'+
+        // Upper legs
+        '<path d="M36 140 Q28 145 26 175 Q24 200 30 210 Q36 218 44 214 Q50 195 48 168 L44 140 Z"/>'+
+        '<path d="M84 140 Q92 145 94 175 Q96 200 90 210 Q84 218 76 214 Q70 195 72 168 L76 140 Z"/>'+
+        // Lower legs
+        '<path d="M30 210 Q24 218 25 242 Q26 260 32 264 Q38 266 42 258 Q44 242 44 216 Z"/>'+
+        '<path d="M90 210 Q96 218 95 242 Q94 260 88 264 Q82 266 78 258 Q76 242 76 216 Z"/>'+
+      '</g>'+
+      // Muscle overlays with heat colors — drawn on top with blur for glow effect
+      // Chest
+      '<ellipse cx="48" cy="72" rx="12" ry="14" fill="'+hcOrBase('chest')+'" filter="url(#mblur)" opacity="0.8"/>'+
+      '<ellipse cx="72" cy="72" rx="12" ry="14" fill="'+hcOrBase('chest')+'" filter="url(#mblur)" opacity="0.8"/>'+
+      // Front delts
+      '<ellipse cx="33" cy="60" rx="7" ry="9" fill="'+hcOrBase('front-delts')+'" filter="url(#mblur)" opacity="0.9"/>'+
+      '<ellipse cx="87" cy="60" rx="7" ry="9" fill="'+hcOrBase('front-delts')+'" filter="url(#mblur)" opacity="0.9"/>'+
+      // Side delts
+      '<ellipse cx="25" cy="65" rx="5" ry="8" fill="'+hcOrBase('side-delts')+'" filter="url(#mblur)" opacity="0.8"/>'+
+      '<ellipse cx="95" cy="65" rx="5" ry="8" fill="'+hcOrBase('side-delts')+'" filter="url(#mblur)" opacity="0.8"/>'+
+      // Traps
+      '<ellipse cx="60" cy="52" rx="16" ry="6" fill="'+hcOrBase('traps')+'" filter="url(#mblur)" opacity="0.8"/>'+
+      // Biceps
+      '<ellipse cx="20" cy="90" rx="5" ry="12" fill="'+hcOrBase('biceps')+'" filter="url(#mblur)" opacity="0.9"/>'+
+      '<ellipse cx="100" cy="90" rx="5" ry="12" fill="'+hcOrBase('biceps')+'" filter="url(#mblur)" opacity="0.9"/>'+
+      // Triceps (visible from front sides)
+      '<ellipse cx="17" cy="92" rx="3" ry="9" fill="'+hcOrBase('triceps')+'" filter="url(#mblur)" opacity="0.6"/>'+
+      '<ellipse cx="103" cy="92" rx="3" ry="9" fill="'+hcOrBase('triceps')+'" filter="url(#mblur)" opacity="0.6"/>'+
+      // Forearms
+      '<ellipse cx="18" cy="128" rx="4" ry="12" fill="'+hcOrBase('forearms')+'" filter="url(#mblur)" opacity="0.8"/>'+
+      '<ellipse cx="102" cy="128" rx="4" ry="12" fill="'+hcOrBase('forearms')+'" filter="url(#mblur)" opacity="0.8"/>'+
+      // Abs
+      '<rect x="51" y="90" width="18" height="40" rx="5" fill="'+hcOrBase('abs')+'" filter="url(#mblur)" opacity="0.8"/>'+
+      // Obliques
+      '<ellipse cx="40" cy="108" rx="8" ry="14" fill="'+hcOrBase('obliques')+'" filter="url(#mblur)" opacity="0.7"/>'+
+      '<ellipse cx="80" cy="108" rx="8" ry="14" fill="'+hcOrBase('obliques')+'" filter="url(#mblur)" opacity="0.7"/>'+
+      // Quads
+      '<ellipse cx="44" cy="170" rx="13" ry="30" fill="'+hcOrBase('quads')+'" filter="url(#mblur)" opacity="0.85"/>'+
+      '<ellipse cx="76" cy="170" rx="13" ry="30" fill="'+hcOrBase('quads')+'" filter="url(#mblur)" opacity="0.85"/>'+
+      // Calves front
+      '<ellipse cx="36" cy="240" rx="7" ry="18" fill="'+hcOrBase('calves')+'" filter="url(#mblur)" opacity="0.75"/>'+
+      '<ellipse cx="84" cy="240" rx="7" ry="18" fill="'+hcOrBase('calves')+'" filter="url(#mblur)" opacity="0.75"/>'+
+      '</svg>';
+  }
+
+  function _bodyBack(hcOrBase,acc){
+    return'<svg viewBox="0 0 120 280" xmlns="http://www.w3.org/2000/svg" style="height:240px;width:auto">'+
+      '<defs><filter id="mblur2"><feGaussianBlur in="SourceGraphic" stdDeviation="2"/></filter></defs>'+
+      // Body silhouette
+      '<g opacity="0.15" fill="white">'+
+        '<ellipse cx="60" cy="24" rx="14" ry="18"/>'+
+        '<rect x="55" y="40" width="10" height="8" rx="3"/>'+
+        '<path d="M35 50 Q28 55 26 80 L24 130 Q24 140 36 140 L84 140 Q96 140 96 130 L94 80 Q92 55 85 50 Z"/>'+
+        '<path d="M26 55 Q15 58 13 80 Q11 100 16 108 Q20 116 26 112 Q30 95 34 72 Z"/>'+
+        '<path d="M94 55 Q105 58 107 80 Q109 100 104 108 Q100 116 94 112 Q90 95 86 72 Z"/>'+
+        '<path d="M16 110 Q10 118 11 138 Q12 154 18 156 Q24 158 26 148 Q24 130 22 112 Z"/>'+
+        '<path d="M104 110 Q110 118 109 138 Q108 154 102 156 Q96 158 94 148 Q96 130 98 112 Z"/>'+
+        '<path d="M36 140 Q28 145 26 175 Q24 200 30 210 Q36 218 44 214 Q50 195 48 168 L44 140 Z"/>'+
+        '<path d="M84 140 Q92 145 94 175 Q96 200 90 210 Q84 218 76 214 Q70 195 72 168 L76 140 Z"/>'+
+        '<path d="M30 210 Q24 218 25 242 Q26 260 32 264 Q38 266 42 258 Q44 242 44 216 Z"/>'+
+        '<path d="M90 210 Q96 218 95 242 Q94 260 88 264 Q82 266 78 258 Q76 242 76 216 Z"/>'+
+      '</g>'+
+      // Rear delts
+      '<ellipse cx="33" cy="61" rx="7" ry="9" fill="'+hcOrBase('rear-delts')+'" filter="url(#mblur2)" opacity="0.9"/>'+
+      '<ellipse cx="87" cy="61" rx="7" ry="9" fill="'+hcOrBase('rear-delts')+'" filter="url(#mblur2)" opacity="0.9"/>'+
+      // Traps
+      '<ellipse cx="60" cy="56" rx="20" ry="10" fill="'+hcOrBase('traps')+'" filter="url(#mblur2)" opacity="0.85"/>'+
+      // Lats
+      '<path d="M30 70 Q20 90 22 115 Q26 128 34 125 Q42 118 44 100 Q44 80 38 65 Z" fill="'+hcOrBase('lats')+'" filter="url(#mblur2)" opacity="0.85"/>'+
+      '<path d="M90 70 Q100 90 98 115 Q94 128 86 125 Q78 118 76 100 Q76 80 82 65 Z" fill="'+hcOrBase('lats')+'" filter="url(#mblur2)" opacity="0.85"/>'+
+      // Mid back
+      '<rect x="49" y="75" width="22" height="22" rx="4" fill="'+hcOrBase('mid-back')+'" filter="url(#mblur2)" opacity="0.8"/>'+
+      // Lower back
+      '<rect x="50" y="100" width="20" height="22" rx="4" fill="'+hcOrBase('lower-back')+'" filter="url(#mblur2)" opacity="0.8"/>'+
+      // Triceps
+      '<ellipse cx="19" cy="90" rx="5" ry="13" fill="'+hcOrBase('triceps')+'" filter="url(#mblur2)" opacity="0.9"/>'+
+      '<ellipse cx="101" cy="90" rx="5" ry="13" fill="'+hcOrBase('triceps')+'" filter="url(#mblur2)" opacity="0.9"/>'+
+      // Forearms back
+      '<ellipse cx="18" cy="128" rx="4" ry="12" fill="'+hcOrBase('forearms')+'" filter="url(#mblur2)" opacity="0.75"/>'+
+      '<ellipse cx="102" cy="128" rx="4" ry="12" fill="'+hcOrBase('forearms')+'" filter="url(#mblur2)" opacity="0.75"/>'+
+      // Glutes
+      '<ellipse cx="46" cy="145" rx="16" ry="14" fill="'+hcOrBase('glutes')+'" filter="url(#mblur2)" opacity="0.9"/>'+
+      '<ellipse cx="74" cy="145" rx="16" ry="14" fill="'+hcOrBase('glutes')+'" filter="url(#mblur2)" opacity="0.9"/>'+
+      // Hamstrings
+      '<ellipse cx="44" cy="185" rx="13" ry="28" fill="'+hcOrBase('hamstrings')+'" filter="url(#mblur2)" opacity="0.85"/>'+
+      '<ellipse cx="76" cy="185" rx="13" ry="28" fill="'+hcOrBase('hamstrings')+'" filter="url(#mblur2)" opacity="0.85"/>'+
+      // Calves
+      '<ellipse cx="36" cy="238" rx="8" ry="20" fill="'+hcOrBase('calves')+'" filter="url(#mblur2)" opacity="0.85"/>'+
+      '<ellipse cx="84" cy="238" rx="8" ry="20" fill="'+hcOrBase('calves')+'" filter="url(#mblur2)" opacity="0.85"/>'+
+      '</svg>';
+  }
