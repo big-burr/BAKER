@@ -367,12 +367,14 @@
     <button class="str-tab" id="str-tab-workout" onclick="STRENGTH.switchTab('workout')">&#9998; Workout</button>
     <button class="str-tab" id="str-tab-map" onclick="STRENGTH.switchTab('map')">&#128134; Map</button>
     <button class="str-tab" id="str-tab-score" onclick="STRENGTH.switchTab('score')">&#9651; Score</button>
+    <button class="str-tab" id="str-tab-coach" onclick="STRENGTH.switchTab('coach')">&#9670; Coach</button>
   </div>
   <div class="str-body">
     <div id="str-split-content"></div>
     <div id="str-workout-content" style="display:none"></div>
     <div id="str-map-content" style="display:none"></div>
     <div id="str-score-content" style="display:none"></div>
+  <div id="str-coach-content" class="str-tab-content" style="display:none;padding:14px;overflow-y:auto;height:calc(100% - 90px)"></div>
   </div>
 </div>
 
@@ -1035,6 +1037,39 @@ async function _checkMemoryCap(key){
     console.error('[BAKER Memory] archive error:',e);
   }
 }
+
+// Pip-Boy color picker
+(function(){
+  var saved=localStorage.getItem('baker_pipboy_color');
+  if(saved)window.BAKER_PIPBOY_COLOR=saved;
+  function applyPipColor(col){
+    window.BAKER_PIPBOY_COLOR=col;
+    localStorage.setItem('baker_pipboy_color',col);
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    var picker=document.getElementById('pip-color-picker');
+    var hexInp=document.getElementById('pip-color-hex');
+    var preview=document.getElementById('pip-color-preview');
+    if(!picker)return;
+    var init=localStorage.getItem('baker_pipboy_color')||'#39ff14';
+    picker.value=init;if(hexInp)hexInp.value=init;if(preview)preview.style.background=init;
+    picker.addEventListener('input',function(){
+      var c=picker.value;if(hexInp)hexInp.value=c;if(preview)preview.style.background=c;applyPipColor(c);
+    });
+    if(hexInp)hexInp.addEventListener('input',function(){
+      var c=hexInp.value;
+      if(/^#[0-9a-fA-F]{6}$/.test(c)){picker.value=c;if(preview)preview.style.background=c;applyPipColor(c);}
+    });
+    var themeSel=document.getElementById('fallout-theme-sel');
+    if(themeSel){
+      function updatePipVis(){
+        var pipSetting=document.getElementById('pip-color-setting');
+        if(pipSetting)pipSetting.style.display=themeSel.value==='pipboy'?'flex':'none';
+      }
+      themeSel.addEventListener('change',updatePipVis);updatePipVis();
+    }
+  });
+})();
 
 // INIT
 // ═══════════════════════════════════════════════════════════
