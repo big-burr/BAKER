@@ -341,7 +341,7 @@ function _layoutGrid(W,H){
 
 // ── FOREST LAYOUT ─────────────────────────────────────────
 function _layoutForest(W,H){
-  var TYPE_ORDER=['conversation','project','lecture','daily','general'];
+  var TYPE_ORDER=['conversation','project','lecture','daily','general','system','workout','academic','biometric','weekly'];
   var USABLE_LEFT=0.06,USABLE_RIGHT=0.94;
   var USABLE_TOP=0.08,USABLE_BOTTOM=0.86;
   var GAP_FRAC=0.04;
@@ -419,10 +419,10 @@ function _layoutYggdrasil(W,H){
     nonOrphans[0].isLeaf=false;
   }
 
-  var TYPE_ORDER=['conversation','project','lecture','daily','general'];
+  var TYPE_ORDER=['conversation','project','lecture','daily','general','system','workout','academic','biometric','weekly'];
   var typeGroups={};
   TYPE_ORDER.forEach(function(t){typeGroups[t]=[];});
-  nonOrphans.slice(1).forEach(function(n){typeGroups[n.type].push(n);});
+  nonOrphans.slice(1).forEach(function(n){var t=typeGroups[n.type]?n.type:'general';typeGroups[t].push(n);});
 
   var activeTypes=TYPE_ORDER.filter(function(t){return typeGroups[t].length>0;});
   var numBranches=activeTypes.length;
@@ -466,7 +466,7 @@ function _layoutYggdrasil(W,H){
 
 // ── CLUSTER LAYOUT ────────────────────────────────────────
 function _layoutCluster(W,H){
-  var typeOrder=['conversation','project','lecture','daily','general'];
+  var typeOrder=['conversation','project','lecture','daily','general','system','workout','academic','biometric','weekly'];
   var groupCenters={};
   var activeTypes=typeOrder.filter(function(t){
     return graphNodes.some(function(n){return n.type===t&&!n.orphan;});
@@ -581,7 +581,7 @@ function runGraphSim(){
         b.vx-=dx*w*diff;b.vy-=dy*w*diff;
       });
       if(clusterMode){
-        var typeOrder=['conversation','project','lecture','daily','general'];
+        var typeOrder=['conversation','project','lecture','daily','general','system','workout','academic','biometric','weekly'];
         var activeCenters={};
         typeOrder.forEach(function(t){
           var m=graphNodes.filter(function(n){return n.type===t&&!n.orphan;});
