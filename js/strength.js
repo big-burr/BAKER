@@ -13,7 +13,7 @@ var STRENGTH=(function(){
   var DAYS_FULL=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   var REST_DEFAULT=120; // seconds
 
-  var data={bodyweight:185,split:[],logs:[],prs:{},restTime:REST_DEFAULT};
+  var data={bodyweight:185,split:[],logs:[],prs:{},restTime:REST_DEFAULT,customExercises:[]};
   var currentTab='workout';
   var _restTimer=null;
   var _restRemaining=0;
@@ -69,7 +69,26 @@ var STRENGTH=(function(){
     try{var r=localStorage.getItem(LS_KEY);if(r){var d=JSON.parse(r);
       data.bodyweight=d.bodyweight||185;data.split=d.split||[];
       data.logs=d.logs||[];data.prs=d.prs||{};data.restTime=d.restTime||REST_DEFAULT;
+      data.customExercises=d.customExercises||[];
+      // Merge custom exercises into EXERCISE_MUSCLES
+      data.customExercises.forEach(function(ce){
+        if(ce.name&&ce.muscles)EXERCISE_MUSCLES[ce.name]=ce.muscles;
+      });
     }}catch(e){}
+  }
+  function addCustomExercise(name,muscles,pattern){
+    if(!name||!muscles||!muscles.length)return false;
+    var exists=data.customExercises.some(function(ce){return ce.name.toLowerCase()===name.toLowerCase();});
+    if(exists)return false;
+    var ce={name:name,muscles:muscles,pattern:pattern||'',custom:true};
+    data.customExercises.push(ce);
+    EXERCISE_MUSCLES[name]=muscles;
+    _save();return true;
+  }
+  function getAllExercises(){
+    var std=Object.keys(EXERCISE_MUSCLES).filter(function(k){return!data.customExercises.some(function(ce){return ce.name===k;});}).sort();
+    var custom=data.customExercises.map(function(ce){return'★ '+ce.name;}).sort();
+    return std.concat(custom);
   }
   function _save(){
     var cutoff=new Date();cutoff.setDate(cutoff.getDate()-90);
@@ -339,7 +358,7 @@ var STRENGTH=(function(){
   function render(){
     var panel=_el('strength-panel');
     if(!panel||!panel.classList.contains('str-vis'))return;
-    ['split','workout','map','score'].forEach(function(t){
+    ['split','workout','map','score','coach'].forEach(function(t){
       var btn=_el('str-tab-'+t);if(btn)btn.classList.toggle('active',t===currentTab);
       var content=_el('str-'+t+'-content');if(content)content.style.display=(t===currentTab?'block':'none');
     });
@@ -347,15 +366,59 @@ var STRENGTH=(function(){
     else if(currentTab==='workout')_renderWorkout();
     else if(currentTab==='map')_renderMap();
     else if(currentTab==='score')_renderScore();
+    else if(currentTab==='coach')_renderCoach();
   }
 
   // ── SPLIT TAB ─────────────────────────────────────────────
+  function _showCustomExerciseModal(){
+    var existing=document.getElementById('str-custom-modal');if(existing)existing.remove();
+    var ALL_MUSCLES=['chest','front-delts','side-delts','rear-delts','traps','lats','mid-back',
+      'lower-back','biceps','triceps','forearms','abs','obliques','quads','hamstrings','glutes','calves'];
+    var PATTERNS=['Push','Pull','Hinge','Squat','Carry','Isolation','Compound','Core'];
+    var modal=document.createElement('div');modal.id='str-custom-modal';
+    modal.style.cssText='position:absolute;inset:0;background:rgba(0,0,0,.85);z-index:60;display:flex;align-items:center;justify-content:center;padding:16px;border-radius:14px';
+    modal.innerHTML='<div style="background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:16px;width:100%;max-width:360px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'+
+        '<span style="font-family:var(--mono);font-size:11px;color:var(--accent)">★ New Exercise</span>'+
+        '<button id="str-custom-close" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px">×</button></div>'+
+      '<input id="str-custom-name" placeholder="Exercise name..." style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:7px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;margin-bottom:10px;box-sizing:border-box">'+
+      '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.08em;margin-bottom:5px">MUSCLES WORKED</div>'+
+      '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">'+
+        ALL_MUSCLES.map(function(m){
+          return'<label style="display:flex;align-items:center;gap:3px;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:3px 6px;cursor:pointer;font-family:var(--mono);font-size:9px;color:var(--muted)">'+
+            '<input type="checkbox" value="'+m+'" style="margin:0"> '+m+'</label>';
+        }).join('')+'</div>'+
+      '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.08em;margin-bottom:5px">MOVEMENT PATTERN</div>'+
+      '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px">'+
+        PATTERNS.map(function(p){
+          return'<label style="display:flex;align-items:center;gap:3px;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:3px 8px;cursor:pointer;font-family:var(--mono);font-size:9px;color:var(--muted)">'+
+            '<input type="radio" name="str-pattern" value="'+p+'" style="margin:0"> '+p+'</label>';
+        }).join('')+'</div>'+
+      '<button id="str-custom-save" style="width:100%;background:var(--accent-dim);border:1px solid var(--accent);border-radius:4px;padding:8px;font-family:var(--mono);font-size:11px;color:var(--accent);cursor:pointer">Save Exercise</button>'+
+      '</div>';
+    _el('strength-panel').appendChild(modal);
+    _el('str-custom-close').addEventListener('click',function(){modal.remove();});
+    modal.addEventListener('click',function(e){if(e.target===modal)modal.remove();});
+    _el('str-custom-save').addEventListener('click',function(){
+      var name=(_el('str-custom-name')||{}).value||'';
+      if(!name.trim()){alert('Enter a name');return;}
+      var muscles=[].slice.call(modal.querySelectorAll('input[type=checkbox]:checked')).map(function(cb){return cb.value;});
+      if(!muscles.length){alert('Select at least one muscle');return;}
+      var patternEl=modal.querySelector('input[name=str-pattern]:checked');
+      var pattern=patternEl?patternEl.value:'';
+      var ok=addCustomExercise(name.trim(),muscles,pattern);
+      if(ok){modal.remove();_renderSplit();}
+      else{alert('Exercise already exists');}
+    });
+  }
+
   function _renderSplit(){
     var el=_el('str-split-content');if(!el)return;
     var today=new Date().getDay();
     var html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'+
       '<span style="font-family:var(--mono);font-size:10px;color:var(--muted)">Tap a day to edit your split</span>'+
       '<div style="display:flex;gap:6px;align-items:center">'+
+      '<button id="str-add-custom" style="background:none;border:1px solid var(--accent-dim);border-radius:4px;padding:3px 8px;font-family:var(--mono);font-size:9px;color:var(--accent);cursor:pointer">★ Custom</button>'+
         '<label style="font-size:10px;color:var(--muted);font-family:var(--mono)">BW:</label>'+
         '<input id="str-bw" type="number" value="'+data.bodyweight+'" min="50" max="500" step="0.5" '+
         'style="width:55px;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-family:var(--mono);font-size:10px;color:var(--text);outline:none"> lbs'+
@@ -372,6 +435,8 @@ var STRENGTH=(function(){
     html+='</div><div id="str-day-editor" style="display:none"></div>';
     el.innerHTML=html;
     _el('str-bw').addEventListener('change',function(){data.bodyweight=parseFloat(this.value)||185;_save();});
+    var custBtn=_el('str-add-custom');
+    if(custBtn)custBtn.addEventListener('click',_showCustomExerciseModal);
     el.querySelectorAll('.str-day-card').forEach(function(card){
       card.addEventListener('click',function(){_showDayEditor(parseInt(card.dataset.day));});
     });
@@ -399,7 +464,7 @@ var STRENGTH=(function(){
           '<span style="font-family:var(--mono);font-size:11px;color:var(--accent)">'+DAYS_FULL[dayIdx]+'</span>'+
           '<input id="str-day-name" value="'+(splitDay?_esc(splitDay.name):'')+'" placeholder="Day name" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-family:var(--mono);font-size:10px;color:var(--text);outline:none">'+
         '</div>'+
-        '<datalist id="str-ex-list">'+Object.keys(EXERCISE_MUSCLES).map(function(e){return'<option value="'+e+'">';}).join('')+'</datalist>'+
+        '<datalist id="str-ex-list">'+getAllExercises().map(function(e){return'<option value="'+e+'">';}).join('')+'</datalist>'+
         exList+
         '<div style="display:flex;gap:6px;margin-top:8px">'+
           '<button id="str-add-ex" style="flex:1;background:none;border:1px dashed var(--border);border-radius:4px;padding:5px;font-family:var(--mono);font-size:10px;color:var(--muted);cursor:pointer">+ Exercise</button>'+
@@ -502,7 +567,7 @@ var STRENGTH=(function(){
         '<input id="str-custom-ex" list="str-workout-list" placeholder="Add exercise..." style="flex:1;background:var(--bg);border:1px dashed var(--border);border-radius:4px;padding:6px 10px;font-family:var(--mono);font-size:10px;color:var(--text);outline:none">'+
         '<button id="str-custom-add" style="background:none;border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-family:var(--mono);font-size:10px;color:var(--muted);cursor:pointer">+</button>'+
         '</div>'+
-        '<datalist id="str-workout-list">'+Object.keys(EXERCISE_MUSCLES).map(function(e){return'<option value="'+e+'">';}).join('')+'</datalist>';
+        '<datalist id="str-workout-list">'+getAllExercises().map(function(e){return'<option value="'+e+'">';}).join('')+'</datalist>';
     }
     html+='<div id="str-rest-bar" style="display:none"></div>';
     el.innerHTML=html;
@@ -761,7 +826,103 @@ var STRENGTH=(function(){
     el.innerHTML=html;
   }
 
-  // ── Panel ─────────────────────────────────────────────────
+  // ── COACH TAB ────────────────────────────────────────────────
+  var _coachCache=null;
+  var _coachCacheDate=null;
+
+  function _renderCoach(){
+    var el=_el('str-coach-content');if(!el)return;
+    var log=_getTodayLog();
+    var totalVol=_calcWeeklyVolume();
+    var score=_calcScore();
+    var weekLogs=data.logs.filter(function(l){return l.date>=_weekStart();});
+
+    el.innerHTML=
+      // Header stats
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">'+
+        '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center">'+
+          '<div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent)">'+score+'</div>'+
+          '<div style="font-family:var(--mono);font-size:8px;color:var(--muted)">SCORE</div></div>'+
+        '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center">'+
+          '<div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--green)">'+weekLogs.length+'</div>'+
+          '<div style="font-family:var(--mono);font-size:8px;color:var(--muted)">SESSIONS</div></div>'+
+        '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center">'+
+          '<div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber)">'+Math.round(totalVol/1000)+'k</div>'+
+          '<div style="font-family:var(--mono);font-size:8px;color:var(--muted)">LBS LIFTED</div></div>'+
+      '</div>'+
+      // Weekly targets
+      '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px">'+
+        '<div style="font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:.1em;margin-bottom:8px">WEEKLY TARGETS</div>'+
+        ['Bench Press','Squat','Deadlift'].map(function(lift){
+          var pr=data.prs[lift];
+          var norm=STRENGTH_NORMS[lift]||1.5;
+          var target=Math.round(data.bodyweight*norm/5)*5;
+          var current=pr?pr.weight:0;
+          var pct=Math.min(100,Math.round((current/target)*100));
+          return'<div style="margin-bottom:6px">'+
+            '<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;margin-bottom:3px">'+
+              '<span style="color:var(--text)">'+lift+'</span>'+
+              '<span style="color:var(--muted)">'+current+' / '+target+' lbs</span></div>'+
+            '<div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">'+
+              '<div style="height:100%;width:'+pct+'%;background:'+(pct>=100?'var(--green)':pct>=75?'var(--accent)':'var(--amber)')+';border-radius:2px"></div>'+
+            '</div></div>';
+        }).join('')+
+      '</div>'+
+      // Training notes
+      '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px">'+
+        '<div style="font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:.1em;margin-bottom:6px">TRAINING NOTES</div>'+
+        '<textarea id="str-coach-notes" rows="3" placeholder="Notes, cues, reminders..." style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:6px;font-family:var(--mono);font-size:10px;color:var(--text);resize:none;outline:none;box-sizing:border-box">'+
+          (localStorage.getItem('baker_strength_notes')||'')+'</textarea>'+
+      '</div>'+
+      // AI Coach
+      '<button id="str-coach-btn" style="width:100%;background:none;border:1px solid var(--accent-dim);border-radius:6px;padding:10px;font-family:var(--mono);font-size:11px;color:var(--accent);cursor:pointer;margin-bottom:8px">◆ Get Coaching Recommendations</button>'+
+      '<div id="str-coach-output" style="font-family:var(--mono);font-size:10px;color:var(--text);line-height:1.8;white-space:pre-wrap">'+
+        (_coachCache&&_coachCacheDate===_today()?_coachCache:'')+'</div>';
+
+    // Notes autosave
+    var notesEl=_el('str-coach-notes');
+    if(notesEl)notesEl.addEventListener('input',function(){localStorage.setItem('baker_strength_notes',this.value);});
+
+    var coachBtn=_el('str-coach-btn');
+    if(coachBtn)coachBtn.addEventListener('click',function(){_runCoach(log);});
+  }
+
+  async function _runCoach(log){
+    var key=localStorage.getItem('baker_api_key');if(!key)return;
+    var btn=_el('str-coach-btn');var out=_el('str-coach-output');
+    if(btn){btn.textContent='◆ Analyzing...';btn.disabled=true;}
+    if(out)out.textContent='';
+    var recent=data.logs.slice(-7).map(function(l){
+      return l.name+' ('+l.date+'): '+l.entries.map(function(e){
+        var d=e.sets.filter(function(s){return s.done;});
+        return d.length?e.exercise+' '+d.length+'×'+(d[0]?d[0].reps+'@'+d[0].weight+'lbs':''):null;
+      }).filter(Boolean).join(', ');
+    }).filter(Boolean).join('\n');
+    var prsStr=Object.entries(data.prs).slice(0,10).map(function(kv){return kv[0]+': '+kv[1].weight+'lbs×'+kv[1].reps;}).join(', ');
+    var notes=localStorage.getItem('baker_strength_notes')||'';
+    try{
+      var resp=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,
+          messages:[{role:'user',content:
+            'You are BAKER, a personal strength coach AI in JARVIS style. Give specific, actionable coaching.'+
+            '\n\nBodyweight: '+data.bodyweight+'lbs | Score: '+_calcScore()+' | Weekly Volume: '+_calcWeeklyVolume().toLocaleString()+'lbs'+
+            '\nToday: '+log.name+
+            '\nRecent sessions:\n'+recent+
+            '\nPRs: '+prsStr+
+            (notes?'\nNotes: '+notes:'')+
+            '\n\nProvide: 1) Today focus (2-3 sentences) 2) Specific weights/reps to hit 3) One technical cue per main lift 4) Recovery tip 5) Weekly goal. Be specific with numbers. JARVIS tone. Call user sir.'}]})
+      });
+      var d=await resp.json();
+      var text=d.content.map(function(b){return b.text||'';}).join('').trim();
+      _coachCache=text;_coachCacheDate=_today();
+      if(out)out.textContent=text;
+    }catch(e){if(out)out.textContent='Analysis failed: '+e.message;}
+    if(btn){btn.textContent='◆ Get Coaching Recommendations';btn.disabled=false;}
+  }
+
+    // ── Panel ─────────────────────────────────────────────────
   function showPanel(){var p=_el('strength-panel');if(!p)return;p.classList.add('str-vis');if(p._wbNormalise)p._wbNormalise();render();}
   function hidePanel(){_el('strength-panel').classList.remove('str-vis');_stopRest();}
   function togglePanel(){var p=_el('strength-panel');p.classList.toggle('str-vis');if(p.classList.contains('str-vis')){if(p._wbNormalise)p._wbNormalise();render();}}
@@ -785,175 +946,100 @@ var STRENGTH=(function(){
 
   return{init,showPanel,hidePanel,togglePanel,switchTab,handleVoice,importData,_skipRest:_skipRest};
 })();  // ── MAP TAB ───────────────────────────────────────────────────
+  var _mapMode='soreness'; // 'soreness' | 'strength'
+
   function _renderMap(){
     var el=_el('str-map-content');if(!el)return;
-    var theme=typeof FALLOUT!=='undefined'?FALLOUT.getTheme():'none';
-    function hc(m){
-      var h=_muscleHeat(m);
-      if(h<0.01)return null; // transparent — show base body
-      var a=Math.min(0.95,0.25+h*0.7);
-      if(theme==='pipboy')return'rgba(57,255,20,'+a.toFixed(2)+')';
-      if(theme==='enclave')return'rgba(220,40,20,'+a.toFixed(2)+')';
-      if(theme==='bos')return'rgba(210,170,50,'+a.toFixed(2)+')';
-      if(theme==='ncr')return'rgba(210,160,80,'+a.toFixed(2)+')';
-      if(theme==='vaulttec')return'rgba(245,196,0,'+a.toFixed(2)+')';
-      // Default: cool→warm gradient (blue→orange→red)
-      if(h<0.33)return'rgba(96,165,250,'+a.toFixed(2)+')';
-      if(h<0.66)return'rgba(251,146,60,'+a.toFixed(2)+')';
-      return'rgba(248,113,113,'+a.toFixed(2)+')';
+    var theme=typeof FALLOUT!=='undefined'?FALLOUT.getTheme():'baker';
+
+    function heatFn(muscle){
+      if(_mapMode==='strength'){
+        // Strength: PR weight / (bodyweight * norm) capped at 1
+        var prList={
+          'chest':['Bench Press','Incline Bench','DB Fly','Cable Fly','Close Grip Bench','Dips','Push Up','Decline Bench'],
+          'front-delts':['Overhead Press','Front Raise'],
+          'side-delts':['DB Lateral Raise','Cable Lateral Raise'],
+          'rear-delts':['Face Pull'],
+          'traps':['Shrug','Deadlift','Barbell Row','Overhead Press'],
+          'lats':['Lat Pulldown','Pull Up','Barbell Row','Cable Row','DB Row','Chin Up'],
+          'mid-back':['Barbell Row','Cable Row','Pendlay Row'],
+          'lower-back':['Deadlift','Romanian Deadlift'],
+          'biceps':['Barbell Curl','DB Curl','Hammer Curl','Chin Up','Preacher Curl'],
+          'triceps':['Tricep Pushdown','Skull Crusher','Close Grip Bench','Dips','Overhead Tricep Extension'],
+          'forearms':['Farmer Carry','Hammer Curl'],
+          'abs':['Plank','Ab Wheel','Cable Crunch'],
+          'obliques':['Russian Twist'],
+          'quads':['Squat','Leg Press','Leg Extension','Hack Squat','Goblet Squat','Bulgarian Split Squat'],
+          'hamstrings':['Romanian Deadlift','Leg Curl','Deadlift'],
+          'glutes':['Hip Thrust','Squat','Bulgarian Split Squat'],
+          'calves':['Calf Raise','Seated Calf Raise']
+        };
+        var lifts=prList[muscle]||[];
+        var best=0;
+        lifts.forEach(function(l){
+          var pr=data.prs[l];
+          if(!pr)return;
+          var norm=STRENGTH_NORMS[l]||(data.bodyweight*1.2);
+          var ratio=pr.weight/(data.bodyweight*1.5);
+          best=Math.max(best,Math.min(1,ratio));
+        });
+        return best;
+      }
+      return _muscleHeat(muscle);
     }
-    function hcOrBase(m){return hc(m)||'rgba(255,255,255,0.06)';}
 
     var totalHeat=0,count=0;
     ['chest','front-delts','side-delts','biceps','triceps','abs','quads','calves','lats','traps','hamstrings','glutes'].forEach(function(m){totalHeat+=_muscleHeat(m);count++;});
     var recovery=1-(totalHeat/count);
     var recColor=recovery>0.75?'var(--green)':recovery>0.4?'var(--amber)':'var(--red)';
-    var accCol='var(--accent)';
 
-    // Build legend entries for muscles with heat
-    var legendItems=[
-      {m:'chest',label:'Chest'},{m:'front-delts',label:'Front Delt'},{m:'side-delts',label:'Side Delt'},
-      {m:'rear-delts',label:'Rear Delt'},{m:'traps',label:'Traps'},{m:'lats',label:'Lats'},
-      {m:'mid-back',label:'Mid Back'},{m:'lower-back',label:'Lower Back'},
-      {m:'biceps',label:'Biceps'},{m:'triceps',label:'Triceps'},{m:'forearms',label:'Forearms'},
-      {m:'abs',label:'Abs'},{m:'obliques',label:'Obliques'},
-      {m:'glutes',label:'Glutes'},{m:'quads',label:'Quads'},
-      {m:'hamstrings',label:'Hamstrings'},{m:'calves',label:'Calves'}
-    ].filter(function(item){return _muscleHeat(item.m)>0.01;});
+    // Build active legend
+    var MUSCLE_LABELS={'chest':'Chest','front-delts':'Front Delt','side-delts':'Side Delt','rear-delts':'Rear Delt',
+      'traps':'Traps','lats':'Lats','mid-back':'Mid Back','lower-back':'Lower Back',
+      'biceps':'Biceps','triceps':'Triceps','forearms':'Forearms',
+      'abs':'Abs','obliques':'Obliques','glutes':'Glutes','quads':'Quads',
+      'hamstrings':'Hamstrings','calves':'Calves'};
+    var activeMuscles=Object.keys(MUSCLE_LABELS).filter(function(m){return heatFn(m)>0.01;});
 
-    var legend=legendItems.length?
-      '<div style="display:flex;flex-wrap:wrap;gap:4px;padding:8px 0;border-top:1px solid var(--border)">'+
-      legendItems.map(function(item){
-        var h=_muscleHeat(item.m);
-        var col=hc(item.m);
-        return'<div style="display:flex;align-items:center;gap:3px;font-family:var(--mono);font-size:9px;color:var(--text)">'+
-          '<div style="width:8px;height:8px;border-radius:2px;background:'+col+'"></div>'+
-          item.label+' '+Math.round(h*100)+'%</div>';
-      }).join('')+'</div>':'';
+    var mapHtml=typeof STRENGTH_MAPS!=='undefined'
+      ?STRENGTH_MAPS.render(theme,heatFn,_mapMode,190,320)
+      :'<div style="font-family:var(--mono);font-size:10px;color:var(--muted);padding:20px">Map loading...</div>';
 
     el.innerHTML=
-      '<div style="display:flex;gap:10px;align-items:flex-start">'+
-      // Character + stats
-      '<div style="width:80px;flex-shrink:0;text-align:center">'+
-        '<div style="width:72px;height:108px;margin:0 auto">'+_getFactionChar(theme,recovery)+'</div>'+
-        '<div style="font-family:var(--mono);font-size:18px;font-weight:700;color:'+recColor+';margin-top:4px">'+Math.round(recovery*100)+'%</div>'+
-        '<div style="font-family:var(--mono);font-size:8px;color:var(--muted)">'+(recovery>0.75?'Fresh':recovery>0.5?'Good':recovery>0.25?'Sore':'Toasted')+'</div>'+
-      '</div>'+
-      // Body maps
-      '<div style="flex:1;min-width:0">'+
-        '<div style="display:flex;justify-content:center;gap:4px">'+
-          '<div style="text-align:center"><div style="font-family:var(--mono);font-size:7px;color:var(--muted);letter-spacing:.08em;margin-bottom:3px">FRONT</div>'+
-            _bodyFront(hcOrBase,accCol)+'</div>'+
-          '<div style="text-align:center"><div style="font-family:var(--mono);font-size:7px;color:var(--muted);letter-spacing:.08em;margin-bottom:3px">BACK</div>'+
-            _bodyBack(hcOrBase,accCol)+'</div>'+
+      // Controls row
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'+
+        '<div style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--muted)">'+
+          (theme.toUpperCase())+' — '+(_mapMode==='soreness'?'SORENESS':'STRENGTH')+'</div>'+
+        '<div style="display:flex;gap:5px">'+
+          '<button id="str-map-sor" style="background:'+(_mapMode==='soreness'?'var(--accent-dim)':'none')+';border:1px solid '+(_mapMode==='soreness'?'var(--accent)':'var(--border)')+';border-radius:4px;padding:3px 8px;font-family:var(--mono);font-size:9px;color:'+(_mapMode==='soreness'?'var(--accent)':'var(--muted)')+';cursor:pointer">Soreness</button>'+
+          '<button id="str-map-str" style="background:'+(_mapMode==='strength'?'var(--accent-dim)':'none')+';border:1px solid '+(_mapMode==='strength'?'var(--accent)':'var(--border)')+';border-radius:4px;padding:3px 8px;font-family:var(--mono);font-size:9px;color:'+(_mapMode==='strength'?'var(--accent)':'var(--muted)')+';cursor:pointer">Strength</button>'+
         '</div>'+
-        legend+
-      '</div></div>';
-  }
+      '</div>'+
+      // Recovery bar
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'+
+        '<span style="font-family:var(--mono);font-size:9px;color:var(--muted)">Recovery</span>'+
+        '<div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden">'+
+          '<div style="height:100%;width:'+Math.round(recovery*100)+'%;background:'+recColor+';border-radius:2px"></div>'+
+        '</div>'+
+        '<span style="font-family:var(--mono);font-size:10px;color:'+recColor+'">'+Math.round(recovery*100)+'%</span>'+
+      '</div>'+
+      // Map SVG
+      '<div style="display:flex;justify-content:center">'+mapHtml+'</div>'+
+      // Legend
+      (activeMuscles.length?
+        '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">'+
+        activeMuscles.map(function(m){
+          var h=heatFn(m);
+          var pct=Math.round(h*100);
+          var col=_mapMode==='soreness'?
+            (h<0.33?'#60a5fa':h<0.66?'#fb923c':'#f87171'):
+            (h<0.33?'#60a5fa':h<0.66?'#a78bfa':'#fbbf24');
+          return'<span style="font-family:var(--mono);font-size:8px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-left:2px solid '+col+';border-radius:3px;padding:2px 5px">'+
+            MUSCLE_LABELS[m]+' '+pct+'%</span>';
+        }).join('')+'</div>':'');
 
-  function _bodyFront(hcOrBase,acc){
-    // Detailed front body with anatomically shaped regions
-    return'<svg viewBox="0 0 120 280" xmlns="http://www.w3.org/2000/svg" style="height:240px;width:auto">'+
-      '<defs><filter id="mblur"><feGaussianBlur in="SourceGraphic" stdDeviation="2"/></filter></defs>'+
-      // Body silhouette base
-      '<g opacity="0.15" fill="white">'+
-        // Head
-        '<ellipse cx="60" cy="24" rx="14" ry="18"/>'+
-        // Neck
-        '<rect x="55" y="40" width="10" height="8" rx="3"/>'+
-        // Torso
-        '<path d="M35 50 Q28 55 26 80 L24 130 Q24 140 36 140 L84 140 Q96 140 96 130 L94 80 Q92 55 85 50 Z"/>'+
-        // Upper arms
-        '<path d="M26 55 Q15 58 13 80 Q11 100 16 108 Q20 116 26 112 Q30 95 34 72 Z"/>'+
-        '<path d="M94 55 Q105 58 107 80 Q109 100 104 108 Q100 116 94 112 Q90 95 86 72 Z"/>'+
-        // Lower arms
-        '<path d="M16 110 Q10 118 11 138 Q12 154 18 156 Q24 158 26 148 Q24 130 22 112 Z"/>'+
-        '<path d="M104 110 Q110 118 109 138 Q108 154 102 156 Q96 158 94 148 Q96 130 98 112 Z"/>'+
-        // Upper legs
-        '<path d="M36 140 Q28 145 26 175 Q24 200 30 210 Q36 218 44 214 Q50 195 48 168 L44 140 Z"/>'+
-        '<path d="M84 140 Q92 145 94 175 Q96 200 90 210 Q84 218 76 214 Q70 195 72 168 L76 140 Z"/>'+
-        // Lower legs
-        '<path d="M30 210 Q24 218 25 242 Q26 260 32 264 Q38 266 42 258 Q44 242 44 216 Z"/>'+
-        '<path d="M90 210 Q96 218 95 242 Q94 260 88 264 Q82 266 78 258 Q76 242 76 216 Z"/>'+
-      '</g>'+
-      // Muscle overlays with heat colors — drawn on top with blur for glow effect
-      // Chest
-      '<ellipse cx="48" cy="72" rx="12" ry="14" fill="'+hcOrBase('chest')+'" filter="url(#mblur)" opacity="0.8"/>'+
-      '<ellipse cx="72" cy="72" rx="12" ry="14" fill="'+hcOrBase('chest')+'" filter="url(#mblur)" opacity="0.8"/>'+
-      // Front delts
-      '<ellipse cx="33" cy="60" rx="7" ry="9" fill="'+hcOrBase('front-delts')+'" filter="url(#mblur)" opacity="0.9"/>'+
-      '<ellipse cx="87" cy="60" rx="7" ry="9" fill="'+hcOrBase('front-delts')+'" filter="url(#mblur)" opacity="0.9"/>'+
-      // Side delts
-      '<ellipse cx="25" cy="65" rx="5" ry="8" fill="'+hcOrBase('side-delts')+'" filter="url(#mblur)" opacity="0.8"/>'+
-      '<ellipse cx="95" cy="65" rx="5" ry="8" fill="'+hcOrBase('side-delts')+'" filter="url(#mblur)" opacity="0.8"/>'+
-      // Traps
-      '<ellipse cx="60" cy="52" rx="16" ry="6" fill="'+hcOrBase('traps')+'" filter="url(#mblur)" opacity="0.8"/>'+
-      // Biceps
-      '<ellipse cx="20" cy="90" rx="5" ry="12" fill="'+hcOrBase('biceps')+'" filter="url(#mblur)" opacity="0.9"/>'+
-      '<ellipse cx="100" cy="90" rx="5" ry="12" fill="'+hcOrBase('biceps')+'" filter="url(#mblur)" opacity="0.9"/>'+
-      // Triceps (visible from front sides)
-      '<ellipse cx="17" cy="92" rx="3" ry="9" fill="'+hcOrBase('triceps')+'" filter="url(#mblur)" opacity="0.6"/>'+
-      '<ellipse cx="103" cy="92" rx="3" ry="9" fill="'+hcOrBase('triceps')+'" filter="url(#mblur)" opacity="0.6"/>'+
-      // Forearms
-      '<ellipse cx="18" cy="128" rx="4" ry="12" fill="'+hcOrBase('forearms')+'" filter="url(#mblur)" opacity="0.8"/>'+
-      '<ellipse cx="102" cy="128" rx="4" ry="12" fill="'+hcOrBase('forearms')+'" filter="url(#mblur)" opacity="0.8"/>'+
-      // Abs
-      '<rect x="51" y="90" width="18" height="40" rx="5" fill="'+hcOrBase('abs')+'" filter="url(#mblur)" opacity="0.8"/>'+
-      // Obliques
-      '<ellipse cx="40" cy="108" rx="8" ry="14" fill="'+hcOrBase('obliques')+'" filter="url(#mblur)" opacity="0.7"/>'+
-      '<ellipse cx="80" cy="108" rx="8" ry="14" fill="'+hcOrBase('obliques')+'" filter="url(#mblur)" opacity="0.7"/>'+
-      // Quads
-      '<ellipse cx="44" cy="170" rx="13" ry="30" fill="'+hcOrBase('quads')+'" filter="url(#mblur)" opacity="0.85"/>'+
-      '<ellipse cx="76" cy="170" rx="13" ry="30" fill="'+hcOrBase('quads')+'" filter="url(#mblur)" opacity="0.85"/>'+
-      // Calves front
-      '<ellipse cx="36" cy="240" rx="7" ry="18" fill="'+hcOrBase('calves')+'" filter="url(#mblur)" opacity="0.75"/>'+
-      '<ellipse cx="84" cy="240" rx="7" ry="18" fill="'+hcOrBase('calves')+'" filter="url(#mblur)" opacity="0.75"/>'+
-      '</svg>';
-  }
-
-  function _bodyBack(hcOrBase,acc){
-    return'<svg viewBox="0 0 120 280" xmlns="http://www.w3.org/2000/svg" style="height:240px;width:auto">'+
-      '<defs><filter id="mblur2"><feGaussianBlur in="SourceGraphic" stdDeviation="2"/></filter></defs>'+
-      // Body silhouette
-      '<g opacity="0.15" fill="white">'+
-        '<ellipse cx="60" cy="24" rx="14" ry="18"/>'+
-        '<rect x="55" y="40" width="10" height="8" rx="3"/>'+
-        '<path d="M35 50 Q28 55 26 80 L24 130 Q24 140 36 140 L84 140 Q96 140 96 130 L94 80 Q92 55 85 50 Z"/>'+
-        '<path d="M26 55 Q15 58 13 80 Q11 100 16 108 Q20 116 26 112 Q30 95 34 72 Z"/>'+
-        '<path d="M94 55 Q105 58 107 80 Q109 100 104 108 Q100 116 94 112 Q90 95 86 72 Z"/>'+
-        '<path d="M16 110 Q10 118 11 138 Q12 154 18 156 Q24 158 26 148 Q24 130 22 112 Z"/>'+
-        '<path d="M104 110 Q110 118 109 138 Q108 154 102 156 Q96 158 94 148 Q96 130 98 112 Z"/>'+
-        '<path d="M36 140 Q28 145 26 175 Q24 200 30 210 Q36 218 44 214 Q50 195 48 168 L44 140 Z"/>'+
-        '<path d="M84 140 Q92 145 94 175 Q96 200 90 210 Q84 218 76 214 Q70 195 72 168 L76 140 Z"/>'+
-        '<path d="M30 210 Q24 218 25 242 Q26 260 32 264 Q38 266 42 258 Q44 242 44 216 Z"/>'+
-        '<path d="M90 210 Q96 218 95 242 Q94 260 88 264 Q82 266 78 258 Q76 242 76 216 Z"/>'+
-      '</g>'+
-      // Rear delts
-      '<ellipse cx="33" cy="61" rx="7" ry="9" fill="'+hcOrBase('rear-delts')+'" filter="url(#mblur2)" opacity="0.9"/>'+
-      '<ellipse cx="87" cy="61" rx="7" ry="9" fill="'+hcOrBase('rear-delts')+'" filter="url(#mblur2)" opacity="0.9"/>'+
-      // Traps
-      '<ellipse cx="60" cy="56" rx="20" ry="10" fill="'+hcOrBase('traps')+'" filter="url(#mblur2)" opacity="0.85"/>'+
-      // Lats
-      '<path d="M30 70 Q20 90 22 115 Q26 128 34 125 Q42 118 44 100 Q44 80 38 65 Z" fill="'+hcOrBase('lats')+'" filter="url(#mblur2)" opacity="0.85"/>'+
-      '<path d="M90 70 Q100 90 98 115 Q94 128 86 125 Q78 118 76 100 Q76 80 82 65 Z" fill="'+hcOrBase('lats')+'" filter="url(#mblur2)" opacity="0.85"/>'+
-      // Mid back
-      '<rect x="49" y="75" width="22" height="22" rx="4" fill="'+hcOrBase('mid-back')+'" filter="url(#mblur2)" opacity="0.8"/>'+
-      // Lower back
-      '<rect x="50" y="100" width="20" height="22" rx="4" fill="'+hcOrBase('lower-back')+'" filter="url(#mblur2)" opacity="0.8"/>'+
-      // Triceps
-      '<ellipse cx="19" cy="90" rx="5" ry="13" fill="'+hcOrBase('triceps')+'" filter="url(#mblur2)" opacity="0.9"/>'+
-      '<ellipse cx="101" cy="90" rx="5" ry="13" fill="'+hcOrBase('triceps')+'" filter="url(#mblur2)" opacity="0.9"/>'+
-      // Forearms back
-      '<ellipse cx="18" cy="128" rx="4" ry="12" fill="'+hcOrBase('forearms')+'" filter="url(#mblur2)" opacity="0.75"/>'+
-      '<ellipse cx="102" cy="128" rx="4" ry="12" fill="'+hcOrBase('forearms')+'" filter="url(#mblur2)" opacity="0.75"/>'+
-      // Glutes
-      '<ellipse cx="46" cy="145" rx="16" ry="14" fill="'+hcOrBase('glutes')+'" filter="url(#mblur2)" opacity="0.9"/>'+
-      '<ellipse cx="74" cy="145" rx="16" ry="14" fill="'+hcOrBase('glutes')+'" filter="url(#mblur2)" opacity="0.9"/>'+
-      // Hamstrings
-      '<ellipse cx="44" cy="185" rx="13" ry="28" fill="'+hcOrBase('hamstrings')+'" filter="url(#mblur2)" opacity="0.85"/>'+
-      '<ellipse cx="76" cy="185" rx="13" ry="28" fill="'+hcOrBase('hamstrings')+'" filter="url(#mblur2)" opacity="0.85"/>'+
-      // Calves
-      '<ellipse cx="36" cy="238" rx="8" ry="20" fill="'+hcOrBase('calves')+'" filter="url(#mblur2)" opacity="0.85"/>'+
-      '<ellipse cx="84" cy="238" rx="8" ry="20" fill="'+hcOrBase('calves')+'" filter="url(#mblur2)" opacity="0.85"/>'+
-      '</svg>';
+    // Bind toggle buttons
+    var sorBtn=_el('str-map-sor'),strBtn=_el('str-map-str');
+    if(sorBtn)sorBtn.addEventListener('click',function(){_mapMode='soreness';_renderMap();});
+    if(strBtn)strBtn.addEventListener('click',function(){_mapMode='strength';_renderMap();});
   }
