@@ -518,6 +518,122 @@ function _drawYggdrasil(ctx,W,H){
   ctx.textAlign='left';
 }
 
+
+// ── NINE REALMS BACKGROUND + RUNE NODES ──────────────────
+function _drawNineRealms(ctx,W,H){
+  // ── Draw background image ────────────────────────────────
+  if(_NINE_REALMS_IMG){
+    // Fit portrait image centered on landscape canvas
+    var imgAspect=_NINE_REALMS_IMG.width/_NINE_REALMS_IMG.height;
+    var canvasAspect=W/H;
+    var drawW,drawH,drawX,drawY;
+    if(canvasAspect>imgAspect){
+      // Canvas wider than image — fit height
+      drawH=H;
+      drawW=H*imgAspect;
+      drawX=(W-drawW)/2;
+      drawY=0;
+    }else{
+      // Canvas taller — fit width
+      drawW=W;
+      drawH=W/imgAspect;
+      drawX=0;
+      drawY=(H-drawH)/2;
+    }
+    ctx.globalAlpha=0.88;
+    ctx.drawImage(_NINE_REALMS_IMG,drawX,drawY,drawW,drawH);
+    ctx.globalAlpha=1.0;
+
+    // Dark vignette overlay so nodes read clearly
+    var vig=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.2,W/2,H/2,Math.min(W,H)*0.75);
+    vig.addColorStop(0,'rgba(0,0,0,0.0)');
+    vig.addColorStop(1,'rgba(0,0,0,0.45)');
+    ctx.fillStyle=vig;
+    ctx.fillRect(0,0,W,H);
+  }else{
+    // Fallback: deep space gradient while image loads
+    var bg=ctx.createLinearGradient(W/2,0,W/2,H);
+    bg.addColorStop(0,'#0d0d1a');
+    bg.addColorStop(0.5,'#0a0a16');
+    bg.addColorStop(1,'#080810');
+    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    // Draw placeholder text
+    ctx.fillStyle='rgba(200,180,120,0.4)';
+    ctx.font='12px IBM Plex Mono,monospace';
+    ctx.textAlign='center';
+    ctx.fillText('Loading Nine Worlds...', W/2, H/2);
+    ctx.textAlign='left';
+  }
+}
+
+// ── Draw a single rune-style node ────────────────────────
+function _drawRuneNode(ctx,n,col,isHL,nodeBrightness){
+  var x=n.x,y=n.y;
+  var sz=Math.max(n.radius||5,5);
+  var zone=n.realmZone?NINE_REALMS_ZONES[n.realmZone]:null;
+  var zonCol=zone?zone.col:col;
+  var alpha=isHL?1.0:((nodeBrightness||1)*0.85);
+
+  ctx.save();
+  ctx.globalAlpha=alpha;
+
+  // Stone tablet shape (rounded rect)
+  var tw=sz*3.2,th=sz*2.0;
+  var rx=4;
+  ctx.beginPath();
+  ctx.moveTo(x-tw/2+rx,y-th/2);
+  ctx.lineTo(x+tw/2-rx,y-th/2);
+  ctx.arcTo(x+tw/2,y-th/2,x+tw/2,y-th/2+rx,rx);
+  ctx.lineTo(x+tw/2,y+th/2-rx);
+  ctx.arcTo(x+tw/2,y+th/2,x+tw/2-rx,y+th/2,rx);
+  ctx.lineTo(x-tw/2+rx,y+th/2);
+  ctx.arcTo(x-tw/2,y+th/2,x-tw/2,y+th/2-rx,rx);
+  ctx.lineTo(x-tw/2,y-th/2+rx);
+  ctx.arcTo(x-tw/2,y-th/2,x-tw/2+rx,y-th/2,rx);
+  ctx.closePath();
+
+  // Stone fill: dark with zone color tint
+  var fill=ctx.createRadialGradient(x-tw*0.1,y-th*0.2,0,x,y,tw*0.7);
+  fill.addColorStop(0,'rgba(60,54,48,0.95)');
+  fill.addColorStop(0.6,'rgba(38,34,30,0.92)');
+  fill.addColorStop(1,'rgba(22,20,18,0.88)');
+  ctx.fillStyle=fill;ctx.fill();
+
+  // Border: glowing in zone color when highlighted, stone brown otherwise
+  ctx.strokeStyle=isHL?zonCol+'ff':zonCol+'66';
+  ctx.lineWidth=isHL?1.8:1.0;
+  if(isHL){ctx.shadowColor=zonCol;ctx.shadowBlur=8;}
+  ctx.stroke();
+  ctx.shadowBlur=0;
+
+  // Rune symbol: small glyph above the label
+  var RUNE_GLYPHS={
+    'conversation':'ᚱ','lecture':'ᚨ','project':'ᛟ',
+    'daily':'ᛞ','general':'ᚾ','system':'ᛁ',
+    'workout':'ᛏ','academic':'ᚦ','biometric':'ᛒ',
+    'weekly':'ᚹ'
+  };
+  var rune=RUNE_GLYPHS[n.type]||'ᚷ';
+  ctx.font='bold '+(sz*1.1)+'px serif';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.fillStyle=isHL?zonCol:'rgba(200,185,150,0.7)';
+  ctx.fillText(rune,x,y-sz*0.25);
+
+  // Node label below rune
+  if(n.label){
+    var label=n.label.length>10?n.label.slice(0,10)+'…':n.label;
+    ctx.font=(isHL?'bold ':'')+Math.max(sz*0.8,7)+'px IBM Plex Mono,monospace';
+    ctx.textAlign='center';
+    ctx.textBaseline='top';
+    ctx.fillStyle=isHL?'#fff':'rgba(220,200,160,0.8)';
+    ctx.fillText(label,x,y+sz*0.3);
+  }
+
+  ctx.textAlign='left';ctx.textBaseline='alphabetic';
+  ctx.restore();
+}
+
 // ── Draw cluster halos ────────────────────────────────────
 function _drawClusterHalos(ctx){
   var typeOrder=['conversation','project','lecture','daily','general'];
@@ -690,6 +806,13 @@ function _drawCedar(ctx,cx,baseY,slotW,treeH,col,foliage){
 }
 
 function _drawNode(ctx,n,matchedNodes,brightness){
+  // Nine Realms mode: use rune-style stone tablets
+  if(typeof GraphSettings!=='undefined'&&GraphSettings.nineRealmsMode){
+    var _col=typeColors[n.type]||'#7c6af7';
+    var _isHL=!!(matchedNodes&&matchedNodes[n.id]);
+    _drawRuneNode(ctx,n,_col,_isHL,brightness);
+    return;
+  }
   var isPinned=!!pinnedNodes[n.id];
   var isOrphan=n.orphan;
   var color=isOrphan?ORPHAN_COLOR:(typeColors[n.type]||'#7c6af7');
