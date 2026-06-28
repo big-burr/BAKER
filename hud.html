@@ -50,7 +50,6 @@
       <button class="hbtn" id="vaultchat-nav-btn" onclick="VAULTCHAT.togglePanel()">&#129504; Chat</button>
       <button class="hbtn" id="graphui-nav-btn" onclick="GRAPHUI.togglePanel()">&#128375; Graph</button>
       <button class="hbtn" id="brief-nav-btn" onclick="requestBrief()">&#9670; Brief</button>
-      <button class="hbtn" id="analyze-nav-btn" onclick="ANALYZE.togglePanel()">&#9670; Analyze</button>
       <button class="hbtn" id="health-nav-btn" onclick="toggleVaultHealth()">&#9650; Vault Health</button>
       <button class="hbtn" id="timeline-nav-btn" onclick="TIMELINE.togglePanel()">&#9776; Timeline</button>
     </div>
@@ -93,7 +92,6 @@
         <button class="hbtn" onclick="VAULTCHAT.togglePanel();closeNavMenu()">&#129504; Chat</button>
         <button class="hbtn" onclick="GRAPHUI.togglePanel();closeNavMenu()">&#128375; Graph</button>
         <button class="hbtn" onclick="requestBrief();closeNavMenu()">&#9670; Brief</button>
-        <button class="hbtn" onclick="ANALYZE.togglePanel();closeNavMenu()">&#9670; Analyze</button>
         <button class="hbtn" onclick="toggleVaultHealth();closeNavMenu()">&#9650; Health</button>
         <button class="hbtn" onclick="TIMELINE.togglePanel();closeNavMenu()">&#9776; Timeline</button>
       </div>
@@ -479,13 +477,6 @@
 </div>
 
 
-<div id="analyze-panel">
-  <div class="az-hdr" id="az-hdr">
-    <span style="font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.08em">&#9670; ANALYZE</span>
-    <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0" onclick="ANALYZE.hidePanel()">&#215;</button>
-  </div>
-  <div id="az-body"></div>
-</div>
 <div id="daily-brief-panel">
   <div class="brief-hdr">
     <span class="brief-title">&#9670; Daily Brief</span>
@@ -749,8 +740,7 @@ async function processCommand(txt){
   var weeklyResult=WEEKLY.handleVoice(txt);if(weeklyResult!==null){speakResponse(weeklyResult);return;}
   var inboxResult=INBOX.handleVoice(txt);if(inboxResult!==null){speakResponse(inboxResult);return;}
   var dailyResult=DAILY.handleVoice(txt);if(dailyResult!==null){speakResponse(dailyResult);return;}
-  var timelineResult=TIMELINE.handleVoice(txt);if(timelineResult!==null){speakResponse(timelineResult);return;}
-  var azResult=ANALYZE.handleVoice(txt);if(azResult!==null){speakResponse(azResult);return;}
+  if(typeof TIMELINE!=='undefined'){var timelineResult=TIMELINE.handleVoice(txt);if(timelineResult!==null){speakResponse(timelineResult);return;}}
   var acadResult=ACADEMIC.handleVoice(txt);if(acadResult!==null){speakResponse(acadResult);return;}
   var bioResult=await BIOMETRICS.handleVoice(txt);if(bioResult!==null){speakResponse(bioResult);return;}
   var reminderResult=await REMINDERS.handleVoice(txt);if(reminderResult!==null){speakResponse(reminderResult);return;}
@@ -813,7 +803,6 @@ async function sendToBAKER(txt,key){var webOn=localStorage.getItem('baker_web_se
 <script src="js/hud-info.js"></script>
 <script src="js/reminders.js"></script>
 <script src="js/filedrop.js"></script>
-<script src="js/analyze.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════
 // DAILY BRIEF + VAULT HEALTH + VOICE OPEN NOTE
@@ -931,7 +920,7 @@ function toggleNavRows(){
   btn.title=collapsed?'Expand nav':'Collapse nav';
   // Update all panel tops
   var top=collapsed?'54px':'128px';
-  document.querySelectorAll('#strength-panel,#calendar-panel,#month-panel,#vault-panel,#vaultchat-panel,#graphui-panel,#budget-panel,#biometrics-panel,#academic-panel,#places-panel,#focus-panel,#hudinfo-panel,#daily-brief-panel,#vault-health-panel,#spotify-panel,#habits-panel,#lecture-panel,#weekly-panel,#inbox-panel,#timeline-panel,#analyze-panel').forEach(function(p){
+  document.querySelectorAll('#strength-panel,#calendar-panel,#month-panel,#vault-panel,#vaultchat-panel,#graphui-panel,#budget-panel,#biometrics-panel,#academic-panel,#places-panel,#focus-panel,#hudinfo-panel,#daily-brief-panel,#vault-health-panel,#spotify-panel,#habits-panel,#lecture-panel,#weekly-panel,#inbox-panel,#timeline-panel').forEach(function(p){
     if(p)p.style.top=top;
   });
   localStorage.setItem('baker_nav_collapsed',collapsed?'1':'0');
@@ -1147,8 +1136,7 @@ FALLOUT.init();
 FOCUS.init();
 PLACES.init();
 DAILY.init();
-TIMELINE.init();
-ANALYZE.init();
+if(typeof TIMELINE!=='undefined')TIMELINE.init();
 makeWindowBehavior(document.getElementById('analyze-panel'),document.getElementById('az-hdr'),{minW:340,minH:400});
 makeWindowBehavior(document.getElementById('timeline-panel'),document.getElementById('tl-hdr'),{minW:300,minH:400});
 HABITS.init();
