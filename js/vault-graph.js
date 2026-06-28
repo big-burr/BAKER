@@ -465,6 +465,62 @@ function _layoutYggdrasil(W,H){
   });
 }
 
+
+// ── NINE REALMS LAYOUT ────────────────────────────────────
+var _NINE_REALMS_IMG=null;
+(function(){
+  var img=new Image();
+  img.onload=function(){_NINE_REALMS_IMG=img;};
+  img.src='/BAKER/nine-worlds.png';
+})();
+
+var NINE_REALMS_TYPE_MAP={
+  'lecture':'ASGARD','weekly':'ASGARD','project':'ASGARD',
+  'conversation':'MIDGARD','daily':'MIDGARD','general':'MIDGARD',
+  'academic':'ALFHEIM','workout':'MUSPELLHEIM',
+  'biometric':'VANAHEIM','system':'NIDAVELLIR'
+};
+
+var NINE_REALMS_ZONES={
+  'ASGARD':     {fx:0.50,fy:0.26,r:0.09,col:'#e8d5a3',label:'ASGARD'},
+  'MIDGARD':    {fx:0.50,fy:0.50,r:0.11,col:'#7ac4a0',label:'MIDGARD'},
+  'ALFHEIM':    {fx:0.23,fy:0.46,r:0.08,col:'#7dd4e8',label:'ALFHEIM'},
+  'MUSPELLHEIM':{fx:0.77,fy:0.44,r:0.08,col:'#ff8c42',label:'MUSPELLHEIM'},
+  'VANAHEIM':   {fx:0.21,fy:0.62,r:0.07,col:'#a0c4e8',label:'VANAHEIM'},
+  'NIDAVELLIR': {fx:0.79,fy:0.62,r:0.07,col:'#c8a87a',label:'NIDAVELLIR'},
+  'JOTUNHEIM':  {fx:0.21,fy:0.78,r:0.07,col:'#b0a0c8',label:'JOTUNHEIM'},
+  'HELHEIM':    {fx:0.79,fy:0.78,r:0.07,col:'#6a4a6a',label:'HELHEIM'},
+  'NIFLHEIM':   {fx:0.50,fy:0.87,r:0.07,col:'#a0c8e8',label:'NIFLHEIM'}
+};
+
+function _layoutNineRealms(W,H){
+  var realmGroups={};
+  Object.keys(NINE_REALMS_ZONES).forEach(function(r){realmGroups[r]=[];});
+  graphNodes.forEach(function(n){
+    var realm=NINE_REALMS_TYPE_MAP[n.type]||'MIDGARD';
+    realmGroups[realm].push(n);
+  });
+  Object.keys(NINE_REALMS_ZONES).forEach(function(realm){
+    var zone=NINE_REALMS_ZONES[realm];
+    var cx=zone.fx*W;
+    var cy=zone.fy*H;
+    var radius=zone.r*Math.min(W,H)*0.85;
+    var members=realmGroups[realm];
+    if(!members.length)return;
+    members.forEach(function(n,i){
+      var _j=((n.id||i)*1.618)%1;
+      var angle=_j*Math.PI*2;
+      var dist=Math.sqrt(((i+1)/members.length))*radius*0.7;
+      var jx=(((n.id||i)*7)%11-5)*2;
+      var jy=(((n.id||i)*13)%11-5)*2;
+      n.x=cx+Math.cos(angle)*dist+jx;
+      n.y=cy+Math.sin(angle)*dist+jy;
+      n.realmZone=realm;
+      n.isLeaf=false;
+    });
+  });
+}
+
 // ── CLUSTER LAYOUT ────────────────────────────────────────
 function _layoutCluster(W,H){
   var typeOrder=['conversation','project','lecture','daily','general','system','workout','academic','biometric','weekly'];
@@ -552,6 +608,7 @@ function runGraphSim(){
     var query=GraphSettings.searchQuery||'';
     var treeMode=GraphSettings.treeMode||false;
     var clusterMode=GraphSettings.clusterMode||false;
+    var nineRealmsMode2=GraphSettings.nineRealmsMode||false;
     var gridMode=GraphSettings.gridMode||false;
     var yggMode=GraphSettings.yggdrasilMode||false;
     var brightness=GraphSettings.nodeBrightness!==undefined?GraphSettings.nodeBrightness:1.0;
@@ -620,6 +677,11 @@ function runGraphSim(){
     // ── DRAW ──────────────────────────────────────────────
     try{
     ctx.clearRect(0,0,W,H);
+
+    // Nine Realms background drawn BEFORE transform (fixed to canvas)
+    var nineRealmsMode=GraphSettings.nineRealmsMode||false;
+    if(nineRealmsMode)_drawNineRealms(ctx,W,H);
+
     ctx.save();
     ctx.translate(graphTransform.x,graphTransform.y);
     ctx.scale(graphTransform.scale,graphTransform.scale);
