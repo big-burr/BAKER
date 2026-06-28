@@ -703,7 +703,7 @@ function _drawNode(ctx,n,matchedNodes,brightness){
   if(n._bornAt){
     var _age=(Date.now()-n._bornAt)/1000;
     if(_age<2.0){
-      var _boost=_age<0.2?3.0:_age<0.8?(3.0-2.0*(_age-0.2)/0.6):(1+2.0*(1-(_age-0.8)/1.2));
+      var _boost=_age<0.2?2.2:_age<0.8?(2.2-1.2*(_age-0.2)/0.6):(1+1.2*(1-(_age-0.8)/1.2));
       r=r*Math.max(1,_boost);
     }else{delete n._bornAt;}
   }
