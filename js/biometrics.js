@@ -12,9 +12,9 @@ var BIOMETRICS=(function(){
   var LS_KEY='baker_biometrics_v1';
   var PANEL_ID='biometrics-panel';
 
-  // entry: {date:'YYYY-MM-DD', mood:1-10|null, sleep:0-24|null, energy:1-10|null, note:''}
+  // entry: {date:'YYYY-MM-DD', mood:1-10|null, sleep:0-24|null, energy:1-10|null, weight:lbs|null, note:''}
   var entries=[];
-  var currentTab='log'; // 'log' | 'trends'
+  var currentTab='today'; // 'today' | 'log' | 'trends'
 
   // ── Storage ───────────────────────────────────────────────
   function _load(){
@@ -34,10 +34,55 @@ var BIOMETRICS=(function(){
   function _getEntry(date){
     return entries.find(function(e){return e.date===date;})||null;
   }
+  function _recoveryScore(date){
+    // Calculate recovery score from sleep, mood, energy, and strength soreness
+    var entry=_getEntry(date);
+    if(!entry)return null;
+    var score=0,count=0;
+    if(entry.sleep!=null){score+=Math.min(entry.sleep/8,1)*10;count++;}
+    if(entry.mood!=null){score+=entry.mood;count++;}
+    if(entry.energy!=null){score+=entry.energy;count++;}
+    // Factor in strength soreness
+    try{
+      var st=JSON.parse(localStorage.getItem('baker_strength_v1')||'{}');
+      var MUSCLES=['chest','biceps','triceps','quads','hamstrings','glutes','lats','traps'];
+      var totalHeat=0;
+      MUSCLES.forEach(function(m){
+        // Simple heat: did they train this yesterday or 2 days ago?
+        (st.logs||[]).forEach(function(l){
+          var age=(new Date(date)-new Date(l.date+'T12:00:00'))/(1000*3600);
+          if(age>0&&age<48)totalHeat+=0.1;
+        });
+      });
+      var sorenessDeduct=Math.min(totalHeat,3);
+      score=Math.max(0,score-sorenessDeduct);
+      if(count>0)count+=0.5; // partial weight
+    }catch(e){}
+    return count>0?Math.round((score/count)*10)/10:null;
+  }
+
+  function _sparkline(values,color,width,height){
+    if(!values||values.length<2)return'';
+    width=width||80;height=height||28;
+    var valid=values.filter(function(v){return v!=null;});
+    if(!valid.length)return'';
+    var min=Math.min.apply(null,valid),max=Math.max.apply(null,valid);
+    var range=max-min||1;
+    var pts=values.map(function(v,i){
+      var x=(i/(values.length-1))*width;
+      var y=v!=null?height-((v-min)/range)*(height-4)-2:null;
+      return v!=null?(x+','+y):null;
+    }).filter(Boolean).join(' ');
+    return'<svg width="'+width+'" height="'+height+'" viewBox="0 0 '+width+' '+height+'" style="overflow:visible">'+
+      '<polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'+
+      '<circle cx="'+((values.length-1)/(values.length-1)*width)+'" cy="'+(height-((valid[valid.length-1]-min)/range)*(height-4)-2)+'" r="2.5" fill="'+color+'"/>'+
+      '</svg>';
+  }
+
   function _setEntry(date,fields){
     var existing=_getEntry(date);
     if(existing){Object.assign(existing,fields);}
-    else{entries.push(Object.assign({date:date,mood:null,sleep:null,energy:null,note:''},fields));}
+    else{entries.push(Object.assign({date:date,mood:null,sleep:null,energy:null,weight:null,note:''},fields));}
     entries.sort(function(a,b){return b.date.localeCompare(a.date);});
     _save();
   }
@@ -158,25 +203,181 @@ var BIOMETRICS=(function(){
   function render(){
     var panel=document.getElementById(PANEL_ID);
     if(!panel||!panel.classList.contains('bio-vis'))return;
-
-    // Sync from vault first
-    if(typeof vaultIndex!=='undefined'&&vaultIndex.length)syncFromVault();
-
-    var today=_todayStr();
-    var todayEntry=_getEntry(today);
-    var last30=_last30();
-
-    // Tab buttons
-    ['log','trends'].forEach(function(t){
+    ['today','log','trends'].forEach(function(t){
       var btn=document.getElementById('bio-tab-'+t);
       if(btn)btn.classList.toggle('active',t===currentTab);
+      var content=document.getElementById('bio-'+t+'-content');
+      if(content)content.style.display=(t===currentTab?'block':'none');
     });
+    if(currentTab==='today')_renderToday();
+    else if(currentTab==='log')_renderLog();
+    else _renderTrends();
+  }
 
-    var body=document.getElementById('bio-body');
-    if(!body)return;
+  function _renderToday(){
+    var el=document.getElementById('bio-today-content');if(!el)return;
+    var today=_todayStr();
+    var entry=_getEntry(today)||{mood:null,sleep:null,energy:null,weight:null,note:''};
+    var rec=_recoveryScore(today);
 
-    if(currentTab==='log')_renderLog(body,today,todayEntry,last30);
-    else _renderTrends(body,last30);
+    var html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">';
+    // Recovery score card
+    var recColor=rec==null?'var(--muted)':rec>=7?'var(--green)':rec>=5?'var(--amber)':'var(--red)';
+    html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;grid-column:1/-1">'+
+      '<div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.1em;margin-bottom:4px">RECOVERY SCORE</div>'+
+      '<div style="font-size:32px;font-weight:700;color:'+recColor+';font-family:var(--mono);">'+(rec!=null?rec:'—')+'</div>'+
+      '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px">'+
+        (rec==null?'Log metrics to calculate':rec>=8?'Fully recovered':rec>=6?'Good to train':rec>=4?'Train light':'Rest recommended')+
+      '</div></div>';
+
+    // Metric inputs
+    function metricCard(id,label,val,min,max,step,unit){
+      return'<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px">'+
+        '<div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.08em;margin-bottom:6px">'+label+'</div>'+
+        '<div style="display:flex;align-items:center;gap:6px">'+
+          '<input id="bio-in-'+id+'" type="number" value="'+(val!=null?val:'')+'" min="'+min+'" max="'+max+'" step="'+step+'" placeholder="—" '+
+          'style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:6px;font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent);text-align:center;outline:none;width:0">'+
+          '<span style="font-family:var(--mono);font-size:9px;color:var(--muted)">'+unit+'</span>'+
+        '</div></div>';
+    }
+    html+=metricCard('mood','MOOD',entry.mood,1,10,0.5,'/10');
+    html+=metricCard('sleep','SLEEP',entry.sleep,0,24,0.5,'hrs');
+    html+=metricCard('energy','ENERGY',entry.energy,1,10,0.5,'/10');
+    html+=metricCard('weight','BODYWEIGHT',entry.weight,50,500,0.5,'lbs');
+    html+='</div>';
+
+    // Note
+    html+='<div style="margin-bottom:10px">'+
+      '<textarea id="bio-note" rows="2" placeholder="Notes (how you feel, sleep quality, stress...)" '+
+      'style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;font-family:var(--mono);font-size:10px;color:var(--text);resize:none;outline:none;box-sizing:border-box">'+
+      (entry.note||'')+'</textarea></div>';
+
+    // Save button
+    html+='<button id="bio-save" style="width:100%;background:var(--accent-dim);border:1px solid var(--accent);border-radius:6px;padding:8px;font-family:var(--mono);font-size:11px;color:var(--accent);cursor:pointer">Save Today</button>';
+
+    el.innerHTML=html;
+
+    // Auto-save on input change
+    function autoSave(){
+      var fields={};
+      var m=parseFloat(document.getElementById('bio-in-mood').value);if(!isNaN(m))fields.mood=m;
+      var s=parseFloat(document.getElementById('bio-in-sleep').value);if(!isNaN(s))fields.sleep=s;
+      var e=parseFloat(document.getElementById('bio-in-energy').value);if(!isNaN(e))fields.energy=e;
+      var w=parseFloat(document.getElementById('bio-in-weight').value);if(!isNaN(w))fields.weight=w;
+      var n=document.getElementById('bio-note').value;if(n)fields.note=n;
+      _setEntry(today,fields);_save();
+    }
+    ['bio-in-mood','bio-in-sleep','bio-in-energy','bio-in-weight'].forEach(function(id){
+      var inp=document.getElementById(id);
+      if(inp)inp.addEventListener('change',function(){autoSave();render();});
+    });
+    document.getElementById('bio-note').addEventListener('input',autoSave);
+    document.getElementById('bio-save').addEventListener('click',function(){
+      autoSave();
+      if(typeof speakResponse==='function')speakResponse('Logged, sir.');
+    });
+  }
+
+  function _renderLog(){
+    var el=document.getElementById('bio-log-content');if(!el)return;
+    var recent=entries.slice(0,30);
+    if(!recent.length){el.innerHTML='<div style="font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;padding:20px">No entries yet. Log today first.</div>';return;}
+    var html='<table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:10px">'+
+      '<thead><tr style="border-bottom:1px solid var(--border)">'+
+      '<th style="text-align:left;padding:5px 6px;color:var(--muted);font-weight:normal">Date</th>'+
+      '<th style="text-align:center;padding:5px 4px;color:var(--muted);font-weight:normal">Mood</th>'+
+      '<th style="text-align:center;padding:5px 4px;color:var(--muted);font-weight:normal">Sleep</th>'+
+      '<th style="text-align:center;padding:5px 4px;color:var(--muted);font-weight:normal">Energy</th>'+
+      '<th style="text-align:center;padding:5px 4px;color:var(--muted);font-weight:normal">BW</th>'+
+      '<th style="text-align:center;padding:5px 4px;color:var(--muted);font-weight:normal">Rec</th>'+
+      '</tr></thead><tbody>';
+    recent.forEach(function(e){
+      var rec=_recoveryScore(e.date);
+      var recColor=rec==null?'var(--muted)':rec>=7?'var(--green)':rec>=5?'var(--amber)':'var(--red)';
+      html+='<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">'+
+        '<td style="padding:5px 6px;color:var(--muted)">'+e.date.slice(5)+'</td>'+
+        '<td style="text-align:center;padding:5px 4px;color:'+(e.mood>=7?'var(--green)':e.mood>=5?'var(--amber)':'var(--muted)')+';">'+(e.mood!=null?e.mood:'—')+'</td>'+
+        '<td style="text-align:center;padding:5px 4px;color:'+(e.sleep>=7?'var(--green)':e.sleep>=5?'var(--amber)':'var(--muted)')+';">'+(e.sleep!=null?e.sleep+'h':'—')+'</td>'+
+        '<td style="text-align:center;padding:5px 4px;color:'+(e.energy>=7?'var(--green)':e.energy>=5?'var(--amber)':'var(--muted)')+';">'+(e.energy!=null?e.energy:'—')+'</td>'+
+        '<td style="text-align:center;padding:5px 4px;color:var(--text);">'+(e.weight!=null?e.weight:'—')+'</td>'+
+        '<td style="text-align:center;padding:5px 4px;color:'+recColor+';">'+(rec!=null?rec:'—')+'</td>'+
+        '</tr>';
+    });
+    html+='</tbody></table>';
+    el.innerHTML=html;
+  }
+
+  function _renderTrends(){
+    var el=document.getElementById('bio-trends-content');if(!el)return;
+    var recent=entries.slice(0,14).reverse(); // chronological, last 14 days
+    if(recent.length<2){el.innerHTML='<div style="font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;padding:20px">Need at least 2 entries for trends.</div>';return;}
+
+    var moodVals=recent.map(function(e){return e.mood;});
+    var sleepVals=recent.map(function(e){return e.sleep;});
+    var energyVals=recent.map(function(e){return e.energy;});
+    var weightVals=recent.map(function(e){return e.weight;});
+
+    function avg(arr){var v=arr.filter(function(x){return x!=null;});return v.length?Math.round(v.reduce(function(a,b){return a+b;},0)/v.length*10)/10:null;}
+    function trend(arr){
+      var v=arr.filter(function(x){return x!=null;});
+      if(v.length<2)return 0;
+      return v[v.length-1]-v[0];
+    }
+    function trendArrow(t){return t>0.5?'↑ improving':t<-0.5?'↓ declining':'→ stable';}
+    function trendColor(t){return t>0.5?'var(--green)':t<-0.5?'var(--red)':'var(--muted)';}
+
+    var html='<div style="display:flex;flex-direction:column;gap:12px">';
+
+    function sparkCard(label,vals,color,unit){
+      var a=avg(vals);var t=trend(vals);
+      return'<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
+          '<span style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.08em">'+label+'</span>'+
+          '<span style="font-family:var(--mono);font-size:9px;color:'+trendColor(t)+'">'+trendArrow(t)+'</span>'+
+        '</div>'+
+        '<div style="display:flex;align-items:flex-end;justify-content:space-between">'+
+          '<div style="font-family:var(--mono);font-size:22px;font-weight:700;color:'+color+'">'+
+            (a!=null?a:'—')+(a!=null&&unit?'<span style="font-size:11px;color:var(--muted)"> '+unit+'</span>':'')+
+          '</div>'+
+          _sparkline(vals,color,100,32)+
+        '</div></div>';
+    }
+
+    html+=sparkCard('MOOD',moodVals,'var(--accent)','/10');
+    html+=sparkCard('SLEEP',sleepVals,'var(--blue)','hrs');
+    html+=sparkCard('ENERGY',energyVals,'var(--amber)','/10');
+    if(weightVals.some(function(v){return v!=null;}))
+      html+=sparkCard('BODYWEIGHT',weightVals,'var(--green)','lbs');
+
+    // Correlations
+    var moodSleep=_correlate(moodVals,sleepVals);
+    var energySleep=_correlate(energyVals,sleepVals);
+    if(moodSleep!=null||energySleep!=null){
+      html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px">'+
+        '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.08em;margin-bottom:8px">CORRELATIONS</div>';
+      if(moodSleep!=null)html+='<div style="font-family:var(--mono);font-size:10px;color:var(--text);margin-bottom:4px">Sleep → Mood: <span style="color:'+(moodSleep>0.3?'var(--green)':moodSleep<-0.3?'var(--red)':'var(--muted)')+'">'+
+        (moodSleep>0.5?'strong positive':moodSleep>0.3?'positive':moodSleep<-0.5?'strong negative':moodSleep<-0.3?'negative':'no clear link')+'</span></div>';
+      if(energySleep!=null)html+='<div style="font-family:var(--mono);font-size:10px;color:var(--text)">Sleep → Energy: <span style="color:'+(energySleep>0.3?'var(--green)':energySleep<-0.3?'var(--red)':'var(--muted)')+'">'+
+        (energySleep>0.5?'strong positive':energySleep>0.3?'positive':energySleep<-0.5?'strong negative':energySleep<-0.3?'negative':'no clear link')+'</span></div>';
+      html+='</div>';
+    }
+    html+='</div>';
+    el.innerHTML=html;
+  }
+
+  function _correlate(a,b){
+    // Pearson correlation
+    var pairs=[];
+    for(var i=0;i<Math.min(a.length,b.length);i++){if(a[i]!=null&&b[i]!=null)pairs.push([a[i],b[i]]);}
+    if(pairs.length<4)return null;
+    var n=pairs.length;
+    var ma=pairs.reduce(function(s,p){return s+p[0];},0)/n;
+    var mb=pairs.reduce(function(s,p){return s+p[1];},0)/n;
+    var num=pairs.reduce(function(s,p){return s+(p[0]-ma)*(p[1]-mb);},0);
+    var da=Math.sqrt(pairs.reduce(function(s,p){return s+Math.pow(p[0]-ma,2);},0));
+    var db=Math.sqrt(pairs.reduce(function(s,p){return s+Math.pow(p[1]-mb,2);},0));
+    if(!da||!db)return null;
+    return Math.round((num/(da*db))*100)/100;
   }
 
   function _renderLog(body,today,todayEntry,last30){
