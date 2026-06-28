@@ -1,10 +1,11 @@
-// BAKER Service Worker — baker-v71
-const CACHE = 'baker-v71';
+// BAKER Service Worker — baker-v73
+const CACHE = 'baker-v73';
 
 const ASSETS = [
   '/BAKER/',
   '/BAKER/hud.html',
   '/BAKER/hud.css',
+  '/BAKER/nine-worlds.png',
   '/BAKER/index.html',
   '/BAKER/manifest.json',
   '/BAKER/icon.svg',
@@ -31,6 +32,7 @@ const ASSETS = [
   '/BAKER/js/academic.js',
   '/BAKER/js/places.js',
   '/BAKER/js/daily.js',
+  '/BAKER/js/dailylog.js',
   '/BAKER/js/timeline.js',
   '/BAKER/js/habits.js',
   '/BAKER/js/lecture.js',
