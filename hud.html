@@ -282,6 +282,7 @@
       <div class="gui-toggle-row"><span>Tree mode</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-treemode"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
       <div class="gui-toggle-row"><span>Grid mode</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-gridmode"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
       <div class="gui-toggle-row"><span>&#127795; Yggdrasil</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-yggmode"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+      <div class="gui-toggle-row"><span>&#127758; Nine Realms</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-ninerealmsmode"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
       <div class="gui-slider-row" style="margin-top:6px">
         <div class="gui-slider-lbl"><span>Node brightness</span><span id="gui-brightness-val">100</span></div>
         <input type="range" class="gui-slider" id="gui-brightness" min="10" max="100" value="100">
@@ -746,6 +747,7 @@ async function processCommand(txt){
   var inboxResult=INBOX.handleVoice(txt);if(inboxResult!==null){speakResponse(inboxResult);return;}
   var dailyResult=DAILY.handleVoice(txt);if(dailyResult!==null){speakResponse(dailyResult);return;}
   if(typeof TIMELINE!=='undefined'){var timelineResult=TIMELINE.handleVoice(txt);if(timelineResult!==null){speakResponse(timelineResult);return;}}
+  var dlResult=DAILYLOG.handleVoice(txt);if(dlResult!==null){speakResponse(dlResult);return;}
   var acadResult=ACADEMIC.handleVoice(txt);if(acadResult!==null){speakResponse(acadResult);return;}
   var bioResult=await BIOMETRICS.handleVoice(txt);if(bioResult!==null){speakResponse(bioResult);return;}
   var reminderResult=await REMINDERS.handleVoice(txt);if(reminderResult!==null){speakResponse(reminderResult);return;}
@@ -925,7 +927,7 @@ function toggleNavRows(){
   btn.title=collapsed?'Expand nav':'Collapse nav';
   // Update all panel tops
   var top=collapsed?'54px':'128px';
-  document.querySelectorAll('#strength-panel,#calendar-panel,#month-panel,#vault-panel,#vaultchat-panel,#graphui-panel,#budget-panel,#biometrics-panel,#academic-panel,#places-panel,#focus-panel,#hudinfo-panel,#daily-brief-panel,#vault-health-panel,#spotify-panel,#habits-panel,#lecture-panel,#weekly-panel,#inbox-panel,#timeline-panel').forEach(function(p){
+  document.querySelectorAll('#strength-panel,#calendar-panel,#month-panel,#vault-panel,#vaultchat-panel,#graphui-panel,#budget-panel,#biometrics-panel,#academic-panel,#places-panel,#focus-panel,#hudinfo-panel,#daily-brief-panel,#vault-health-panel,#spotify-panel,#habits-panel,#lecture-panel,#weekly-panel,#inbox-panel,#timeline-panel,#dailylog-panel').forEach(function(p){
     if(p)p.style.top=top;
   });
   localStorage.setItem('baker_nav_collapsed',collapsed?'1':'0');
