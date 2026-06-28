@@ -127,11 +127,18 @@ var WEEKLY=(function(){
     }
 
     // AI narrative button
-    html+='<button id="weekly-ai-btn" style="width:100%;background:none;border:1px solid var(--accent-dim);border-radius:6px;padding:8px;font-family:var(--mono);font-size:10px;color:var(--accent);cursor:pointer;margin-bottom:10px">&#9670; Generate Weekly Summary</button>'+
+    html+='<div style="display:flex;gap:6px;margin-bottom:10px">'+
+      '<button id="weekly-ai-btn" style="flex:1;background:none;border:1px solid var(--accent-dim);border-radius:6px;padding:8px;font-family:var(--mono);font-size:10px;color:var(--accent);cursor:pointer">&#9670; Generate Summary</button>'+
+      '<button id="weekly-save-btn" style="background:none;border:1px solid var(--green);border-radius:6px;padding:8px 12px;font-family:var(--mono);font-size:10px;color:var(--green);cursor:pointer">&#128190; Save</button>'+
+      '</div>'+
       '<div id="weekly-ai-output" style="display:none"></div>';
 
     body.innerHTML=html;
     document.getElementById('weekly-ai-btn').addEventListener('click',function(){_generateSummary(d);});
+    document.getElementById('weekly-save-btn').addEventListener('click',function(){
+      var aiText=(document.getElementById('weekly-ai-output')||{}).textContent||'';
+      _saveToVault(d,aiText||null);
+    });
   }
 
   function _statBox(val,label,color){
@@ -180,5 +187,37 @@ var WEEKLY=(function(){
   }
 
   function init(){}
+  async function _saveToVault(d,aiText){
+    if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected){alert('Connect vault first');return;}
+    var md='---\ntype: weekly\nweek: '+d.ws+'\n---\n\n# Weekly Review — '+d.ws+' to '+d.we+'\n\n';
+    if(aiText)md+='> '+aiText+'\n\n';
+    md+='## Stats\n\n| Metric | Value |\n|---|---|\n';
+    md+='| Tasks completed | '+((d.tasks&&d.tasks.done&&d.tasks.done.length)||0)+' |\n';
+    md+='| Workouts | '+(d.workouts&&d.workouts.length||0)+' |\n';
+    md+='| Habits | '+(d.habits&&d.habits.pct||0)+'% |\n\n';
+    md+='## Completed Tasks\n\n';
+    ((d.tasks&&d.tasks.done)||[]).forEach(function(t){md+='- [x] '+t.text+'\n';});
+    md+='\n## Workouts\n\n';
+    (d.workouts||[]).forEach(function(w){
+      md+='**'+w.name+'** ('+w.date+')\n';
+      (w.entries||[]).forEach(function(e){
+        var done=(e.sets||[]).filter(function(s){return s.done;});
+        if(done.length)md+='- '+e.exercise+': '+done.map(function(s){return s.reps+'x'+s.weight;}).join(', ')+'\n';
+      });
+      md+='\n';
+    });
+    try{
+      var dir=vaultHandle;
+      dir=await dir.getDirectoryHandle('07-System',{create:true});
+      dir=await dir.getDirectoryHandle('Weekly',{create:true});
+      var fh=await dir.getFileHandle('week-'+d.ws+'.md',{create:true});
+      var w=await fh.createWritable();await w.write(md);await w.close();
+      if(typeof spawnBirthParticle==='function')spawnBirthParticle('system','07-System/Weekly/week-'+d.ws+'.md');
+      var btn=document.getElementById('weekly-save-btn');
+      if(btn){btn.textContent='Saved!';btn.disabled=true;}
+      if(typeof speakResponse==='function')speakResponse('Weekly review saved to vault, sir.');
+    }catch(e){alert('Save failed: '+e.message);}
+  }
+
   return{init,showPanel,hidePanel,togglePanel,handleVoice};
 })();
