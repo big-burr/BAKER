@@ -397,10 +397,13 @@
     <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0" onclick="BIOMETRICS.hidePanel()">&#215;</button>
   </div>
   <div class="bio-tabs">
-    <button class="bio-tab active" id="bio-tab-log" onclick="BIOMETRICS.switchTab('log')">&#128200; Log</button>
+    <button class="bio-tab active" id="bio-tab-today" onclick="BIOMETRICS.switchTab('today')">&#9711; Today</button>
+    <button class="bio-tab" id="bio-tab-log" onclick="BIOMETRICS.switchTab('log')">&#128200; Log</button>
     <button class="bio-tab" id="bio-tab-trends" onclick="BIOMETRICS.switchTab('trends')">&#128202; Trends</button>
   </div>
-  <div id="bio-body"></div>
+  <div id="bio-today-content" style="overflow-y:auto;padding:14px;flex:1"></div>
+  <div id="bio-log-content" style="display:none;overflow-y:auto;padding:14px;flex:1"></div>
+  <div id="bio-trends-content" style="display:none;overflow-y:auto;padding:14px;flex:1"></div>
 </div>
 
 <div id="focus-panel">
@@ -525,6 +528,8 @@
         <button class="bp-tab active" id="bp-tab-log" onclick="BUDGET.switchTab('log')">&#128179; Log</button>
         <button class="bp-tab" id="bp-tab-cats" onclick="BUDGET.switchTab('cats')">&#9776; Categories</button>
         <button class="bp-tab" id="bp-tab-bills" onclick="BUDGET.switchTab('bills')">&#128197; Bills</button>
+        <button class="bp-tab" id="bp-tab-goals" onclick="BUDGET.switchTab('goals')">&#127919; Goals</button>
+        <button class="bp-tab" id="bp-tab-worth" onclick="BUDGET.switchTab('worth')">&#9651; Worth</button>
       </div>
       <div class="bp-tab-content" id="bp-tab-content"></div>
     </div>
@@ -1098,8 +1103,8 @@ async function _checkMemoryCap(key){
 makeDraggable('orb-panel','orb-panel-hdr');
 makeDraggable('note-panel','note-panel-hdr');
 makeDraggable('widget-panel','widget-panel-hdr');
-makeWindowBehavior(document.getElementById('spotify-panel'),document.getElementById('spotify-panel').querySelector('.spp-hdr'),{minW:280,minH:120});
-makeWindowBehavior(document.getElementById('calendar-panel'),document.getElementById('calendar-panel').querySelector('.cal-hdr'),{minW:280,minH:200});
+if(document.getElementById('spotify-panel')) makeWindowBehavior(document.getElementById('spotify-panel'),document.getElementById('spotify-panel').querySelector('.spp-hdr'),{minW:280,minH:120});
+if(document.getElementById('calendar-panel')) makeWindowBehavior(document.getElementById('calendar-panel'),document.getElementById('calendar-panel').querySelector('.cal-hdr'),{minW:280,minH:200});
 CAL.init();
 (function(){
   var _origToggle=CAL.toggleTask;
@@ -1111,7 +1116,7 @@ CAL.init();
     };
   }
 })();
-makeWindowBehavior(document.getElementById('month-panel'),document.getElementById('month-panel').querySelector('.mcal-hdr'),{minW:320,minH:360});
+if(document.getElementById('month-panel')) makeWindowBehavior(document.getElementById('month-panel'),document.getElementById('month-panel').querySelector('.mcal-hdr'),{minW:320,minH:360});
 MCAL.init();
 (function(){
   var _origToggle=CAL.toggleTask;
@@ -1123,13 +1128,13 @@ MCAL.init();
     };
   }
 })();
-makeWindowBehavior(document.getElementById('vault-panel'),document.getElementById('vault-panel').querySelector('.vp-hdr'),{minW:300,minH:300});
+if(document.getElementById('vault-panel')) makeWindowBehavior(document.getElementById('vault-panel'),document.getElementById('vault-panel').querySelector('.vp-hdr'),{minW:300,minH:300});
 VAULTUI.init();
-makeWindowBehavior(document.getElementById('vaultchat-panel'),document.getElementById('vaultchat-panel').querySelector('#vc-hdr'),{minW:320,minH:300});
+if(document.getElementById('vaultchat-panel')) makeWindowBehavior(document.getElementById('vaultchat-panel'),document.getElementById('vaultchat-panel').querySelector('#vc-hdr'),{minW:320,minH:300});
 VAULTCHAT.init();
 BUDGET.init();
-makeWindowBehavior(document.getElementById('budget-panel'),document.getElementById('budget-panel').querySelector('.bp-hdr'),{minW:600,minH:400});
-makeWindowBehavior(document.getElementById('graphui-panel'),document.getElementById('graphui-panel').querySelector('.gui-hdr'),{minW:260,minH:400});
+if(document.getElementById('budget-panel')) makeWindowBehavior(document.getElementById('budget-panel'),document.getElementById('budget-panel').querySelector('.bp-hdr'),{minW:600,minH:400});
+if(document.getElementById('graphui-panel')) makeWindowBehavior(document.getElementById('graphui-panel'),document.getElementById('graphui-panel').querySelector('.gui-hdr'),{minW:260,minH:400});
 GRAPHUI.init();
 VAULTSYNC.init();
 FALLOUT.init();
@@ -1137,8 +1142,7 @@ FOCUS.init();
 PLACES.init();
 DAILY.init();
 if(typeof TIMELINE!=='undefined')TIMELINE.init();
-makeWindowBehavior(document.getElementById('analyze-panel'),document.getElementById('az-hdr'),{minW:340,minH:400});
-makeWindowBehavior(document.getElementById('timeline-panel'),document.getElementById('tl-hdr'),{minW:300,minH:400});
+if(document.getElementById('timeline-panel')) makeWindowBehavior(document.getElementById('timeline-panel'),document.getElementById('tl-hdr'),{minW:300,minH:400});
 HABITS.init();
 (function(){
   var _origHabSwitch=HABITS.switchTab;
@@ -1148,14 +1152,14 @@ HABITS.init();
 LECTURE.init();
 WEEKLY.init();
 INBOX.init();
-makeWindowBehavior(document.getElementById('habits-panel'),document.getElementById('habits-hdr'),{minW:320,minH:300});
-makeWindowBehavior(document.getElementById('lecture-panel'),document.getElementById('lecture-hdr'),{minW:340,minH:300});
-makeWindowBehavior(document.getElementById('weekly-panel'),document.getElementById('weekly-hdr'),{minW:380,minH:300});
-makeWindowBehavior(document.getElementById('inbox-panel'),document.getElementById('inbox-hdr'),{minW:300,minH:200});
-makeWindowBehavior(document.getElementById('places-panel'),document.getElementById('places-hdr'),{minW:400,minH:400});
+if(document.getElementById('habits-panel')) makeWindowBehavior(document.getElementById('habits-panel'),document.getElementById('habits-hdr'),{minW:320,minH:300});
+if(document.getElementById('lecture-panel')) makeWindowBehavior(document.getElementById('lecture-panel'),document.getElementById('lecture-hdr'),{minW:340,minH:300});
+if(document.getElementById('weekly-panel')) makeWindowBehavior(document.getElementById('weekly-panel'),document.getElementById('weekly-hdr'),{minW:380,minH:300});
+if(document.getElementById('inbox-panel')) makeWindowBehavior(document.getElementById('inbox-panel'),document.getElementById('inbox-hdr'),{minW:300,minH:200});
+if(document.getElementById('places-panel')) makeWindowBehavior(document.getElementById('places-panel'),document.getElementById('places-hdr'),{minW:400,minH:400});
 ACADEMIC.init();
-makeWindowBehavior(document.getElementById('focus-panel'),document.getElementById('focus-hdr'),{minW:280,minH:300});
-makeWindowBehavior(document.getElementById('academic-panel'),document.getElementById('academic-hdr'),{minW:400,minH:400});
+if(document.getElementById('focus-panel')) makeWindowBehavior(document.getElementById('focus-panel'),document.getElementById('focus-hdr'),{minW:280,minH:300});
+if(document.getElementById('academic-panel')) makeWindowBehavior(document.getElementById('academic-panel'),document.getElementById('academic-hdr'),{minW:400,minH:400});
 BIOMETRICS.init();
 (function(){
   var _origBioSave=BIOMETRICS.saveEntry;
@@ -1167,9 +1171,9 @@ BIOMETRICS.init();
     };
   }
 })();
-makeWindowBehavior(document.getElementById('biometrics-panel'),document.getElementById('bio-hdr'),{minW:320,minH:300});
+if(document.getElementById('biometrics-panel')) makeWindowBehavior(document.getElementById('biometrics-panel'),document.getElementById('bio-hdr'),{minW:320,minH:300});
 STRENGTH.init();
-makeWindowBehavior(document.getElementById('strength-panel'),document.getElementById('strength-panel').querySelector('.str-hdr'),{minW:640,minH:400});
+if(document.getElementById('strength-panel')) makeWindowBehavior(document.getElementById('strength-panel'),document.getElementById('strength-panel').querySelector('.str-hdr'),{minW:640,minH:400});
 // Patch STRENGTH.switchTab to properly set scroll on active content div
 (function(){
   var _origSwitch=STRENGTH.switchTab;
@@ -1222,7 +1226,7 @@ REMINDERS.init();
   };
 })();
 FILEDROP.init();
-makeWindowBehavior(document.getElementById('hudinfo-panel'),document.getElementById('hudinfo-hdr'),{minW:180,minH:100});
+if(document.getElementById('hudinfo-panel')) makeWindowBehavior(document.getElementById('hudinfo-panel'),document.getElementById('hudinfo-hdr'),{minW:180,minH:100});
 // Morning biometric prompt (7am-10am, once per day)
 (function(){
   var lastPrompt=localStorage.getItem('baker_morning_prompt');
