@@ -981,6 +981,19 @@ var GRAPHUI=(function(){
       (_el('gui-clustermode')||{}).checked =false;
       applyAndRebuild();
     });
+    // Nine Realms mode
+    _on('gui-ninerealmsmode','change',function(){
+      GraphSettings.nineRealmsMode=this.checked;
+      if(this.checked){
+        GraphSettings.treeMode=false;GraphSettings.gridMode=false;
+        GraphSettings.clusterMode=false;GraphSettings.yggdrasilMode=false;
+      }
+      (_el('gui-treemode')||{}).checked=false;
+      (_el('gui-gridmode')||{}).checked=false;
+      (_el('gui-clustermode')||{}).checked=false;
+      (_el('gui-yggmode')||{}).checked=false;
+      applyAndRebuild();
+    });
     // Node brightness
     _on('gui-brightness','input',function(){
       GraphSettings.nodeBrightness=parseInt(this.value,10)/100;
