@@ -47,8 +47,9 @@ function spawnBirthParticle(type,targetPath){
       done:false,
       popped:false
     });
-    // Mark target node as freshly born so it renders oversized
-    if(node)node._bornAt=Date.now()+Math.round(1200); // born after particle arrives
+    // Mark target node as freshly born ONLY if it's a new node (no connections yet)
+    // Prevents bulk vault-sync writes from making all nodes huge on connect
+    if(node&&(!node.connCount||node.connCount<1))node._bornAt=Date.now()+1200;
   }
   trySpawn();
 }
