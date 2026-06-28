@@ -1279,7 +1279,7 @@ if(document.getElementById('strength-panel')) makeWindowBehavior(document.getEle
       var el=document.getElementById('str-'+t+'-content');
       if(!el)return;
       if(t===tab){
-        el.style.display='block';
+        el.style.display='flex';el.style.flexDirection='column';
         el.style.height=restH+'px';
         el.style.overflowY='auto';
         el.style.webkitOverflowScrolling='touch';
