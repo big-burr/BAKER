@@ -1,5 +1,5 @@
-// BAKER Service Worker — baker-v60
-const CACHE = 'baker-v60';
+// BAKER Service Worker — baker-v65
+const CACHE = 'baker-v65';
 
 const ASSETS = [
   '/BAKER/',
@@ -30,6 +30,9 @@ const ASSETS = [
   '/BAKER/js/focus.js',
   '/BAKER/js/academic.js',
   '/BAKER/js/places.js',
+  '/BAKER/js/daily.js',
+  '/BAKER/js/timeline.js',
+  '/BAKER/js/analyze.js',
   '/BAKER/js/habits.js',
   '/BAKER/js/lecture.js',
   '/BAKER/js/weekly.js',
