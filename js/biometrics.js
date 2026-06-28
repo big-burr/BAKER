@@ -380,7 +380,12 @@ var BIOMETRICS=(function(){
     return Math.round((num/(da*db))*100)/100;
   }
 
-  function _renderLog(body,today,todayEntry,last30){
+  function _renderLog(){
+    var el=document.getElementById('bio-log-content');if(!el)return;
+    var today=_todayStr();
+    var todayEntry=_getEntry(today);
+    var last30=entries.slice(0,30);
+    var body=el;
     var avgMood=_avg(last30.map(function(e){return e.mood;}));
     var avgSleep=_avg(last30.map(function(e){return e.sleep;}));
     var avgEnergy=_avg(last30.map(function(e){return e.energy;}));
@@ -461,7 +466,10 @@ var BIOMETRICS=(function(){
     });
   }
 
-  function _renderTrends(body,last30){
+  function _renderTrends(){
+    var el=document.getElementById('bio-trends-content');if(!el)return;
+    var last30=entries.slice(0,14).reverse();
+    var body=el;
     if(last30.length<2){
       body.innerHTML='<div style="font-family:var(--mono);font-size:11px;color:var(--muted);padding:20px;text-align:center">Log at least 2 days to see trends.<br><br>Connect your vault to import existing daily logs.</div>';
       return;
