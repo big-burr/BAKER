@@ -297,7 +297,7 @@ input[type=range].spp-slider:hover::-webkit-slider-thumb{background:#9585ff}
 .str-tab:hover{color:var(--text)}
 .str-body{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0}
 #str-split-content,#str-workout-content,#str-log-content,#str-map-content,#str-score-content,#str-coach-content{display:none;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
-#str-split-content.active,#str-workout-content.active,#str-log-content.active,#str-map-content.active,#str-score-content.active,#str-coach-content.active{display:block;overflow-y:auto;flex:1;min-height:0;-webkit-overflow-scrolling:touch}
+#str-split-content.active,#str-workout-content.active,#str-log-content.active,#str-map-content.active,#str-score-content.active,#str-coach-content.active{display:flex;flex-direction:column;overflow-y:auto;flex:1;min-height:0;-webkit-overflow-scrolling:touch}
 .str-body::-webkit-scrollbar{width:4px}
 .str-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
