@@ -561,11 +561,13 @@ var BUDGET=(function(){
     if(currentTab==='log')      renderLog(md);
     else if(currentTab==='cats') renderCats(md);
     else if(currentTab==='bills') renderBills();
+    else if(currentTab==='goals') renderGoals();
+    else if(currentTab==='worth') renderNetWorth();
   }
 
   function switchTab(tab){
     currentTab=tab;
-    ['log','cats','bills'].forEach(function(t){
+    ['log','cats','bills','goals','worth'].forEach(function(t){
       var el=document.getElementById('bp-tab-'+t);
       if(el) el.className='bp-tab'+(t===tab?' active':'');
     });
@@ -573,6 +575,99 @@ var BUDGET=(function(){
   }
 
   function _setLogFilter(f){ logFilter=f; render(); }
+
+  // ── Goals & Net Worth ─────────────────────────────────────
+  var _goals=JSON.parse(localStorage.getItem('baker_budget_goals')||'[]');
+  var _assets=JSON.parse(localStorage.getItem('baker_budget_assets')||'[]');
+  function _saveGoals(){try{localStorage.setItem('baker_budget_goals',JSON.stringify(_goals));}catch(e){}}
+  function _saveAssets(){try{localStorage.setItem('baker_budget_assets',JSON.stringify(_assets));}catch(e){}}
+
+  function renderGoals(){
+    var body=document.getElementById('bp-body');if(!body)return;
+    var html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'+
+      '<span style="font-family:var(--mono);font-size:10px;color:var(--muted)">Savings Goals</span>'+
+      '<button id="bp-add-goal" style="background:none;border:1px solid var(--accent-dim);border-radius:4px;padding:3px 10px;font-family:var(--mono);font-size:9px;color:var(--accent);cursor:pointer">+ Goal</button></div>';
+    if(!_goals.length)html+='<div style="font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;padding:20px">No goals yet.</div>';
+    _goals.forEach(function(g,i){
+      var pct=Math.min(100,Math.round((g.saved/g.target)*100));
+      var col=pct>=100?'var(--green)':pct>=50?'var(--accent)':'var(--amber)';
+      html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px">'+
+        '<div style="display:flex;justify-content:space-between;margin-bottom:5px">'+
+          '<span style="font-family:var(--mono);font-size:11px;color:var(--text)">'+g.name+'</span>'+
+          '<button class="bp-del-g" data-i="'+i+'" style="background:none;border:none;color:var(--muted);cursor:pointer">✕</button>'+
+        '</div>'+
+        '<div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:5px">'+
+          '<div style="height:100%;width:'+pct+'%;background:'+col+';border-radius:4px"></div></div>'+
+        '<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:6px">'+
+          '<span>$'+g.saved.toLocaleString()+' / $'+g.target.toLocaleString()+'</span>'+
+          '<span>'+pct+'%</span></div>'+
+        '<div style="display:flex;gap:5px">'+
+          '<input class="bp-dep-in" data-i="'+i+'" type="number" placeholder="Deposit $" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-family:var(--mono);font-size:10px;color:var(--text);outline:none">'+
+          '<button class="bp-dep-btn" data-i="'+i+'" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:4px;padding:4px 10px;font-family:var(--mono);font-size:9px;color:var(--accent);cursor:pointer">Add</button>'+
+        '</div></div>';
+    });
+    body.innerHTML=html;
+    var ag=document.getElementById('bp-add-goal');
+    if(ag)ag.addEventListener('click',function(){
+      var n=prompt('Goal name?');if(!n)return;
+      var t=parseFloat(prompt('Target amount ($)?'));if(isNaN(t))return;
+      _goals.push({name:n.trim(),target:t,saved:0});_saveGoals();renderGoals();
+    });
+    document.querySelectorAll('.bp-del-g').forEach(function(b){
+      b.addEventListener('click',function(){_goals.splice(parseInt(b.dataset.i),1);_saveGoals();renderGoals();});
+    });
+    document.querySelectorAll('.bp-dep-btn').forEach(function(b){
+      b.addEventListener('click',function(){
+        var inp=document.querySelector('.bp-dep-in[data-i="'+b.dataset.i+'"]');
+        var amt=parseFloat(inp.value);if(isNaN(amt)||amt<=0)return;
+        var g=_goals[parseInt(b.dataset.i)];
+        g.saved=Math.min(g.saved+amt,g.target);
+        _saveGoals();renderGoals();
+      });
+    });
+  }
+
+  function renderNetWorth(){
+    var body=document.getElementById('bp-body');if(!body)return;
+    var totA=_assets.filter(function(a){return a.type==='asset';}).reduce(function(s,a){return s+a.value;},0);
+    var totL=_assets.filter(function(a){return a.type==='liability';}).reduce(function(s,a){return s+a.value;},0);
+    var nw=totA-totL;var nc=nw>=0?'var(--green)':'var(--red)';
+    var html='<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center;margin-bottom:14px">'+
+      '<div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.12em;margin-bottom:4px">NET WORTH</div>'+
+      '<div style="font-family:var(--mono);font-size:30px;font-weight:700;color:'+nc+'">'+(nw<0?'-$':'$')+Math.abs(nw).toLocaleString()+'</div>'+
+      '<div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px">Assets $'+totA.toLocaleString()+' · Liabilities $'+totL.toLocaleString()+'</div></div>';
+    ['asset','liability'].forEach(function(type){
+      var items=_assets.map(function(a,i){return{a:a,i:i};}).filter(function(x){return x.a.type===type;});
+      if(!items.length)return;
+      html+='<div style="font-family:var(--mono);font-size:8px;color:'+(type==='asset'?'var(--green)':'var(--red)')+';letter-spacing:.1em;margin-bottom:5px;margin-top:8px">'+type.toUpperCase()+'S</div>';
+      items.forEach(function(x){
+        html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:5px;margin-bottom:4px;font-family:var(--mono);font-size:10px">'+
+          '<span style="flex:1;color:var(--text)">'+x.a.name+'</span>'+
+          '<span style="color:'+(type==='asset'?'var(--green)':'var(--red)')+'">$'+x.a.value.toLocaleString()+'</span>'+
+          '<button class="bp-del-as" data-i="'+x.i+'" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px">✕</button></div>';
+      });
+    });
+    html+='<div style="display:flex;gap:5px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">'+
+      '<input id="bp-an" placeholder="Name" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-family:var(--mono);font-size:10px;color:var(--text);outline:none">'+
+      '<input id="bp-av" type="number" placeholder="$" style="width:70px;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:5px;font-family:var(--mono);font-size:10px;color:var(--text);outline:none">'+
+      '<select id="bp-at" style="background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:5px;font-family:var(--mono);font-size:9px;color:var(--text);outline:none">'+
+        '<option value="asset">Asset</option><option value="liability">Liability</option></select>'+
+      '<button id="bp-add-as" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:4px;padding:5px 8px;font-family:var(--mono);font-size:9px;color:var(--accent);cursor:pointer">+</button></div>';
+    body.innerHTML=html;
+    document.querySelectorAll('.bp-del-as').forEach(function(b){
+      b.addEventListener('click',function(){_assets.splice(parseInt(b.dataset.i),1);_saveAssets();renderNetWorth();});
+    });
+    var ab=document.getElementById('bp-add-as');
+    if(ab)ab.addEventListener('click',function(){
+      var n=document.getElementById('bp-an').value.trim();
+      var v=parseFloat(document.getElementById('bp-av').value);
+      var t=document.getElementById('bp-at').value;
+      if(!n||isNaN(v))return;
+      _assets.push({name:n,value:v,type:t});_saveAssets();
+      document.getElementById('bp-an').value='';document.getElementById('bp-av').value='';
+      renderNetWorth();
+    });
+  }
 
   // ── Month nav ─────────────────────────────────────────────
   function prevMonth(){
