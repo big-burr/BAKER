@@ -50,7 +50,9 @@
       <button class="hbtn" id="vaultchat-nav-btn" onclick="VAULTCHAT.togglePanel()">&#129504; Chat</button>
       <button class="hbtn" id="graphui-nav-btn" onclick="GRAPHUI.togglePanel()">&#128375; Graph</button>
       <button class="hbtn" id="brief-nav-btn" onclick="requestBrief()">&#9670; Brief</button>
+      <button class="hbtn" id="analyze-nav-btn" onclick="ANALYZE.togglePanel()">&#9670; Analyze</button>
       <button class="hbtn" id="health-nav-btn" onclick="toggleVaultHealth()">&#9650; Vault Health</button>
+      <button class="hbtn" id="timeline-nav-btn" onclick="TIMELINE.togglePanel()">&#9776; Timeline</button>
     </div>
     <div class="nav-row">
       <span class="nav-row-label">Life</span>
@@ -91,7 +93,9 @@
         <button class="hbtn" onclick="VAULTCHAT.togglePanel();closeNavMenu()">&#129504; Chat</button>
         <button class="hbtn" onclick="GRAPHUI.togglePanel();closeNavMenu()">&#128375; Graph</button>
         <button class="hbtn" onclick="requestBrief();closeNavMenu()">&#9670; Brief</button>
+        <button class="hbtn" onclick="ANALYZE.togglePanel();closeNavMenu()">&#9670; Analyze</button>
         <button class="hbtn" onclick="toggleVaultHealth();closeNavMenu()">&#9650; Health</button>
+        <button class="hbtn" onclick="TIMELINE.togglePanel();closeNavMenu()">&#9776; Timeline</button>
       </div>
     </div>
     <div class="nav-dd-group">
@@ -374,7 +378,7 @@
     <div id="str-workout-content" style="display:none"></div>
     <div id="str-map-content" style="display:none"></div>
     <div id="str-score-content" style="display:none"></div>
-  <div id="str-coach-content"></div>
+    <div id="str-coach-content" style="display:none"></div>
   </div>
 </div>
 
@@ -459,6 +463,28 @@
     <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0" onclick="INBOX.hidePanel()">&#215;</button>
   </div>
   <div id="inbox-body"></div>
+</div>
+
+<div id="timeline-panel">
+  <div class="tl-hdr" id="tl-hdr">
+    <span style="font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.08em">&#9776; TIMELINE</span>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button onclick="TIMELINE.setRange(7)" style="background:none;border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-family:var(--mono);font-size:9px;color:var(--muted);cursor:pointer">7d</button>
+      <button onclick="TIMELINE.setRange(30)" style="background:none;border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-family:var(--mono);font-size:9px;color:var(--muted);cursor:pointer">30d</button>
+      <button onclick="TIMELINE.setRange(90)" style="background:none;border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-family:var(--mono);font-size:9px;color:var(--muted);cursor:pointer">90d</button>
+      <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0 0 0 6px" onclick="TIMELINE.hidePanel()">&#215;</button>
+    </div>
+  </div>
+  <div id="tl-body"></div>
+</div>
+
+
+<div id="analyze-panel">
+  <div class="az-hdr" id="az-hdr">
+    <span style="font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.08em">&#9670; ANALYZE</span>
+    <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0" onclick="ANALYZE.hidePanel()">&#215;</button>
+  </div>
+  <div id="az-body"></div>
 </div>
 <div id="daily-brief-panel">
   <div class="brief-hdr">
@@ -660,6 +686,7 @@ async function doConnect(handle){
   if(typeof VAULTCHAT!=='undefined')VAULTCHAT.onVaultReady();
   if(typeof BIOMETRICS!=='undefined')BIOMETRICS.onVaultReady();
   if(typeof VAULTSYNC!=='undefined')VAULTSYNC.onVaultConnect();
+  setTimeout(function(){if(typeof DAILY!=='undefined')DAILY.createDailyNote();},2000);
 }
 function setVaultBtn(s){var b=document.getElementById('vault-btn');b.className='hbtn'+(s==='on'?' on':'');b.textContent=s==='on'?'⬡ Vault on':s==='scanning'?'⟳ Scanning...':'⬡ Connect Vault';}
 async function scanDir(dir,path){try{for await(var entry of dir.values()){if(entry.name.startsWith('.'))continue;if(entry.kind==='file'&&entry.name.endsWith('.md')){try{var f=await entry.getFile();var content=await f.text();vaultIndex.push({name:entry.name,path:path?path+'/'+entry.name:entry.name,content:content,mtime:f.lastModified});}catch(e){}}else if(entry.kind==='directory'){await scanDir(entry,path?path+'/'+entry.name:entry.name);}}}catch(e){}}
@@ -721,6 +748,9 @@ async function processCommand(txt){
   var lectureResult=LECTURE.handleVoice(txt);if(lectureResult!==null){speakResponse(lectureResult);return;}
   var weeklyResult=WEEKLY.handleVoice(txt);if(weeklyResult!==null){speakResponse(weeklyResult);return;}
   var inboxResult=INBOX.handleVoice(txt);if(inboxResult!==null){speakResponse(inboxResult);return;}
+  var dailyResult=DAILY.handleVoice(txt);if(dailyResult!==null){speakResponse(dailyResult);return;}
+  var timelineResult=TIMELINE.handleVoice(txt);if(timelineResult!==null){speakResponse(timelineResult);return;}
+  var azResult=ANALYZE.handleVoice(txt);if(azResult!==null){speakResponse(azResult);return;}
   var acadResult=ACADEMIC.handleVoice(txt);if(acadResult!==null){speakResponse(acadResult);return;}
   var bioResult=await BIOMETRICS.handleVoice(txt);if(bioResult!==null){speakResponse(bioResult);return;}
   var reminderResult=await REMINDERS.handleVoice(txt);if(reminderResult!==null){speakResponse(reminderResult);return;}
@@ -769,6 +799,8 @@ async function sendToBAKER(txt,key){var webOn=localStorage.getItem('baker_web_se
 <script src="js/focus.js"></script>
 <script src="js/academic.js"></script>
 <script src="js/places.js"></script>
+<script src="js/daily.js"></script>
+<script src="js/timeline.js"></script>
 <script src="js/habits.js"></script>
 <script src="js/lecture.js"></script>
 <script src="js/weekly.js"></script>
@@ -781,6 +813,7 @@ async function sendToBAKER(txt,key){var webOn=localStorage.getItem('baker_web_se
 <script src="js/hud-info.js"></script>
 <script src="js/reminders.js"></script>
 <script src="js/filedrop.js"></script>
+<script src="js/analyze.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════
 // DAILY BRIEF + VAULT HEALTH + VOICE OPEN NOTE
@@ -898,7 +931,7 @@ function toggleNavRows(){
   btn.title=collapsed?'Expand nav':'Collapse nav';
   // Update all panel tops
   var top=collapsed?'54px':'128px';
-  document.querySelectorAll('#strength-panel,#calendar-panel,#month-panel,#vault-panel,#vaultchat-panel,#graphui-panel,#budget-panel,#biometrics-panel,#academic-panel,#places-panel,#focus-panel,#hudinfo-panel,#daily-brief-panel,#vault-health-panel,#spotify-panel,#habits-panel,#lecture-panel,#weekly-panel,#inbox-panel').forEach(function(p){
+  document.querySelectorAll('#strength-panel,#calendar-panel,#month-panel,#vault-panel,#vaultchat-panel,#graphui-panel,#budget-panel,#biometrics-panel,#academic-panel,#places-panel,#focus-panel,#hudinfo-panel,#daily-brief-panel,#vault-health-panel,#spotify-panel,#habits-panel,#lecture-panel,#weekly-panel,#inbox-panel,#timeline-panel,#analyze-panel').forEach(function(p){
     if(p)p.style.top=top;
   });
   localStorage.setItem('baker_nav_collapsed',collapsed?'1':'0');
@@ -1079,8 +1112,28 @@ makeDraggable('widget-panel','widget-panel-hdr');
 makeWindowBehavior(document.getElementById('spotify-panel'),document.getElementById('spotify-panel').querySelector('.spp-hdr'),{minW:280,minH:120});
 makeWindowBehavior(document.getElementById('calendar-panel'),document.getElementById('calendar-panel').querySelector('.cal-hdr'),{minW:280,minH:200});
 CAL.init();
+(function(){
+  var _origToggle=CAL.toggleTask;
+  if(_origToggle){
+    CAL.toggleTask=function(id){
+      var r=_origToggle.call(CAL,id);
+      if(typeof DAILY!=='undefined')DAILY.onTaskUpdate();
+      return r;
+    };
+  }
+})();
 makeWindowBehavior(document.getElementById('month-panel'),document.getElementById('month-panel').querySelector('.mcal-hdr'),{minW:320,minH:360});
 MCAL.init();
+(function(){
+  var _origToggle=CAL.toggleTask;
+  if(_origToggle){
+    CAL.toggleTask=function(id){
+      var r=_origToggle.call(CAL,id);
+      if(typeof DAILY!=='undefined')DAILY.onTaskUpdate();
+      return r;
+    };
+  }
+})();
 makeWindowBehavior(document.getElementById('vault-panel'),document.getElementById('vault-panel').querySelector('.vp-hdr'),{minW:300,minH:300});
 VAULTUI.init();
 makeWindowBehavior(document.getElementById('vaultchat-panel'),document.getElementById('vaultchat-panel').querySelector('#vc-hdr'),{minW:320,minH:300});
@@ -1093,7 +1146,17 @@ VAULTSYNC.init();
 FALLOUT.init();
 FOCUS.init();
 PLACES.init();
+DAILY.init();
+TIMELINE.init();
+ANALYZE.init();
+makeWindowBehavior(document.getElementById('analyze-panel'),document.getElementById('az-hdr'),{minW:340,minH:400});
+makeWindowBehavior(document.getElementById('timeline-panel'),document.getElementById('tl-hdr'),{minW:300,minH:400});
 HABITS.init();
+(function(){
+  var _origHabSwitch=HABITS.switchTab;
+  // Proxy _save by patching after any habit check — done via global flag
+  window._dailyHabitHook=function(){if(typeof DAILY!=='undefined')DAILY.onHabitUpdate();};
+})();
 LECTURE.init();
 WEEKLY.init();
 INBOX.init();
@@ -1106,9 +1169,52 @@ ACADEMIC.init();
 makeWindowBehavior(document.getElementById('focus-panel'),document.getElementById('focus-hdr'),{minW:280,minH:300});
 makeWindowBehavior(document.getElementById('academic-panel'),document.getElementById('academic-hdr'),{minW:400,minH:400});
 BIOMETRICS.init();
+(function(){
+  var _origBioSave=BIOMETRICS.saveEntry;
+  if(_origBioSave){
+    BIOMETRICS.saveEntry=function(){
+      var r=_origBioSave.apply(BIOMETRICS,arguments);
+      if(typeof DAILY!=='undefined')DAILY.onBiometricsUpdate();
+      return r;
+    };
+  }
+})();
 makeWindowBehavior(document.getElementById('biometrics-panel'),document.getElementById('bio-hdr'),{minW:320,minH:300});
 STRENGTH.init();
 makeWindowBehavior(document.getElementById('strength-panel'),document.getElementById('strength-panel').querySelector('.str-hdr'),{minW:640,minH:400});
+// Patch STRENGTH.switchTab to properly set scroll on active content div
+(function(){
+  var _origSwitch=STRENGTH.switchTab;
+  STRENGTH.switchTab=function(tab){
+    _origSwitch.call(STRENGTH,tab);
+    // After tab switch, make the active div fill remaining space and scroll
+    var tabs=['split','workout','map','score','coach'];
+    var panel=document.getElementById('strength-panel');
+    if(!panel)return;
+    var body=panel.querySelector('.str-body');
+    var hdrH=(panel.querySelector('.str-hdr')||{}).offsetHeight||44;
+    var tabsH=(panel.querySelector('.str-tabs')||{}).offsetHeight||36;
+    var restH=panel.offsetHeight-hdrH-tabsH-4;
+    tabs.forEach(function(t){
+      var el=document.getElementById('str-'+t+'-content');
+      if(!el)return;
+      if(t===tab){
+        el.style.display='block';
+        el.style.height=restH+'px';
+        el.style.overflowY='auto';
+        el.style.webkitOverflowScrolling='touch';
+      }else{
+        el.style.display='none';
+      }
+    });
+  };
+  // Also call on show to set initial scroll
+  var _origShow=STRENGTH.showPanel;
+  STRENGTH.showPanel=function(){
+    _origShow.call(STRENGTH);
+    setTimeout(function(){STRENGTH.switchTab('workout');},50);
+  };
+})();
 HUDINFO.init();
 REMINDERS.init();
 (function(){
