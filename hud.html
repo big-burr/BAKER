@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1, maximum-scale=1.0, user-scalable=no">
 <title>BAKER — HUD</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="manifest" href="manifest.json">
@@ -1096,6 +1096,94 @@ async function _checkMemoryCap(key){
       themeSel.addEventListener('change',updatePipVis);updatePipVis();
     }
   });
+})();
+
+
+// ══ MOBILE: Swipe-to-dismiss panels ══════════════════════
+(function(){
+  var THRESHOLD=80; // px to trigger dismiss
+
+  function addSwipeClose(panelId,closeFn){
+    var panel=document.getElementById(panelId);
+    if(!panel)return;
+    var startY=0,currentY=0,dragging=false;
+
+    panel.addEventListener('touchstart',function(e){
+      // Only trigger on the drag handle area (top 50px)
+      if(e.touches[0].clientY-panel.getBoundingClientRect().top>50)return;
+      startY=e.touches[0].clientY;
+      dragging=true;
+      panel.style.transition='none';
+    },{passive:true});
+
+    panel.addEventListener('touchmove',function(e){
+      if(!dragging)return;
+      currentY=e.touches[0].clientY;
+      var dy=Math.max(0,currentY-startY);
+      panel.style.transform='translateY('+dy+'px)';
+      panel.style.opacity=String(1-dy/300);
+    },{passive:true});
+
+    panel.addEventListener('touchend',function(){
+      if(!dragging)return;
+      dragging=false;
+      var dy=currentY-startY;
+      panel.style.transition='';
+      panel.style.transform='';
+      panel.style.opacity='';
+      if(dy>THRESHOLD)closeFn();
+    },{passive:true});
+  }
+
+  // Wire up after DOM ready
+  document.addEventListener('DOMContentLoaded',function(){
+    if(window.innerWidth>=768)return; // desktop only
+    var pairs=[
+      ['strength-panel',function(){STRENGTH.hidePanel();}],
+      ['calendar-panel',function(){CAL.hidePanel();}],
+      ['month-panel',function(){MCAL.hidePanel();}],
+      ['vault-panel',function(){VAULTUI.hidePanel();}],
+      ['vaultchat-panel',function(){VAULTCHAT.hidePanel();}],
+      ['graphui-panel',function(){GRAPHUI.hidePanel();}],
+      ['budget-panel',function(){BUDGET.hidePanel();}],
+      ['biometrics-panel',function(){BIOMETRICS.hidePanel();}],
+      ['academic-panel',function(){ACADEMIC.hidePanel();}],
+      ['places-panel',function(){PLACES.hidePanel();}],
+      ['focus-panel',function(){FOCUS.hidePanel();}],
+      ['habits-panel',function(){HABITS.hidePanel();}],
+      ['lecture-panel',function(){LECTURE.hidePanel();}],
+      ['weekly-panel',function(){WEEKLY.hidePanel();}],
+      ['inbox-panel',function(){INBOX.hidePanel();}],
+      ['timeline-panel',function(){if(typeof TIMELINE!=='undefined')TIMELINE.hidePanel();}],
+      ['spotify-panel',function(){SP.togglePanel();}],
+      ['hudinfo-panel',function(){HUDINFO.hidePanel();}],
+    ];
+    pairs.forEach(function(p){addSwipeClose(p[0],p[1]);});
+  });
+})();
+
+// ══ MOBILE: Disable drag/resize on panels ════════════════
+// makeWindowBehavior already checks for mouse events so
+// touch devices naturally skip drag. Resize handles are
+// hidden via CSS. No JS changes needed.
+
+// ══ MOBILE: Graph performance ════════════════════════════
+// Skip graph rendering entirely on phones
+(function(){
+  if(window.innerWidth<768){
+    window._mobileMode=true;
+    // Override buildGraph to be a no-op on mobile
+    var _origBuild=window.buildGraph;
+    window.buildGraph=function(){
+      // Don't run graph on mobile — too heavy
+      return;
+    };
+    // Hide the canvas
+    document.addEventListener('DOMContentLoaded',function(){
+      var canvas=document.getElementById('vault-graph-canvas');
+      if(canvas)canvas.style.display='none';
+    });
+  }
 })();
 
 // INIT
