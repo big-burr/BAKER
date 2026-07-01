@@ -862,7 +862,8 @@ var VAULTUI=(function(){
     typeFilter:{conversation:true,project:true,lecture:true,daily:true,general:true},
     linkDistance:90,repulsion:100,sizeByConnections:false,showLabels:false,
     searchQuery:'',nodeSizeScale:1,graphArea:1,
-    treeMode:false,clusterMode:false,gridMode:false,yggdrasilMode:false,
+    treeMode:false,clusterMode:false,gridMode:false,yggdrasilMode:false,nineRealmsMode:false,
+    linkStrength:0.5,collisionRadius:50,gravity:0.5,velocityDecay:0.4,simSpeed:0.6,
     nodeBrightness:1.0
   };
   if(typeof GraphSettings==='undefined'){
@@ -1038,7 +1039,15 @@ var GRAPHUI=(function(){
   }
 
   function init(){bindControls();}
-  return{init,showPanel,hidePanel,togglePanel,handleVoice};
+  function switchGuiTab(tab){
+    ['filter','display','forces'].forEach(function(t){
+      var btn=document.getElementById('gui-tab-'+t);
+      var cnt=document.getElementById('gui-tab-'+t+'-content');
+      if(btn)btn.classList.toggle('active',t===tab);
+      if(cnt)cnt.style.display=(t===tab?'block':'none');
+    });
+  }
+  return{init,showPanel,hidePanel,togglePanel,handleVoice,switchGuiTab};
 })();
 
 
