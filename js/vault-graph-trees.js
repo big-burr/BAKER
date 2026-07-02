@@ -523,33 +523,17 @@ function _drawYggdrasil(ctx,W,H){
 function _drawNineRealms(ctx,W,H){
   // ── Draw background image ────────────────────────────────
   if(_NINE_REALMS_IMG){
-    // Fit portrait image centered on landscape canvas
-    var imgAspect=_NINE_REALMS_IMG.width/_NINE_REALMS_IMG.height;
-    var canvasAspect=W/H;
-    var drawW,drawH,drawX,drawY;
-    if(canvasAspect>imgAspect){
-      // Canvas wider than image — fit height
-      drawH=H;
-      drawW=H*imgAspect;
-      drawX=(W-drawW)/2;
-      drawY=0;
-    }else{
-      // Canvas taller — fit width
-      drawW=W;
-      drawH=W/imgAspect;
-      drawX=0;
-      drawY=(H-drawH)/2;
-    }
-    ctx.globalAlpha=0.88;
-    ctx.drawImage(_NINE_REALMS_IMG,drawX,drawY,drawW,drawH);
-    ctx.globalAlpha=1.0;
-
-    // Dark vignette overlay so nodes read clearly
-    var vig=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.2,W/2,H/2,Math.min(W,H)*0.75);
-    vig.addColorStop(0,'rgba(0,0,0,0.0)');
-    vig.addColorStop(1,'rgba(0,0,0,0.45)');
-    ctx.fillStyle=vig;
-    ctx.fillRect(0,0,W,H);
+      var imgW=_NINE_REALMS_IMG.width,imgH=_NINE_REALMS_IMG.height;
+      var canvasAspect=W/H;var imgAspect=imgW/imgH;
+      var srcX=0,srcY=0,srcW=imgW,srcH=imgH;
+      if(canvasAspect>imgAspect){srcH=imgW/canvasAspect;srcY=(imgH-srcH)*0.30;}
+      else{srcW=imgH*canvasAspect;srcX=(imgW-srcW)/2;}
+      ctx.globalAlpha=0.92;
+      ctx.drawImage(_NINE_REALMS_IMG,srcX,srcY,srcW,srcH,0,0,W,H);
+      ctx.globalAlpha=1.0;
+      var vig=ctx.createRadialGradient(W/2,H*0.45,Math.min(W,H)*0.1,W/2,H*0.45,Math.min(W,H)*0.72);
+      vig.addColorStop(0,'rgba(0,0,0,0.0)');vig.addColorStop(1,'rgba(0,0,0,0.35)');
+      ctx.fillStyle=vig;ctx.fillRect(0,0,W,H);
   }else{
     // Fallback: deep space gradient while image loads
     var bg=ctx.createLinearGradient(W/2,0,W/2,H);
@@ -594,42 +578,29 @@ function _drawRuneNode(ctx,n,col,isHL,nodeBrightness){
 
   // Stone fill: dark with zone color tint
   var fill=ctx.createRadialGradient(x-tw*0.1,y-th*0.2,0,x,y,tw*0.7);
-  fill.addColorStop(0,'rgba(60,54,48,0.95)');
-  fill.addColorStop(0.6,'rgba(38,34,30,0.92)');
-  fill.addColorStop(1,'rgba(22,20,18,0.88)');
+  fill.addColorStop(0,'rgba(80,70,58,0.97)');
+  fill.addColorStop(0.6,'rgba(55,48,40,0.95)');
+  fill.addColorStop(1,'rgba(35,30,24,0.92)');
   ctx.fillStyle=fill;ctx.fill();
-
-  // Border: glowing in zone color when highlighted, stone brown otherwise
-  ctx.strokeStyle=isHL?zonCol+'ff':zonCol+'66';
-  ctx.lineWidth=isHL?1.8:1.0;
-  if(isHL){ctx.shadowColor=zonCol;ctx.shadowBlur=8;}
-  ctx.stroke();
-  ctx.shadowBlur=0;
-
-  // Rune symbol: small glyph above the label
-  var RUNE_GLYPHS={
-    'conversation':'ᚱ','lecture':'ᚨ','project':'ᛟ',
-    'daily':'ᛞ','general':'ᚾ','system':'ᛁ',
-    'workout':'ᛏ','academic':'ᚦ','biometric':'ᛒ',
-    'weekly':'ᚹ'
-  };
+  ctx.save();ctx.globalAlpha=isHL?0.28:0.14;ctx.fillStyle=zonCol;ctx.fill();ctx.restore();
+  ctx.strokeStyle=isHL?zonCol+'ff':zonCol+'bb';
+  ctx.lineWidth=isHL?2.0:1.3;
+  if(isHL){ctx.shadowColor=zonCol;ctx.shadowBlur=14;}
+  ctx.stroke();ctx.shadowBlur=0;
+  var RUNE_GLYPHS={'conversation':'ᚱ','lecture':'ᚨ','project':'ᛟ','daily':'ᛞ','general':'ᚾ','system':'ᛁ','workout':'ᛏ','academic':'ᚦ','biometric':'ᛒ','weekly':'ᚹ'};
   var rune=RUNE_GLYPHS[n.type]||'ᚷ';
-  ctx.font='bold '+(sz*1.1)+'px serif';
-  ctx.textAlign='center';
-  ctx.textBaseline='middle';
-  ctx.fillStyle=isHL?zonCol:'rgba(200,185,150,0.7)';
-  ctx.fillText(rune,x,y-sz*0.25);
-
-  // Node label below rune
+  ctx.font='bold '+(sz*1.2)+'px serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  if(isHL){ctx.shadowColor=zonCol;ctx.shadowBlur=8;}
+  ctx.fillStyle=isHL?zonCol:'rgba(235,215,175,0.96)';
+  ctx.fillText(rune,x,y-sz*0.25);ctx.shadowBlur=0;
   if(n.label){
-    var label=n.label.length>10?n.label.slice(0,10)+'…':n.label;
-    ctx.font=(isHL?'bold ':'')+Math.max(sz*0.8,7)+'px IBM Plex Mono,monospace';
-    ctx.textAlign='center';
+    var label=n.label.length>12?n.label.slice(0,12)+'…':n.label;
+    ctx.font=(isHL?'bold ':'')+Math.max(sz*0.85,8)+'px IBM Plex Mono,monospace';
     ctx.textBaseline='top';
-    ctx.fillStyle=isHL?'#fff':'rgba(220,200,160,0.8)';
-    ctx.fillText(label,x,y+sz*0.3);
+    ctx.fillStyle=isHL?'#ffffff':'rgba(235,218,182,0.96)';
+    ctx.fillText(label,x,y+sz*0.35);
   }
-
   ctx.textAlign='left';ctx.textBaseline='alphabetic';
   ctx.restore();
 }
