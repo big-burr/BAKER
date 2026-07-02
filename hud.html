@@ -1284,7 +1284,17 @@ FOCUS.init();
 PLACES.init();
 DAILY.init();
 if(typeof TIMELINE!=='undefined')TIMELINE.init();
-if(typeof DAILYLOG!=='undefined'){DAILYLOG.init();if(document.getElementById('dailylog-panel'))makeWindowBehavior(document.getElementById('dailylog-panel'),document.getElementById('dl-hdr'),{minW:320,minH:400});}
+if(typeof DAILYLOG!=='undefined'){
+  DAILYLOG.init();
+  var _dlp=document.getElementById('dailylog-panel');
+  if(_dlp){
+    // Set initial position before makeWindowBehavior reads it
+    _dlp.style.top='128px';
+    _dlp.style.right='16px';
+    _dlp.style.left='auto';
+    makeWindowBehavior(_dlp,document.getElementById('dl-hdr'),{minW:320,minH:400});
+  }
+}
 if(document.getElementById('timeline-panel')) makeWindowBehavior(document.getElementById('timeline-panel'),document.getElementById('tl-hdr'),{minW:300,minH:400});
 HABITS.init();
 (function(){
