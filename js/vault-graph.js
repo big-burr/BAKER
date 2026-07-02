@@ -605,6 +605,11 @@ function runGraphSim(){
     _tickBirthParticles(dt);
     var linkDist=GraphSettings.linkDistance||90;
     var repulsion=(GraphSettings.repulsion||100)/100;
+    var linkStrength=GraphSettings.linkStrength!==undefined?GraphSettings.linkStrength:0.5;
+    var collisionRadius=GraphSettings.collisionRadius!==undefined?GraphSettings.collisionRadius:50;
+    var gravity=GraphSettings.gravity!==undefined?GraphSettings.gravity:0.5;
+    var velocityDecay=GraphSettings.velocityDecay!==undefined?GraphSettings.velocityDecay:0.4;
+    var simSpeed=GraphSettings.simSpeed!==undefined?GraphSettings.simSpeed:0.6;
     var query=GraphSettings.searchQuery||'';
     var treeMode=GraphSettings.treeMode||false;
     var clusterMode=GraphSettings.clusterMode||false;
@@ -612,7 +617,7 @@ function runGraphSim(){
     var gridMode=GraphSettings.gridMode||false;
     var yggMode=GraphSettings.yggdrasilMode||false;
     var brightness=GraphSettings.nodeBrightness!==undefined?GraphSettings.nodeBrightness:1.0;
-    var staticLayout=treeMode||gridMode||yggMode;
+    var staticLayout=treeMode||gridMode||yggMode||nineRealmsMode2;
 
     // Physics sim (default + cluster only)
     if(simTick<300&&!staticLayout){
@@ -634,10 +639,27 @@ function runGraphSim(){
         var dx=b.x-a.x,dy=b.y-a.y;
         var dist=Math.sqrt(dx*dx+dy*dy)||1;
         var diff=(dist-linkDist)/dist;
-        var w=0.04*(1+Math.min(e.weight-1,3)*0.15);
+        var w=0.04*(1+Math.min(e.weight-1,3)*0.15)*linkStrength*2;
         a.vx+=dx*w*diff;a.vy+=dy*w*diff;
         b.vx-=dx*w*diff;b.vy-=dy*w*diff;
       });
+      // Nine Realms: pull nodes toward their realm zone centers
+      if(nineRealmsMode2&&typeof NINE_REALMS_ZONES!=='undefined'){
+        graphNodes.forEach(function(n){
+          var realm=n.realmZone;
+          if(!realm)return;
+          var zone=NINE_REALMS_ZONES[realm];
+          if(!zone)return;
+          var zx=zone.fx*W,zy=zone.fy*H;
+          var zr=zone.r*Math.min(W,H)*0.85;
+          var dx=zx-n.x,dy=zy-n.y;
+          var dist=Math.sqrt(dx*dx+dy*dy)||1;
+          // Strong pull toward zone center, weakens when inside radius
+          var pull=dist>zr?0.12:0.04;
+          n.vx+=dx*pull*0.02;
+          n.vy+=dy*pull*0.02;
+        });
+      }
       if(clusterMode){
         var typeOrder=['conversation','project','lecture','daily','general','system','workout','academic','biometric','weekly'];
         var activeCenters={};
@@ -657,10 +679,33 @@ function runGraphSim(){
           }
         });
       }
+      // Collision
+      if(collisionRadius>0){
+        for(var ci=0;ci<graphNodes.length;ci++){
+          for(var cj=ci+1;cj<graphNodes.length;cj++){
+            var cdx=graphNodes[ci].x-graphNodes[cj].x;
+            var cdy=graphNodes[ci].y-graphNodes[cj].y;
+            var cdist=Math.sqrt(cdx*cdx+cdy*cdy)||1;
+            if(cdist<collisionRadius){
+              var push=(collisionRadius-cdist)/cdist*0.1;
+              graphNodes[ci].vx+=cdx*push;graphNodes[ci].vy+=cdy*push;
+              graphNodes[cj].vx-=cdx*push;graphNodes[cj].vy-=cdy*push;
+            }
+          }
+        }
+      }
+      // Center gravity
+      graphNodes.forEach(function(n){
+        n.vx+=(W*0.5-n.x)*gravity*0.0002;
+        n.vy+=(H*0.5-n.y)*gravity*0.0002;
+      });
+      // Velocity decay + simSpeed
       graphNodes.forEach(function(n){
         if(n.pinned)return;
-        n.x+=Math.max(-8,Math.min(8,n.vx));
-        n.y+=Math.max(-8,Math.min(8,n.vy));
+        n.vx*=(1-velocityDecay);
+        n.vy*=(1-velocityDecay);
+        n.x+=Math.max(-8,Math.min(8,n.vx*simSpeed*2));
+        n.y+=Math.max(-8,Math.min(8,n.vy*simSpeed*2));
         n.x=Math.max(60,Math.min(W/graphTransform.scale-60,n.x));
         n.y=Math.max(60,Math.min(H/graphTransform.scale-60,n.y));
       });
