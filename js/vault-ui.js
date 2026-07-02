@@ -1000,6 +1000,31 @@ var GRAPHUI=(function(){
       GraphSettings.nodeBrightness=parseInt(this.value,10)/100;
       (_el('gui-brightness-val')||{}).textContent =this.value;
     });
+    _on('gui-linkstrength','input',function(){
+      GraphSettings.linkStrength=parseInt(this.value,10)/100;
+      (_el('gui-linkstrength-val')||{}).textContent=this.value;
+      applyAndRebuild();
+    });
+    _on('gui-collision','input',function(){
+      GraphSettings.collisionRadius=parseInt(this.value,10);
+      (_el('gui-collision-val')||{}).textContent=this.value;
+      applyAndRebuild();
+    });
+    _on('gui-gravity','input',function(){
+      GraphSettings.gravity=parseInt(this.value,10)/100;
+      (_el('gui-gravity-val')||{}).textContent=this.value;
+      applyAndRebuild();
+    });
+    _on('gui-decay','input',function(){
+      GraphSettings.velocityDecay=parseInt(this.value,10)/100;
+      (_el('gui-decay-val')||{}).textContent=this.value;
+      applyAndRebuild();
+    });
+    _on('gui-simspeed','input',function(){
+      GraphSettings.simSpeed=parseInt(this.value,10)/100;
+      (_el('gui-simspeed-val')||{}).textContent=this.value;
+      applyAndRebuild();
+    });
     // Search / highlight
     _on('gui-search-input','input',function(){
       GraphSettings.searchQuery=this.value.trim().toLowerCase();
