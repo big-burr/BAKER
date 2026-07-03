@@ -34,9 +34,9 @@ function _drawArcEdge(ctx,a,b,isHL,baseW){
 // Trees far from viewport center fade when zoomed in
 function _drawForest(ctx,W,H){
   var TYPE_ORDER=['conversation','project','lecture','daily','general','system','workout','academic','biometric','weekly'];
-  var GAP_FRAC=0.03;
-  var ROW1_TOP=0.08,ROW1_BOTTOM=0.50;
-  var ROW2_TOP=0.52,ROW2_BOTTOM=0.94;
+  var GAP_FRAC=0.055;
+  var ROW1_TOP=0.04,ROW1_BOTTOM=0.46;
+  var ROW2_TOP=0.54,ROW2_BOTTOM=0.96;
   var orphans=graphNodes.filter(function(n){return n.orphan;});
   var activeGroups=TYPE_ORDER.filter(function(t){
     return graphNodes.some(function(n){return n.type===t&&!n.orphan;});
