@@ -882,7 +882,7 @@ function runGraphSim(){
 
     ctx.restore();
 
-    // Birth particles drawn in screen space (after restore, ignores transform)
+    // Birth particles drawn in screen space (after restore, ignores transform) yes
     _drawBirthParticles(ctx);
     }catch(drawErr){if(!drawErrCount)drawErrCount=0;if(++drawErrCount<=3)console.warn('[BAKER] draw error:',drawErr.message);}
   });
