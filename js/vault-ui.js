@@ -13,6 +13,114 @@ var VAULTUI=(function(){
   var activeTypeFilter='all'; // 'all' | 'conversation' | 'project' | 'lecture' | 'daily' | 'general'
 
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+  // ── Lightweight markdown → HTML renderer ────────────────
+  function _renderMarkdown(md){
+    if(!md)return'';
+    var lines=md.split('\n');
+    var html='';
+    var inCode=false;
+    var inList=false;
+    var inOList=false;
+
+    function closeList(){
+      if(inList){html+='</ul>';inList=false;}
+      if(inOList){html+='</ol>';inOList=false;}
+    }
+    function inline(s){
+      return s
+        .replace(/\*\*\*(.+?)\*\*\*/g,'<strong><em>$1</em></strong>')
+        .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g,'<em>$1</em>')
+        .replace(/`([^`]+)`/g,'<code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;font-size:0.9em">$1</code>')
+        .replace(/\[\[([^\]]+)\]\]/g,'<span style="color:var(--accent);cursor:pointer;border-bottom:1px solid var(--accent-dim)">$1</span>')
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" style="color:var(--accent);text-decoration:underline">$1</a>');
+    }
+
+    lines.forEach(function(line){
+      // Fenced code block
+      if(line.startsWith('```')){
+        if(inCode){html+='</code></pre>';inCode=false;}
+        else{closeList();html+='<pre style="background:rgba(255,255,255,0.05);border-radius:6px;padding:10px 12px;overflow-x:auto;margin:8px 0"><code style="font-family:IBM Plex Mono,monospace;font-size:11px;color:var(--text)">';inCode=true;}
+        return;
+      }
+      if(inCode){html+=esc(line)+'\n';return;}
+
+      // Horizontal rule
+      if(/^[-*_]{3,}$/.test(line.trim())){closeList();html+='<hr style="border:none;border-top:1px solid var(--border);margin:12px 0">';return;}
+
+      // Headings
+      var hm=line.match(/^(#{1,6})\s+(.+)/);
+      if(hm){closeList();var lvl=hm[1].length;var sz=['18','16','14','13','12','11'][lvl-1]||'12';
+        html+='<h'+lvl+' style="font-family:var(--mono);font-size:'+sz+'px;color:var(--accent);margin:12px 0 4px;font-weight:700;letter-spacing:.04em">'+inline(esc(hm[2]))+'</h'+lvl+'>';return;}
+
+      // Frontmatter --- skip
+      if(line.trim()==='---'&&html===''){return;}
+
+      // Checkboxes
+      var cbm=line.match(/^\s*-\s+\[([ xX])\]\s+(.*)/);
+      if(cbm){
+        if(!inList){html+='<ul style="list-style:none;padding-left:4px;margin:4px 0">';inList=true;}
+        var done=cbm[1].toLowerCase()==='x';
+        html+='<li style="padding:3px 0;display:flex;align-items:flex-start;gap:7px">'+
+          '<span style="width:14px;height:14px;border-radius:3px;border:1.5px solid '+(done?'var(--accent)':'var(--border)')+';background:'+(done?'var(--accent-dim)':'none')+';flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:2px">'+
+          (done?'<span style="color:var(--accent);font-size:9px">✓</span>':'')+
+          '</span><span style="'+(done?'text-decoration:line-through;color:var(--muted)':'color:var(--text)')+'">'+inline(esc(cbm[2]))+'</span></li>';
+        return;
+      }
+
+      // Bullet list
+      var bm=line.match(/^\s*[-*+]\s+(.*)/);
+      if(bm){
+        if(inOList){html+='</ol>';inOList=false;}
+        if(!inList){html+='<ul style="padding-left:16px;margin:4px 0">';inList=true;}
+        html+='<li style="padding:2px 0;color:var(--text)">'+inline(esc(bm[1]))+'</li>';
+        return;
+      }
+
+      // Ordered list
+      var om=line.match(/^\s*(\d+)\.\s+(.*)/);
+      if(om){
+        if(inList){html+='</ul>';inList=false;}
+        if(!inOList){html+='<ol style="padding-left:18px;margin:4px 0">';inOList=true;}
+        html+='<li style="padding:2px 0;color:var(--text)">'+inline(esc(om[2]))+'</li>';
+        return;
+      }
+
+      // Blockquote
+      var qm=line.match(/^>\s*(.*)/);
+      if(qm){closeList();
+        html+='<blockquote style="border-left:3px solid var(--accent-dim);padding:4px 10px;margin:6px 0;color:var(--muted);font-style:italic">'+inline(esc(qm[1]))+'</blockquote>';
+        return;
+      }
+
+      // Table row
+      if(line.includes('|')){
+        closeList();
+        var cells=line.split('|').filter(function(c){return c.trim();});
+        if(cells.length&&!/^[-|\s]+$/.test(line)){
+          html+='<tr>'+cells.map(function(c){return'<td style="padding:4px 8px;border-bottom:1px solid var(--border);color:var(--text)">'+inline(esc(c.trim()))+'</td>';}).join('')+'</tr>';
+        }
+        return;
+      }
+
+      // Empty line
+      if(!line.trim()){closeList();html+='<div style="height:6px"></div>';return;}
+
+      // Regular paragraph
+      closeList();
+      html+='<p style="margin:4px 0;color:var(--text);line-height:1.7">'+inline(esc(line))+'</p>';
+    });
+
+    closeList();
+    if(inCode)html+='</code></pre>';
+
+    // Wrap table rows
+    html=html.replace(/(<tr>.*?<\/tr>)+/gs,function(m){
+      return'<table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:10px;margin:8px 0">'+m+'</table>';
+    });
+    return html;
+  }
   function pad(n){return String(n).padStart(2,'0');}
   function todayStr(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
   function mondayOfWeekStr(){
@@ -413,7 +521,7 @@ var VAULTUI=(function(){
     currentNoteIdx=idx;
     exitEditMode(false);
     viewerTitleEl.textContent=note.name.replace(/\.md$/,'');
-    viewerContentEl.textContent=note.content;
+    viewerContentEl.innerHTML=_renderMarkdown(note.content);
     viewerEl.classList.add('vis');
   }
   function closeNote(){
@@ -459,7 +567,7 @@ var VAULTUI=(function(){
     if(cancelEditBtn)cancelEditBtn.style.display='none';
     if(refreshView&&currentNoteIdx!==null){
       var note=vaultIndex[currentNoteIdx];
-      if(note)viewerContentEl.textContent=note.content;
+      if(note)viewerContentEl.innerHTML=_renderMarkdown(note.content);
     }
   }
   async function _deleteCurrentNote(){
@@ -511,7 +619,7 @@ var VAULTUI=(function(){
       await writable.close();
       note.content=newContent;
       try{var f=await fileHandle.getFile();note.mtime=f.lastModified;}catch(e){}
-      viewerContentEl.textContent=newContent;
+      viewerContentEl.innerHTML=_renderMarkdown(newContent);
       exitEditMode(false);
       if(typeof setStatus==='function')setStatus('Saved '+note.name+', sir.');
       if(typeof buildGraph==='function'&&typeof vaultConnected!=='undefined'&&vaultConnected){
@@ -844,7 +952,7 @@ var VAULTUI=(function(){
       // Refresh viewer if this note is currently open
       var viewer=document.getElementById('vp-viewer-content');
       var viewerTitle=document.getElementById('vp-viewer-title');
-      if(viewer&&viewerTitle&&viewerTitle.textContent===fname.replace('.md',''))viewer.textContent=newContent;
+      if(viewer&&viewerTitle&&viewerTitle.textContent===fname.replace('.md',''))viewer.innerHTML=_renderMarkdown(newContent);
     }).catch(function(){});
   }
 
@@ -1155,6 +1263,114 @@ var VAULTCHAT=(function(){
   }
 
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+  // ── Lightweight markdown → HTML renderer ────────────────
+  function _renderMarkdown(md){
+    if(!md)return'';
+    var lines=md.split('\n');
+    var html='';
+    var inCode=false;
+    var inList=false;
+    var inOList=false;
+
+    function closeList(){
+      if(inList){html+='</ul>';inList=false;}
+      if(inOList){html+='</ol>';inOList=false;}
+    }
+    function inline(s){
+      return s
+        .replace(/\*\*\*(.+?)\*\*\*/g,'<strong><em>$1</em></strong>')
+        .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g,'<em>$1</em>')
+        .replace(/`([^`]+)`/g,'<code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;font-size:0.9em">$1</code>')
+        .replace(/\[\[([^\]]+)\]\]/g,'<span style="color:var(--accent);cursor:pointer;border-bottom:1px solid var(--accent-dim)">$1</span>')
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" style="color:var(--accent);text-decoration:underline">$1</a>');
+    }
+
+    lines.forEach(function(line){
+      // Fenced code block
+      if(line.startsWith('```')){
+        if(inCode){html+='</code></pre>';inCode=false;}
+        else{closeList();html+='<pre style="background:rgba(255,255,255,0.05);border-radius:6px;padding:10px 12px;overflow-x:auto;margin:8px 0"><code style="font-family:IBM Plex Mono,monospace;font-size:11px;color:var(--text)">';inCode=true;}
+        return;
+      }
+      if(inCode){html+=esc(line)+'\n';return;}
+
+      // Horizontal rule
+      if(/^[-*_]{3,}$/.test(line.trim())){closeList();html+='<hr style="border:none;border-top:1px solid var(--border);margin:12px 0">';return;}
+
+      // Headings
+      var hm=line.match(/^(#{1,6})\s+(.+)/);
+      if(hm){closeList();var lvl=hm[1].length;var sz=['18','16','14','13','12','11'][lvl-1]||'12';
+        html+='<h'+lvl+' style="font-family:var(--mono);font-size:'+sz+'px;color:var(--accent);margin:12px 0 4px;font-weight:700;letter-spacing:.04em">'+inline(esc(hm[2]))+'</h'+lvl+'>';return;}
+
+      // Frontmatter --- skip
+      if(line.trim()==='---'&&html===''){return;}
+
+      // Checkboxes
+      var cbm=line.match(/^\s*-\s+\[([ xX])\]\s+(.*)/);
+      if(cbm){
+        if(!inList){html+='<ul style="list-style:none;padding-left:4px;margin:4px 0">';inList=true;}
+        var done=cbm[1].toLowerCase()==='x';
+        html+='<li style="padding:3px 0;display:flex;align-items:flex-start;gap:7px">'+
+          '<span style="width:14px;height:14px;border-radius:3px;border:1.5px solid '+(done?'var(--accent)':'var(--border)')+';background:'+(done?'var(--accent-dim)':'none')+';flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:2px">'+
+          (done?'<span style="color:var(--accent);font-size:9px">✓</span>':'')+
+          '</span><span style="'+(done?'text-decoration:line-through;color:var(--muted)':'color:var(--text)')+'">'+inline(esc(cbm[2]))+'</span></li>';
+        return;
+      }
+
+      // Bullet list
+      var bm=line.match(/^\s*[-*+]\s+(.*)/);
+      if(bm){
+        if(inOList){html+='</ol>';inOList=false;}
+        if(!inList){html+='<ul style="padding-left:16px;margin:4px 0">';inList=true;}
+        html+='<li style="padding:2px 0;color:var(--text)">'+inline(esc(bm[1]))+'</li>';
+        return;
+      }
+
+      // Ordered list
+      var om=line.match(/^\s*(\d+)\.\s+(.*)/);
+      if(om){
+        if(inList){html+='</ul>';inList=false;}
+        if(!inOList){html+='<ol style="padding-left:18px;margin:4px 0">';inOList=true;}
+        html+='<li style="padding:2px 0;color:var(--text)">'+inline(esc(om[2]))+'</li>';
+        return;
+      }
+
+      // Blockquote
+      var qm=line.match(/^>\s*(.*)/);
+      if(qm){closeList();
+        html+='<blockquote style="border-left:3px solid var(--accent-dim);padding:4px 10px;margin:6px 0;color:var(--muted);font-style:italic">'+inline(esc(qm[1]))+'</blockquote>';
+        return;
+      }
+
+      // Table row
+      if(line.includes('|')){
+        closeList();
+        var cells=line.split('|').filter(function(c){return c.trim();});
+        if(cells.length&&!/^[-|\s]+$/.test(line)){
+          html+='<tr>'+cells.map(function(c){return'<td style="padding:4px 8px;border-bottom:1px solid var(--border);color:var(--text)">'+inline(esc(c.trim()))+'</td>';}).join('')+'</tr>';
+        }
+        return;
+      }
+
+      // Empty line
+      if(!line.trim()){closeList();html+='<div style="height:6px"></div>';return;}
+
+      // Regular paragraph
+      closeList();
+      html+='<p style="margin:4px 0;color:var(--text);line-height:1.7">'+inline(esc(line))+'</p>';
+    });
+
+    closeList();
+    if(inCode)html+='</code></pre>';
+
+    // Wrap table rows
+    html=html.replace(/(<tr>.*?<\/tr>)+/gs,function(m){
+      return'<table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:10px;margin:8px 0">'+m+'</table>';
+    });
+    return html;
+  }
   function getTime(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
 
   function _panel(){return document.getElementById('vaultchat-panel');}
