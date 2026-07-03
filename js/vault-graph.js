@@ -343,16 +343,11 @@ function _layoutGrid(W,H){
 // ── FOREST LAYOUT ─────────────────────────────────────────
 function _layoutForest(W,H){
   var TYPE_ORDER=['conversation','project','lecture','daily','general','system','workout','academic','biometric','weekly'];
-  var USABLE_LEFT=0.06,USABLE_RIGHT=0.94;
-  var USABLE_TOP=0.08,USABLE_BOTTOM=0.86;
-  var GAP_FRAC=0.04;
-
   var groups={};
   TYPE_ORDER.forEach(function(t){groups[t]=[];});
   var orphans=[];
   graphNodes.forEach(function(n){
     if(n.orphan){orphans.push(n);return;}
-    // Fall back unknown types to 'general' so they always have a bucket
     var t=groups[n.type]?n.type:'general';
     groups[t].push(n);
   });
@@ -361,26 +356,37 @@ function _layoutForest(W,H){
   activeGroups.sort(function(a,b){return groups[b].length-groups[a].length;});
   var ordered=_centerLargest(activeGroups);
 
-  if(!ordered.length&&!orphans.length)return; // nothing to lay out
-  var numSlots=ordered.length+(orphans.length>0?1:0);
-  var totalGap=GAP_FRAC*(numSlots-1);
-  var usableW=(USABLE_RIGHT-USABLE_LEFT)-totalGap;
-  var slotW=usableW/Math.max(numSlots,1);
-  var treeH=H*(USABLE_BOTTOM-USABLE_TOP);
-  var baseY=H*USABLE_BOTTOM;
+  if(!ordered.length&&!orphans.length)return;
 
-  ordered.forEach(function(type,treeIdx){
-    var members=groups[type];
-    var treeCX=W*(USABLE_LEFT+(treeIdx*(slotW+GAP_FRAC)+slotW*0.5));
-    if(members.length===1){members[0].x=treeCX;members[0].y=baseY-treeH*0.3;return;}
+  // ── Two-row layout ────────────────────────────────────────
+  // Split types into two rows so each tree gets more horizontal room
+  var numTypes=ordered.length+(orphans.length>0?1:0);
+  var useRows=numTypes>4; // single row for <=4 types, two rows for more
+
+  var ROW1_TOP=0.08, ROW1_BOTTOM=0.50;  // top row occupies upper half
+  var ROW2_TOP=0.52, ROW2_BOTTOM=0.94;  // bottom row occupies lower half
+  var GAP_FRAC=0.03;
+
+  function _placeTree(members,treeCX,treeH,baseY,treeIdx){
+    if(!members||!members.length)return;
+    if(members.length===1){
+      members[0].x=treeCX;members[0].y=baseY-treeH*0.35;
+      members[0].treeIdx=treeIdx;
+      return;
+    }
     members.sort(function(a,b){return b.connCount-a.connCount;});
     var layers=_buildLayers(members);
     var numLayers=layers.length;
     layers.forEach(function(layer,li){
       var yFrac=li/(Math.max(numLayers-1,1));
-      var y=baseY-yFrac*treeH*0.85;
-      var spreadFrac=0.12+yFrac*0.42;
-      var maxSpread=(slotW*W)*spreadFrac*0.5;
+      var y=baseY-yFrac*treeH*0.88;
+      var occupancyBoost=Math.min(2.4,members.length/6);
+      var spreadFrac=0.22+yFrac*0.65;
+      // Each tree gets its own slot width — calculate based on row
+      var rowCount=useRows?Math.ceil(numTypes/2):numTypes;
+      var usableW=W*(1-GAP_FRAC*(rowCount+1));
+      var slotW=usableW/Math.max(rowCount,1);
+      var maxSpread=Math.max(slotW*spreadFrac*occupancyBoost*0.52,layer.length*24);
       layer.forEach(function(node,ni){
         var xFrac=layer.length===1?0.5:(ni/(layer.length-1));
         var jx=((node.id*7+ni*3)%9-4)*2;
@@ -388,18 +394,68 @@ function _layoutForest(W,H){
         node.x=treeCX-maxSpread+xFrac*(maxSpread*2)+jx;
         node.y=y+jy;
         node.isLeaf=(li===numLayers-1);
+        node.treeIdx=treeIdx;
+        node.treeX=treeCX;
       });
     });
+  }
+
+  if(!useRows){
+    // Single row — original layout
+    var totalGap=GAP_FRAC*(numTypes-1);
+    var usableW=(0.94-0.06)-totalGap;
+    var slotW=usableW/Math.max(numTypes,1);
+    var treeH=H*(ROW2_BOTTOM-ROW1_TOP);
+    var baseY=H*ROW2_BOTTOM;
+    ordered.forEach(function(type,ti){
+      var treeCX=W*(0.06+(ti*(slotW+GAP_FRAC)+slotW*0.5));
+      _placeTree(groups[type],treeCX,treeH,baseY,ti);
+    });
+    if(orphans.length){
+      var groveCX=W*(0.06+(ordered.length*(slotW+GAP_FRAC)+slotW*0.5));
+      orphans.forEach(function(n,i){
+        var angle=(i/Math.max(orphans.length,1))*Math.PI*2;
+        n.x=groveCX+Math.cos(angle)*30;
+        n.y=baseY-H*0.15+Math.sin(angle)*30;
+        n.treeIdx=ordered.length;n.treeX=groveCX;
+      });
+    }
+    return;
+  }
+
+  // Two rows
+  var row1Count=Math.ceil(numTypes/2);
+  var row2Count=numTypes-row1Count;
+  var row1Gap=GAP_FRAC*(row1Count-1);
+  var row2Gap=GAP_FRAC*(row2Count-1);
+  var row1SlotW=(0.94-0.06-row1Gap)/Math.max(row1Count,1);
+  var row2SlotW=(0.94-0.06-row2Gap)/Math.max(row2Count,1);
+  var row1H=H*(ROW1_BOTTOM-ROW1_TOP);
+  var row2H=H*(ROW2_BOTTOM-ROW2_TOP);
+  var row1BaseY=H*ROW1_BOTTOM;
+  var row2BaseY=H*ROW2_BOTTOM;
+
+  // Row 1 gets the larger type groups (already sorted by size)
+  var row1Types=ordered.slice(0,row1Count);
+  var row2Types=ordered.slice(row1Count);
+
+  row1Types.forEach(function(type,ti){
+    var treeCX=W*(0.06+(ti*(row1SlotW+GAP_FRAC)+row1SlotW*0.5));
+    _placeTree(groups[type],treeCX,row1H,row1BaseY,ti);
+  });
+  row2Types.forEach(function(type,ti){
+    var treeCX=W*(0.06+(ti*(row2SlotW+GAP_FRAC)+row2SlotW*0.5));
+    _placeTree(groups[type],treeCX,row2H,row2BaseY,ti+row1Count);
   });
 
-  if(orphans.length>0){
-    var groveCX=W*(USABLE_LEFT+(ordered.length*(slotW+GAP_FRAC)+slotW*0.5));
+  // Orphans go in bottom-right
+  if(orphans.length){
+    var orCX=W*0.92;
     orphans.forEach(function(n,i){
       var angle=(i/Math.max(orphans.length,1))*Math.PI*2;
-      var r=25+(((n.id||0)*13)%35);
-      n.x=groveCX+Math.cos(angle)*r;
-      n.y=baseY-treeH*0.22+Math.sin(angle)*r*0.5;
-      n.isLeaf=true;
+      n.x=orCX+Math.cos(angle)*25;
+      n.y=row2BaseY-row2H*0.3+Math.sin(angle)*25;
+      n.treeIdx=numTypes;n.treeX=orCX;
     });
   }
 }
@@ -560,7 +616,7 @@ function _buildLayers(members){
   var layers=[];var i=0;var layerSize=1;
   while(i<members.length){
     layers.push(members.slice(i,i+layerSize));
-    i+=layerSize;layerSize=Math.min(Math.ceil(layerSize*1.6),6);
+    i+=layerSize;layerSize=Math.min(Math.ceil(layerSize*1.7),10);
   }
   return layers;
 }
