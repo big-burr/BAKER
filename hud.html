@@ -60,21 +60,6 @@
       <button class="hbtn" id="budget-nav-btn" onclick="BUDGET.togglePanel()">&#36; Budget</button>
       <button class="hbtn" id="strength-nav-btn" onclick="STRENGTH.togglePanel()">&#9651; Strength</button>
       <button class="hbtn" id="bio-nav-btn" onclick="BIOMETRICS.togglePanel()">&#9661; Bio</button>
-      <button class="hbtn" id="dailylog-nav-btn" onclick="
-  (function(){
-    var p=document.getElementById('dailylog-panel');
-    if(p&&!p._wbInit){
-      p._wbInit=true;
-      p.style.display='flex';
-      p.style.right='16px';
-      p.style.top='128px';
-      p.style.left='auto';
-      makeWindowBehavior(p,document.getElementById('dl-hdr'),{minW:320,minH:400});
-      p.style.display='none';
-    }
-    DAILYLOG.togglePanel();
-  })()
-">&#9711; Log</button>
       <button class="hbtn" id="focus-nav-btn" onclick="FOCUS.togglePanel()">&#9654; Focus</button>
       <button class="hbtn" id="academic-nav-btn" onclick="ACADEMIC.togglePanel()">&#127979; Academic</button>
       <button class="hbtn" id="places-nav-btn" onclick="PLACES.togglePanel()" title="Nearby Places">&#128205; Places</button>
@@ -119,7 +104,6 @@
         <button class="hbtn" onclick="BUDGET.togglePanel();closeNavMenu()">&#36; Budget</button>
         <button class="hbtn" onclick="STRENGTH.togglePanel();closeNavMenu()">&#9651; Strength</button>
         <button class="hbtn" onclick="BIOMETRICS.togglePanel();closeNavMenu()">&#9661; Bio</button>
-        <button class="hbtn" onclick="DAILYLOG.togglePanel();closeNavMenu()">&#9711; Log</button>
         <button class="hbtn" onclick="FOCUS.togglePanel();closeNavMenu()">&#9654; Focus</button>
         <button class="hbtn" onclick="ACADEMIC.togglePanel();closeNavMenu()">&#127979; Academic</button>
         <button class="hbtn" onclick="PLACES.togglePanel();closeNavMenu()">&#128205; Places</button>
@@ -254,20 +238,13 @@
     <div class="gui-left"><span style="font-size:14px">&#128375;</span><span class="gui-title">Graph Settings</span></div>
     <button class="gui-close" onclick="GRAPHUI.hidePanel()">&#215;</button>
   </div>
-  <!-- Subtabs -->
-  <div class="gui-tabs">
-    <button class="gui-tab active" id="gui-tab-filter" onclick="GRAPHUI.switchGuiTab('filter')">Filter</button>
-    <button class="gui-tab" id="gui-tab-display" onclick="GRAPHUI.switchGuiTab('display')">Display</button>
-    <button class="gui-tab" id="gui-tab-forces" onclick="GRAPHUI.switchGuiTab('forces')">Forces</button>
-  </div>
   <div id="gui-body">
-
-    <!-- FILTER TAB -->
-    <div id="gui-tab-filter-content">
-      <div class="gui-search-row" style="margin-bottom:10px">
-        <input class="gui-search-input" id="gui-search-input" type="text" placeholder="Highlight notes by name&hellip;">
-      </div>
-      <div class="gui-section-lbl" style="margin-bottom:6px">Filter by type</div>
+    <div class="gui-section">
+      <div class="gui-section-lbl">Search &amp; highlight</div>
+      <div class="gui-search-row"><input class="gui-search-input" id="gui-search-input" type="text" placeholder="Highlight notes by name&hellip;"></div>
+    </div>
+    <div class="gui-section">
+      <div class="gui-section-lbl">Filter by type</div>
       <label class="gui-filter-row"><input type="checkbox" data-gui-type="conversation" checked><span class="gui-dot" style="background:#c084fc"></span>Conversation</label>
       <label class="gui-filter-row"><input type="checkbox" data-gui-type="project" checked><span class="gui-dot" style="background:#38bdf8"></span>Project</label>
       <label class="gui-filter-row"><input type="checkbox" data-gui-type="lecture" checked><span class="gui-dot" style="background:#facc15"></span>Lecture</label>
@@ -277,74 +254,41 @@
       <label class="gui-filter-row"><input type="checkbox" data-gui-type="workout" checked><span class="gui-dot" style="background:#ff6b6b"></span>Workout</label>
       <label class="gui-filter-row"><input type="checkbox" data-gui-type="academic" checked><span class="gui-dot" style="background:#ffd166"></span>Academic</label>
       <label class="gui-filter-row"><input type="checkbox" data-gui-type="biometric" checked><span class="gui-dot" style="background:#06d6a0"></span>Biometric</label>
-      <label class="gui-filter-row"><input type="checkbox" data-gui-type="weekly" checked><span class="gui-dot" style="background:#e879f9"></span>Weekly</label>
-      <div style="display:flex;gap:6px;margin-top:10px">
-        <button onclick="document.querySelectorAll('[data-gui-type]').forEach(function(c){c.checked=true;});GRAPHUI._applyFilters();" style="flex:1;background:none;border:1px solid var(--border);border-radius:4px;padding:4px;font-family:var(--mono);font-size:9px;color:var(--muted);cursor:pointer">All on</button>
-        <button onclick="document.querySelectorAll('[data-gui-type]').forEach(function(c){c.checked=false;});GRAPHUI._applyFilters();" style="flex:1;background:none;border:1px solid var(--border);border-radius:4px;padding:4px;font-family:var(--mono);font-size:9px;color:var(--muted);cursor:pointer">All off</button>
-      </div>
     </div>
-
-    <!-- DISPLAY TAB -->
-    <div id="gui-tab-display-content" style="display:none">
-      <div class="gui-section-lbl" style="margin-bottom:8px">Layout Mode</div>
-      <div class="gui-toggle-row"><span>Cluster by type</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-clustermode"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
-      <div class="gui-toggle-row"><span>Tree mode</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-treemode"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
-      <div class="gui-toggle-row"><span>Grid mode</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-gridmode"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
-      <div class="gui-toggle-row"><span>&#127795; Yggdrasil</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-yggmode"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
-      <div class="gui-toggle-row"><span>&#127758; Nine Realms</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-ninerealmsmode"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
-      <div class="gui-section-lbl" style="margin-top:12px;margin-bottom:8px">Appearance</div>
-      <div class="gui-toggle-row"><span>Size nodes by connections</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-sizebyconn"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
-      <div class="gui-toggle-row"><span>Always show labels</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-showlabels"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
-      <div class="gui-slider-row" style="margin-top:8px">
-        <div class="gui-slider-lbl"><span>Node brightness</span><span id="gui-brightness-val">100</span></div>
-        <input type="range" class="gui-slider" id="gui-brightness" min="10" max="100" value="100">
-      </div>
-      <div class="gui-slider-row">
-        <div class="gui-slider-lbl"><span>Node size</span><span id="gui-nodesize-val">100</span></div>
-        <input type="range" class="gui-slider" id="gui-nodesize" min="40" max="250" value="100">
-      </div>
-    </div>
-
-    <!-- FORCES TAB -->
-    <div id="gui-tab-forces-content" style="display:none">
-      <div class="gui-section-lbl" style="margin-bottom:8px">Spring Forces</div>
+    <div class="gui-section">
+      <div class="gui-section-lbl">Forces</div>
       <div class="gui-slider-row">
         <div class="gui-slider-lbl"><span>Link distance</span><span id="gui-linkdist-val">90</span></div>
         <input type="range" class="gui-slider" id="gui-linkdist" min="30" max="200" value="90">
       </div>
       <div class="gui-slider-row">
-        <div class="gui-slider-lbl"><span>Link strength</span><span id="gui-linkstrength-val">50</span></div>
-        <input type="range" class="gui-slider" id="gui-linkstrength" min="1" max="100" value="50">
-      </div>
-      <div class="gui-section-lbl" style="margin-top:12px;margin-bottom:8px">Charge &amp; Space</div>
-      <div class="gui-slider-row">
         <div class="gui-slider-lbl"><span>Repulsion</span><span id="gui-repulsion-val">100</span></div>
-        <input type="range" class="gui-slider" id="gui-repulsion" min="20" max="300" value="100">
+        <input type="range" class="gui-slider" id="gui-repulsion" min="20" max="200" value="100">
       </div>
       <div class="gui-slider-row">
-        <div class="gui-slider-lbl"><span>Collision radius</span><span id="gui-collision-val">50</span></div>
-        <input type="range" class="gui-slider" id="gui-collision" min="0" max="150" value="50">
+        <div class="gui-slider-lbl"><span>Node size</span><span id="gui-nodesize-val">100</span></div>
+        <input type="range" class="gui-slider" id="gui-nodesize" min="40" max="250" value="100">
       </div>
       <div class="gui-slider-row">
         <div class="gui-slider-lbl"><span>Graph area</span><span id="gui-grapharea-val">100</span></div>
         <input type="range" class="gui-slider" id="gui-grapharea" min="30" max="200" value="100">
       </div>
-      <div class="gui-section-lbl" style="margin-top:12px;margin-bottom:8px">Gravity &amp; Decay</div>
-      <div class="gui-slider-row">
-        <div class="gui-slider-lbl"><span>Center gravity</span><span id="gui-gravity-val">50</span></div>
-        <input type="range" class="gui-slider" id="gui-gravity" min="0" max="100" value="50">
-      </div>
-      <div class="gui-slider-row">
-        <div class="gui-slider-lbl"><span>Velocity decay</span><span id="gui-decay-val">40</span></div>
-        <input type="range" class="gui-slider" id="gui-decay" min="5" max="95" value="40">
-      </div>
-      <div class="gui-slider-row">
-        <div class="gui-slider-lbl"><span>Simulation speed</span><span id="gui-simspeed-val">60</span></div>
-        <input type="range" class="gui-slider" id="gui-simspeed" min="10" max="100" value="60">
+    </div>
+    <div class="gui-section">
+      <div class="gui-section-lbl">Display</div>
+      <div class="gui-toggle-row"><span>Size nodes by connections</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-sizebyconn"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+      <div class="gui-toggle-row"><span>Always show labels</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-showlabels"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+      <div class="gui-toggle-row"><span>Cluster by type</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-clustermode"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+      <div class="gui-toggle-row"><span>Tree mode</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-treemode"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+      <div class="gui-toggle-row"><span>Grid mode</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-gridmode"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+      <div class="gui-toggle-row"><span>&#127795; Yggdrasil</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-yggmode"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+      <div class="gui-toggle-row"><span>&#127758; Nine Realms</span><label class="toggle" style="transform:scale(.8)"><input type="checkbox" id="gui-ninerealmsmode"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+      <div class="gui-slider-row" style="margin-top:6px">
+        <div class="gui-slider-lbl"><span>Node brightness</span><span id="gui-brightness-val">100</span></div>
+        <input type="range" class="gui-slider" id="gui-brightness" min="10" max="100" value="100">
       </div>
     </div>
-
-    <button class="gui-reset-btn" id="gui-reset-btn" style="margin-top:12px;padding:8px;background:none;width:100%">&#8634; Reset to defaults</button>
+    <button class="gui-reset-btn" id="gui-reset-btn" style="position:sticky;bottom:0;margin-top:auto;flex-shrink:0;padding:10px;background:rgba(22,22,25,.97)">&#8634; Reset to defaults</button>
   </div>
 </div>
 <div id="vault-panel">
@@ -537,14 +481,6 @@
 </div>
 
 
-
-<div id="dailylog-panel">
-  <div class="dl-hdr" id="dl-hdr">
-    <span style="font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.08em">&#9711; DAILY LOG</span>
-    <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0" onclick="DAILYLOG.hidePanel()">&#215;</button>
-  </div>
-  <div id="dl-body"></div>
-</div>
 <div id="daily-brief-panel">
   <div class="brief-hdr">
     <span class="brief-title">&#9670; Daily Brief</span>
@@ -809,9 +745,9 @@ async function processCommand(txt){
   var lectureResult=LECTURE.handleVoice(txt);if(lectureResult!==null){speakResponse(lectureResult);return;}
   var weeklyResult=WEEKLY.handleVoice(txt);if(weeklyResult!==null){speakResponse(weeklyResult);return;}
   var inboxResult=INBOX.handleVoice(txt);if(inboxResult!==null){speakResponse(inboxResult);return;}
-  if(typeof DAILY!=='undefined'){var dailyResult=DAILY.handleVoice(txt);if(dailyResult!==null){speakResponse(dailyResult);return;}}
+  var dailyResult=DAILY.handleVoice(txt);if(dailyResult!==null){speakResponse(dailyResult);return;}
   if(typeof TIMELINE!=='undefined'){var timelineResult=TIMELINE.handleVoice(txt);if(timelineResult!==null){speakResponse(timelineResult);return;}}
-  if(typeof DAILYLOG!=='undefined'){var dlResult=DAILYLOG.handleVoice(txt);if(dlResult!==null){speakResponse(dlResult);return;}}
+  var dlResult=DAILYLOG.handleVoice(txt);if(dlResult!==null){speakResponse(dlResult);return;}
   var acadResult=ACADEMIC.handleVoice(txt);if(acadResult!==null){speakResponse(acadResult);return;}
   var bioResult=await BIOMETRICS.handleVoice(txt);if(bioResult!==null){speakResponse(bioResult);return;}
   var reminderResult=await REMINDERS.handleVoice(txt);if(reminderResult!==null){speakResponse(reminderResult);return;}
@@ -855,14 +791,12 @@ async function sendToBAKER(txt,key){var webOn=localStorage.getItem('baker_web_se
 <script src="js/cal.js"></script>
 <script src="js/mcal.js"></script>
 <script src="js/vault-ui.js"></script>
-<script src="js/vault-graph-ui.js"></script>
 <script src="js/budget.js"></script>
 <script src="js/fallout.js"></script>
 <script src="js/focus.js"></script>
 <script src="js/academic.js"></script>
 <script src="js/places.js"></script>
 <script src="js/daily.js"></script>
-<script src="js/dailylog.js"></script>
 <script src="js/timeline.js"></script>
 <script src="js/habits.js"></script>
 <script src="js/lecture.js"></script>
@@ -872,7 +806,6 @@ async function sendToBAKER(txt,key){var webOn=localStorage.getItem('baker_web_se
 <script src="js/panels.js"></script>
 <script src="js/voice.js"></script>
 <script src="js/orb.js"></script>
-<script src="js/strength-maps.js"></script>
 <script src="js/strength.js"></script>
 <script src="js/hud-info.js"></script>
 <script src="js/reminders.js"></script>
@@ -909,15 +842,22 @@ function computeVaultStats(){
     return (n.path&&n.path.toLowerCase().includes('lecture'))||(n.content&&n.content.toLowerCase().includes('type: lecture'));
   });
   var streak=0;var checkDate=new Date(today);
+  // If today has no note yet, start streak check from yesterday so a morning open doesn't break the streak
+  var todayHasNote=dailyNotes.some(function(n){return n.name===todayStr+'.md';});
+  if(!todayHasNote)checkDate.setDate(checkDate.getDate()-1);
   while(streak<365){
     var ds=checkDate.getFullYear()+'-'+String(checkDate.getMonth()+1).padStart(2,'0')+'-'+String(checkDate.getDate()).padStart(2,'0');
     if(!dailyNotes.some(function(n){return n.name===ds+'.md';}))break;
     streak++;checkDate.setDate(checkDate.getDate()-1);
   }
-  var sorted=vaultIndex.slice().sort(function(a,b){return(b.mtime||0)-(a.mtime||0);});
+  var sorted=vaultIndex.slice().filter(function(n){
+    // Exclude system/module files from "last note" — they're noisy
+    var p=(n.path||'').toLowerCase();
+    return !p.includes('07-system/')&&!p.includes('tasks.md')&&!p.includes('memory')&&!p.includes('reminders');
+  }).sort(function(a,b){return(b.mtime||0)-(a.mtime||0);});
   var lastNote=sorted[0]?sorted[0].name.replace('.md',''):'none';
   var tasksToday=[];
-  if(typeof CAL!=='undefined'&&CAL.getTasks){tasksToday=CAL.getTasks().filter(function(t){return !t.done&&t.date===todayStr;});}
+  if(typeof CAL!=='undefined'&&CAL.getTasks){tasksToday=CAL.getTasks().filter(function(t){return !t.done&&(t.due===todayStr||(!t.due));});}
   return{total:total,dailyCount:dailyNotes.length,lectureCount:lectures.length,streak:streak,lastNote:lastNote,tasksToday:tasksToday,greeting:today.getHours()<12?'morning':today.getHours()<17?'afternoon':'evening'};
 }
 
@@ -955,7 +895,7 @@ async function requestBrief(){
     panel.style.width=pw+'px';
   }
   panel.classList.add('vis');_initBriefDrag();
-  var taskTxt=s.tasksToday.length?s.tasksToday.map(function(t){return '- '+t.text;}).join('\n'):'No tasks due.';
+  var taskTxt=s.tasksToday.length?s.tasksToday.slice(0,5).map(function(t){return '- '+t.text+(t.due?' (due '+t.due+')':'');}).join('\n'):'No tasks due today.';
   var prompt='You are BAKER. Write a concise daily brief. Tone: one step below JARVIS. 3-4 sentences covering: (1) a '+s.greeting+' greeting, (2) vault status: '+s.total+' total notes, '+s.dailyCount+' daily logs, '+s.streak+'-day daily log streak, last note was "'+s.lastNote+'", (3) tasks today: '+taskTxt+'. No markdown, no bullets. Plain prose. End with one forward-looking remark.';
   try{
     var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:180,messages:[{role:'user',content:prompt}]})});
@@ -1299,7 +1239,6 @@ FOCUS.init();
 PLACES.init();
 DAILY.init();
 if(typeof TIMELINE!=='undefined')TIMELINE.init();
-if(typeof DAILYLOG!=='undefined'){DAILYLOG.init();}
 if(document.getElementById('timeline-panel')) makeWindowBehavior(document.getElementById('timeline-panel'),document.getElementById('tl-hdr'),{minW:300,minH:400});
 HABITS.init();
 (function(){
