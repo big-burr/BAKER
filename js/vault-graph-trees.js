@@ -525,11 +525,15 @@ function _drawNineRealms(ctx,W,H){
   if(_NINE_REALMS_IMG){
       var imgW=_NINE_REALMS_IMG.width,imgH=_NINE_REALMS_IMG.height;
       var canvasAspect=W/H;var imgAspect=imgW/imgH;
-      var srcX=0,srcY=0,srcW=imgW,srcH=imgH;
-      if(canvasAspect>imgAspect){srcH=imgW/canvasAspect;srcY=(imgH-srcH)*0.30;}
-      else{srcW=imgH*canvasAspect;srcX=(imgW-srcW)/2;}
+      // FIT — show full image, gap on sides is fine
+      var drawW,drawH,drawX,drawY;
+      if(canvasAspect>imgAspect){
+        drawH=H;drawW=H*imgAspect;drawX=(W-drawW)/2;drawY=0;
+      }else{
+        drawW=W;drawH=W/imgAspect;drawX=0;drawY=(H-drawH)/2;
+      }
       ctx.globalAlpha=0.92;
-      ctx.drawImage(_NINE_REALMS_IMG,srcX,srcY,srcW,srcH,0,0,W,H);
+      ctx.drawImage(_NINE_REALMS_IMG,0,0,imgW,imgH,drawX,drawY,drawW,drawH);
       ctx.globalAlpha=1.0;
       var vig=ctx.createRadialGradient(W/2,H*0.45,Math.min(W,H)*0.1,W/2,H*0.45,Math.min(W,H)*0.72);
       vig.addColorStop(0,'rgba(0,0,0,0.0)');vig.addColorStop(1,'rgba(0,0,0,0.35)');
