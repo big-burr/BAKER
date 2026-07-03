@@ -60,7 +60,21 @@
       <button class="hbtn" id="budget-nav-btn" onclick="BUDGET.togglePanel()">&#36; Budget</button>
       <button class="hbtn" id="strength-nav-btn" onclick="STRENGTH.togglePanel()">&#9651; Strength</button>
       <button class="hbtn" id="bio-nav-btn" onclick="BIOMETRICS.togglePanel()">&#9661; Bio</button>
-      <button class="hbtn" id="dailylog-nav-btn" onclick="DAILYLOG.togglePanel()">&#9711; Log</button>
+      <button class="hbtn" id="dailylog-nav-btn" onclick="
+  (function(){
+    var p=document.getElementById('dailylog-panel');
+    if(p&&!p._wbInit){
+      p._wbInit=true;
+      p.style.display='flex';
+      p.style.right='16px';
+      p.style.top='128px';
+      p.style.left='auto';
+      makeWindowBehavior(p,document.getElementById('dl-hdr'),{minW:320,minH:400});
+      p.style.display='none';
+    }
+    DAILYLOG.togglePanel();
+  })()
+">&#9711; Log</button>
       <button class="hbtn" id="focus-nav-btn" onclick="FOCUS.togglePanel()">&#9654; Focus</button>
       <button class="hbtn" id="academic-nav-btn" onclick="ACADEMIC.togglePanel()">&#127979; Academic</button>
       <button class="hbtn" id="places-nav-btn" onclick="PLACES.togglePanel()" title="Nearby Places">&#128205; Places</button>
@@ -841,6 +855,7 @@ async function sendToBAKER(txt,key){var webOn=localStorage.getItem('baker_web_se
 <script src="js/cal.js"></script>
 <script src="js/mcal.js"></script>
 <script src="js/vault-ui.js"></script>
+<script src="js/vault-graphui.js"></script>
 <script src="js/budget.js"></script>
 <script src="js/fallout.js"></script>
 <script src="js/focus.js"></script>
@@ -1284,17 +1299,7 @@ FOCUS.init();
 PLACES.init();
 DAILY.init();
 if(typeof TIMELINE!=='undefined')TIMELINE.init();
-if(typeof DAILYLOG!=='undefined'){
-  DAILYLOG.init();
-  var _dlp=document.getElementById('dailylog-panel');
-  if(_dlp){
-    // Set initial position before makeWindowBehavior reads it
-    _dlp.style.top='128px';
-    _dlp.style.right='16px';
-    _dlp.style.left='auto';
-    makeWindowBehavior(_dlp,document.getElementById('dl-hdr'),{minW:320,minH:400});
-  }
-}
+if(typeof DAILYLOG!=='undefined'){DAILYLOG.init();}
 if(document.getElementById('timeline-panel')) makeWindowBehavior(document.getElementById('timeline-panel'),document.getElementById('tl-hdr'),{minW:300,minH:400});
 HABITS.init();
 (function(){
