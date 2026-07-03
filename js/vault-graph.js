@@ -363,9 +363,9 @@ function _layoutForest(W,H){
   var numTypes=ordered.length+(orphans.length>0?1:0);
   var useRows=numTypes>4; // single row for <=4 types, two rows for more
 
-  var ROW1_TOP=0.08, ROW1_BOTTOM=0.50;  // top row occupies upper half
-  var ROW2_TOP=0.52, ROW2_BOTTOM=0.94;  // bottom row occupies lower half
-  var GAP_FRAC=0.03;
+  var ROW1_TOP=0.04, ROW1_BOTTOM=0.46;  // top row
+  var ROW2_TOP=0.54, ROW2_BOTTOM=0.96;  // bottom row — 8% gap between rows
+  var GAP_FRAC=0.055;                    // more horizontal gap between trees
 
   function _placeTree(members,treeCX,treeH,baseY,treeIdx){
     if(!members||!members.length)return;
@@ -550,29 +550,69 @@ var NINE_REALMS_ZONES={
 };
 
 function _layoutNineRealms(W,H){
+  // Account for image letterboxing — zones are fractions of image, not canvas
+  var imgAspect=1060/1484; // nine-worlds.png natural aspect
+  var canvasAspect=W/H;
+  var imgDrawW,imgDrawH,imgOffX,imgOffY;
+  if(canvasAspect>imgAspect){
+    imgDrawH=H;imgDrawW=H*imgAspect;imgOffX=(W-imgDrawW)/2;imgOffY=0;
+  }else{
+    imgDrawW=W;imgDrawH=W/imgAspect;imgOffX=0;imgOffY=(H-imgDrawH)/2;
+  }
+
+  // Convert zone fractions (relative to image) to canvas coords
+  function zoneCanvas(zone){
+    return{
+      cx:imgOffX+zone.fx*imgDrawW,
+      cy:imgOffY+zone.fy*imgDrawH,
+      r:zone.r*Math.min(imgDrawW,imgDrawH)*0.85
+    };
+  }
+
   var realmGroups={};
   Object.keys(NINE_REALMS_ZONES).forEach(function(r){realmGroups[r]=[];});
   graphNodes.forEach(function(n){
     var realm=NINE_REALMS_TYPE_MAP[n.type]||'MIDGARD';
     realmGroups[realm].push(n);
   });
+
   Object.keys(NINE_REALMS_ZONES).forEach(function(realm){
     var zone=NINE_REALMS_ZONES[realm];
-    var cx=zone.fx*W;
-    var cy=zone.fy*H;
-    var radius=zone.r*Math.min(W,H)*0.85;
+    var pos=zoneCanvas(zone);
     var members=realmGroups[realm];
     if(!members.length)return;
-    members.forEach(function(n,i){
-      var _j=((n.id||i)*1.618)%1;
-      var angle=_j*Math.PI*2;
-      var dist=Math.sqrt(((i+1)/members.length))*radius*0.7;
-      var jx=(((n.id||i)*7)%11-5)*2;
-      var jy=(((n.id||i)*13)%11-5)*2;
-      n.x=cx+Math.cos(angle)*dist+jx;
-      n.y=cy+Math.sin(angle)*dist+jy;
-      n.realmZone=realm;
-      n.isLeaf=false;
+
+    // Sub-cluster by type within realm so same-type nodes sit together
+    var typeGroups={};
+    members.forEach(function(n){
+      var t=n.type||'general';
+      if(!typeGroups[t])typeGroups[t]=[];
+      typeGroups[t].push(n);
+    });
+    var types=Object.keys(typeGroups);
+    var numTypes=types.length;
+
+    types.forEach(function(type,ti){
+      var subMembers=typeGroups[type];
+      // Each type gets a mini-zone at a fixed angle within the realm circle
+      var typeAngle=(ti/Math.max(numTypes,1))*Math.PI*2;
+      var typeOffset=numTypes>1?pos.r*0.38:0;
+      var subCX=pos.cx+Math.cos(typeAngle)*typeOffset;
+      var subCY=pos.cy+Math.sin(typeAngle)*typeOffset;
+      var subR=pos.r*(numTypes>1?0.38:0.65);
+
+      subMembers.forEach(function(n,i){
+        var angle=((n.id||i)*1.618%1)*Math.PI*2;
+        var dist=Math.sqrt((i+1)/subMembers.length)*subR*0.8;
+        n.x=subCX+Math.cos(angle)*dist;
+        n.y=subCY+Math.sin(angle)*dist;
+        n.realmZone=realm;
+        n.realmCX=pos.cx;
+        n.realmCY=pos.cy;
+        n.realmR=pos.r;
+        n.pinned=true; // pin in place — physics won't move them
+        n.isLeaf=false;
+      });
     });
   });
 }
@@ -674,6 +714,8 @@ function runGraphSim(){
     var yggMode=GraphSettings.yggdrasilMode||false;
     var brightness=GraphSettings.nodeBrightness!==undefined?GraphSettings.nodeBrightness:1.0;
     var staticLayout=treeMode||gridMode||yggMode||nineRealmsMode2;
+    // Clear pins when Nine Realms is off so physics can run normally
+    if(!nineRealmsMode2)graphNodes.forEach(function(n){if(n.realmZone)n.pinned=false;});
 
     // Physics sim (default + cluster only)
     if(simTick<300&&!staticLayout){
