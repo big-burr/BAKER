@@ -30,74 +30,105 @@ function _drawArcEdge(ctx,a,b,isHL,baseW){
 }
 
 // ── Draw forest decorations + species silhouettes ────────
+// Two-row layout: top row and bottom row of trees
+// Trees far from viewport center fade when zoomed in
 function _drawForest(ctx,W,H){
-  var TYPE_ORDER=['conversation','project','lecture','daily','general','system','workout','academic','biometric'];
-  var USABLE_LEFT=0.02,USABLE_RIGHT=0.98,GAP_FRAC=0.025;
-  var USABLE_TOP=0.08,USABLE_BOTTOM=0.86;
+  var TYPE_ORDER=['conversation','project','lecture','daily','general','system','workout','academic','biometric','weekly'];
+  var GAP_FRAC=0.03;
+  var ROW1_TOP=0.08,ROW1_BOTTOM=0.50;
+  var ROW2_TOP=0.52,ROW2_BOTTOM=0.94;
   var orphans=graphNodes.filter(function(n){return n.orphan;});
   var activeGroups=TYPE_ORDER.filter(function(t){
     return graphNodes.some(function(n){return n.type===t&&!n.orphan;});
   });
-  var orderedTypes=activeGroups.slice().sort(function(a,b){
-    // Count non-orphan nodes per type — same as _layoutForest
+  var orderedTypes=_centerLargest(activeGroups.slice().sort(function(a,b){
     return graphNodes.filter(function(n){return n.type===b&&!n.orphan;}).length-
            graphNodes.filter(function(n){return n.type===a&&!n.orphan;}).length;
-  });
-  orderedTypes=_centerLargest(orderedTypes);
+  }));
   if(!orderedTypes.length&&!orphans.length)return;
-  var numSlots=orderedTypes.length+(orphans.length>0?1:0);
-  var totalGap=GAP_FRAC*(numSlots-1);
-  var usableW=(USABLE_RIGHT-USABLE_LEFT)-totalGap;
-  var slotW=usableW/Math.max(numSlots,1);
-  var baseY=H*USABLE_BOTTOM;
-  // Use the full layout height so silhouettes always fill the slot properly
-  var fullTreeH=H*(USABLE_BOTTOM-USABLE_TOP);
-  var slotPx=slotW*W;
 
-  orderedTypes.forEach(function(type,treeIdx){
-    var members=graphNodes.filter(function(n){return n.type===type&&!n.orphan;});
+  var numTypes=orderedTypes.length+(orphans.length>0?1:0);
+  var useRows=numTypes>4;
+
+  // Viewport center in graph space — used for fade effect
+  var vpCX=(-graphTransform.x)/graphTransform.scale+W/(2*graphTransform.scale);
+  var vpCY=(-graphTransform.y)/graphTransform.scale+H/(2*graphTransform.scale);
+  var fadeScale=graphTransform.scale; // >1 = zoomed in = fade distant trees
+
+  function _treeFade(treeCX,treeBaseY){
+    if(fadeScale<=1.0)return 1.0; // no fade when zoomed out
+    var dx=treeCX-vpCX,dy=treeBaseY-vpCY;
+    var dist=Math.sqrt(dx*dx+dy*dy);
+    var fadeRadius=W/(fadeScale*0.8);
+    return Math.max(0,Math.min(1,1-(dist-fadeRadius*0.4)/(fadeRadius*0.6)));
+  }
+
+  function _drawOneTree(type,treeCX,baseY,row_h,isOrphan){
+    var members=isOrphan?orphans:graphNodes.filter(function(n){return n.type===type&&!n.orphan;});
     if(!members.length)return;
-    var col=typeColors[type]||'#7c6af7';
-    var treeCX=W*(USABLE_LEFT+(treeIdx*(slotW+GAP_FRAC)+slotW*0.5));
-
-    // Cap tree height so it stays proportional to slot width — no more stretching
-    // Trees look best when roughly 1.6-2x taller than wide
-    var treeH=Math.min(fullTreeH, slotPx*2.0);
-
-    // ── Draw species silhouette behind nodes ──
+    var col=isOrphan?ORPHAN_COLOR:(typeColors[type]||'#7c6af7');
+    var fade=_treeFade(treeCX,baseY);
+    if(fade<=0.02)return; // fully faded — skip drawing
+    var slotCount=useRows?Math.ceil(numTypes/2):numTypes;
+    var slotPx=W*((1-GAP_FRAC*(slotCount+1))/Math.max(slotCount,1));
+    var treeH=Math.min(row_h,slotPx*2.2);
     ctx.save();
-    ctx.globalAlpha=0.13;
-    _drawTreeSpecies(ctx,type,treeCX,baseY,slotPx,treeH,col);
-    ctx.globalAlpha=1;
+    ctx.globalAlpha=0.13*fade;
+    if(isOrphan)_drawWalnut(ctx,treeCX,baseY,slotPx,treeH,'#5a3a1a','#2d5c1a');
+    else _drawTreeSpecies(ctx,type,treeCX,baseY,slotPx,treeH,col);
     ctx.restore();
-
-    // Subtle ground line only — no halo oval, no root connector line
+    // Ground line
+    ctx.save();ctx.globalAlpha=fade;
     ctx.beginPath();
-    ctx.moveTo(treeCX-slotPx*0.42,baseY+2);ctx.lineTo(treeCX+slotPx*0.42,baseY+2);
-    ctx.strokeStyle=col+'55';ctx.lineWidth=1.5;ctx.stroke();
-
+    ctx.moveTo(treeCX-slotPx*0.40,baseY+2);ctx.lineTo(treeCX+slotPx*0.40,baseY+2);
+    ctx.strokeStyle=col+(isOrphan?'55':'55');ctx.lineWidth=1.5;ctx.stroke();
     // Labels
     ctx.font='bold 10px IBM Plex Mono, monospace';
     ctx.fillStyle=col+'cc';ctx.textAlign='center';
-    ctx.fillText(type.toUpperCase(),treeCX,baseY+16);
+    ctx.fillText(isOrphan?'ORPHANS':type.toUpperCase(),treeCX,baseY+16);
     ctx.fillStyle=col+'60';ctx.font='9px IBM Plex Mono, monospace';
     ctx.fillText(members.length+' notes',treeCX,baseY+28);
+    ctx.restore();
     ctx.textAlign='left';
-  });
+  }
 
-  // Orphan walnut grove
-  if(orphans.length>0){
-    var groveCX=W*(USABLE_LEFT+(orderedTypes.length*(slotW+GAP_FRAC)+slotW*0.5));
-    var groveH=Math.min(fullTreeH*0.7, slotPx*2.0);
-    ctx.save();ctx.globalAlpha=0.13;
-    _drawWalnut(ctx,groveCX,baseY,slotPx,groveH,'#5a3a1a','#2d5c1a');
-    ctx.globalAlpha=1;ctx.restore();
-    ctx.font='bold 10px IBM Plex Mono, monospace';
-    ctx.fillStyle=ORPHAN_COLOR+'80';ctx.textAlign='center';
-    ctx.fillText('ORPHANS',groveCX,baseY+16);
-    ctx.fillStyle=ORPHAN_COLOR+'50';ctx.font='9px IBM Plex Mono, monospace';
-    ctx.fillText(orphans.length+' notes',groveCX,baseY+28);
-    ctx.textAlign='left';
+  if(!useRows){
+    // Single row
+    var slotW=(0.94-0.06-GAP_FRAC*(numTypes-1))/Math.max(numTypes,1);
+    var baseY=H*ROW2_BOTTOM;
+    var row_h=H*(ROW2_BOTTOM-ROW1_TOP);
+    orderedTypes.forEach(function(type,ti){
+      var cx=W*(0.06+(ti*(slotW+GAP_FRAC)+slotW*0.5));
+      _drawOneTree(type,cx,baseY,row_h,false);
+    });
+    if(orphans.length){
+      var ocx=W*(0.06+(orderedTypes.length*(slotW+GAP_FRAC)+slotW*0.5));
+      _drawOneTree(null,ocx,baseY,row_h,true);
+    }
+    return;
+  }
+
+  // Two rows
+  var row1Count=Math.ceil(numTypes/2);
+  var row2Count=numTypes-row1Count;
+  var r1SlotW=(0.94-0.06-GAP_FRAC*(row1Count-1))/Math.max(row1Count,1);
+  var r2SlotW=(0.94-0.06-GAP_FRAC*(row2Count-1))/Math.max(row2Count,1);
+  var row1BaseY=H*ROW1_BOTTOM;
+  var row2BaseY=H*ROW2_BOTTOM;
+  var row1H=H*(ROW1_BOTTOM-ROW1_TOP);
+  var row2H=H*(ROW2_BOTTOM-ROW2_TOP);
+
+  orderedTypes.slice(0,row1Count).forEach(function(type,ti){
+    var cx=W*(0.06+(ti*(r1SlotW+GAP_FRAC)+r1SlotW*0.5));
+    _drawOneTree(type,cx,row1BaseY,row1H,false);
+  });
+  orderedTypes.slice(row1Count).forEach(function(type,ti){
+    var cx=W*(0.06+(ti*(r2SlotW+GAP_FRAC)+r2SlotW*0.5));
+    _drawOneTree(type,cx,row2BaseY,row2H,false);
+  });
+  if(orphans.length){
+    var ocx=W*0.92;
+    _drawOneTree(null,ocx,row2BaseY,row2H,true);
   }
 }
 
