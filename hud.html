@@ -650,6 +650,7 @@ requestAnimationFrame(draw);
 <script src="js/vault-graph.js"></script>
 <script src="js/vault-graph-draw.js"></script>
 <script src="js/vault-graph-trees.js"></script>
+<script src="js/vault-graph-ui.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════
 // VAULT GRAPH SETTINGS
@@ -729,8 +730,8 @@ async function processCommand(txt){
   if(/\b(open|go to|pull up|show|launch)\b.*\b(tools|index|dashboard)\b/.test(lower)){showWidget('url','⊞ Tools','index.html','⊞');speakResponse('Opening tools, sir.');return;}
   if(/\b(open|go to|switch to)\b.*\b(conversation page|chat page)\b/.test(lower)){window.location.href='conversation.html';return;}
   if(/\b(open|pull up|show|launch|let'?s (open|use|check))\b.*\b(spotify|music)\b/.test(lower)&&!/\bplay\b/.test(lower)){SP.showPanel();speakResponse('Opening Spotify, sir.');return;}
-  var vcResult=VAULTCHAT.handleVoice(txt);
-  if(vcResult!==null){speakResponse(vcResult);return;}
+  if(typeof VAULTCHAT==='undefined'){}else{var vcResult=VAULTCHAT.handleVoice(txt);
+  if(vcResult!==null){speakResponse(vcResult);return;}}
   var spResult=await SP.handleVoice(txt);if(spResult!==null){speakResponse(spResult);return;}
   var calResult=await CAL.handleVoice(txt);if(calResult!==null){speakResponse(calResult);return;}
   var mcalResult=MCAL.handleVoice(txt);if(mcalResult!==null){speakResponse(mcalResult);return;}
@@ -1228,7 +1229,7 @@ MCAL.init();
 if(document.getElementById('vault-panel')) makeWindowBehavior(document.getElementById('vault-panel'),document.getElementById('vault-panel').querySelector('.vp-hdr'),{minW:300,minH:300});
 VAULTUI.init();
 if(document.getElementById('vaultchat-panel')) makeWindowBehavior(document.getElementById('vaultchat-panel'),document.getElementById('vaultchat-panel').querySelector('#vc-hdr'),{minW:320,minH:300});
-VAULTCHAT.init();
+if(typeof VAULTCHAT!=='undefined')VAULTCHAT.init();
 BUDGET.init();
 if(document.getElementById('budget-panel')) makeWindowBehavior(document.getElementById('budget-panel'),document.getElementById('budget-panel').querySelector('.bp-hdr'),{minW:600,minH:400});
 if(document.getElementById('graphui-panel')) makeWindowBehavior(document.getElementById('graphui-panel'),document.getElementById('graphui-panel').querySelector('.gui-hdr'),{minW:260,minH:400});
