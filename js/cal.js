@@ -1,5 +1,5 @@
 // cal.js — Task module (CAL)
-// Depends on globals: vaultHandle, vaultConnected, vaultIndex
+// Depends on globals: vaultHapndle, vaultConnected, vaultIndex
 // Must load before mcal.js
 
 // 
