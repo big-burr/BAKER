@@ -2,13 +2,13 @@
 // Depends on globals: vaultHandle, vaultConnected, vaultIndex
 // Must load before mcal.js
 
-// ═══════════════════════════════════════════════════════════
-// ══  CALENDAR / TASKS MODULE (CAL)  ════════════════════════
-// ═══════════════════════════════════════════════════════════
+// 
+//   CALENDAR / TASKS MODULE (CAL)  
+// 
 // Owns: task CRUD, vault sync (07-System/Tasks.md),
 //       daily-log task import, voice commands, panel UI.
 // Depends on globals: vaultHandle, vaultConnected, vaultIndex (set in hud.html)
-// ═══════════════════════════════════════════════════════════
+// 
 var CAL=(function(){
   var LS_KEY='baker_tasks';
   var TASKS_PATH=['07-System','Tasks.md'];
@@ -438,6 +438,19 @@ var CAL=(function(){
   var addInputEl,addDateEl,addBtnEl;
   async function init(){
     loadLocal();
+    // One-time cleanup: strip workout entries and deduplicate existing tasks
+    (function(){
+      function norm(s){return s.replace(/`due:[^`]*`/g,'').replace(/\*\*/g,'').replace(/\s+/g,' ').toLowerCase().trim();}
+      function isWorkout(s){return /\d+[×x]\d+|@\s*\d+lbs|\d+×\d+|3×5|2×5/.test(s);}
+      var seen={};
+      tasks=tasks.filter(function(t){
+        if(isWorkout(t.text))return false;
+        var key=norm(t.text);
+        if(seen[key])return false;
+        seen[key]=true;
+        return true;
+      });
+    })();
     addInputEl=document.getElementById('cal-add-input');
     addDateEl=document.getElementById('cal-add-date');
     addBtnEl=document.getElementById('cal-add-btn');
@@ -495,9 +508,45 @@ var CAL=(function(){
 })();
 
 
-// ═══════════════════════════════════════════════════════════
-// ══  MONTH CALENDAR MODULE (MCAL)  ═════════════════════════
-// ═══════════════════════════════════════════════════════════
+// 
+//   MONTH CALENDAR MODULE (MCAL)  
+// 
 // Owns: month grid view, day detail panel, cross-module sync with CAL.
 // Depends on globals: vaultIndex (for daily log dots/bullets)
-// ═══════════════════════════════════════════════════════════
+//   // Scan all daily logs in vaultIndex for checkbox items and merge into tasks.
+  // Uses the log filename date (YYYY-MM-DD) as the due date.
+  // Skips: done checkboxes, workout exercise lines (contain ×, @Xlbs), duplicates.
+  function _normText(s){
+    return s.replace(/`due:[^`]*`/g,'').replace(/\*\*/g,'').replace(/\s+/g,' ').toLowerCase().trim();
+  }
+  function _isWorkoutLine(s){
+    return /\d+[×x]\d+|@\s*\d+lbs|\d+×\d+|3×5|2×5|\breps\b|\bsets\b/.test(s);
+  }
+  function syncTasksFromDailyLogs(){
+    if(typeof vaultIndex==='undefined'||!vaultIndex.length)return 0;
+    var added=0;
+    vaultIndex.forEach(function(note){
+      if(!note.name||!note.name.match(/^\d{4}-\d{2}-\d{2}/))return;
+      var dateMatch=note.name.match(/^(\d{4}-\d{2}-\d{2})/);
+      var due=dateMatch?dateMatch[1]:'';
+      (note.content||'').split('\n').forEach(function(line){
+        var m=line.match(/^\s*-\s*\[([ xX])\]\s*(.+)$/);
+        if(!m)return;
+        var done=m[1].toLowerCase()==='x';
+        if(done)return; // skip completed checkboxes
+        var rawText=m[2].trim();
+        if(_isWorkoutLine(rawText))return; // skip exercise entries
+        // Strip backtick due tags from text and use as due date if not already set
+        var backtickDue=rawText.match(/`due:(\d{4}-\d{2}-\d{2})`/);
+        var taskDue=backtickDue?backtickDue[1]:due;
+        var text=rawText.replace(/`due:[^`]*`/g,'').replace(/\s+/g,' ').trim();
+        if(!text)return;
+        var norm=_normText(text);
+        if(tasks.some(function(t){return _normText(t.text)===norm;}))return;
+        tasks.push({id:genId(),text:text,done:false,due:taskDue});
+        added++;
+      });
+    });
+    if(added)saveLocal();
+    return added;
+  }
