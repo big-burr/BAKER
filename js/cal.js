@@ -25,7 +25,9 @@ var CAL=(function(){
   function saveLocal(){
     // Prune completed tasks older than 48h to keep localStorage lean
     var cutoff=Date.now()-48*3600*1000;
-    tasks=tasks.filter(function(t){return!t.done||!t.doneAt||t.doneAt>cutoff;});
+    // Set doneAt on any done tasks missing it so they get pruned properly
+    tasks.forEach(function(t){if(t.done&&!t.doneAt)t.doneAt=1;});// 1ms epoch = always before cutoff = immediate prune
+    tasks=tasks.filter(function(t){return!t.done||t.doneAt>cutoff;});
     try{localStorage.setItem(LS_KEY,JSON.stringify(tasks));}catch(e){}
     if(typeof VAULTSYNC!=='undefined'&&VAULTSYNC.syncTasks)VAULTSYNC.syncTasks();
   }
@@ -103,8 +105,9 @@ var CAL=(function(){
         var done=m[1].toLowerCase()==='x';
         var text=m[2].trim().replace(/📅\s*\d{4}-\d{2}-\d{2}/,'').trim();
         if(!text)return;
+        if(done)return; // skip completed checkboxes from daily logs — they're historical, not active tasks
         if(tasks.some(function(t){return t.text.toLowerCase()===text.toLowerCase();}))return;
-        tasks.push({id:genId(),text:text,done:done,due:due});
+        tasks.push({id:genId(),text:text,done:false,due:due});
         added++;
       });
     });
@@ -133,9 +136,66 @@ var CAL=(function(){
     tasks.push(t);render();scheduleSave();
     return t;
   }
+  // Detect repeating/habit tasks — don't archive these, keep them active
+  function _isRepeating(t){
+    var txt=(t.text||'').toLowerCase();
+    return /(daily|every day|every morning|every night|weekly|every week|every (mon|tue|wed|thu|fri|sat|sun)|habit|recurring|repeat)/.test(txt)||
+           /^habit:/i.test(t.text)||
+           t.recurring===true;
+  }
+
+  // Append completed task to 07-System/Completed Tasks.md
+  async function _archiveToVault(t){
+    if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected)return;
+    try{
+      var dir=vaultHandle;
+      dir=await dir.getDirectoryHandle('07-System',{create:true});
+      var fh=await dir.getFileHandle('Completed Tasks.md',{create:true});
+      var existing='';
+      try{var ef=await fh.getFile();existing=await ef.text();}catch(e){}
+      if(!existing.trim())existing='# Completed Tasks\n\n';
+      var d=new Date(t.doneAt||Date.now());
+      var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      var ts=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+      var entry='- [x] '+t.text+(t.due?' (due '+t.due+')':'')+' — completed '+ds+' at '+ts+'\n';
+      var header='## '+ds;
+      if(existing.indexOf(header)>=0){
+        existing=existing.split(header+'\n').join(header+'\n'+entry);
+      }else{
+        var lines=existing.split('\n');
+        var insertAt=1; // after # title
+        while(insertAt<lines.length&&lines[insertAt].trim()==='')insertAt++;
+        lines.splice(insertAt,0,'',''+header,''+entry);
+        existing=lines.join('\n');
+      }
+      var w=await fh.createWritable();await w.write(existing);await w.close();
+      if(typeof spawnBirthParticle==='function')spawnBirthParticle('system','07-System/Completed Tasks.md');
+    }catch(e){console.warn('[CAL] archive error:',e);}
+  }
+
   function toggleTask(id){
     var t=tasks.find(function(x){return x.id===id;});if(!t)return;
-    t.done=!t.done;if(t.done)t.doneAt=Date.now();else delete t.doneAt;render();scheduleSave();
+    if(!t.done){
+      // Marking as done
+      t.done=true;t.doneAt=Date.now();
+      if(!_isRepeating(t)){
+        // Archive to vault then remove from active list immediately
+        _archiveToVault(t);
+        // Remove from tasks after short delay so UI can show checkmark briefly
+        setTimeout(function(){
+          tasks=tasks.filter(function(x){return x.id!==id;});
+          render();scheduleSave();
+        },800);
+        render();// show checkmark first
+      }else{
+        // Repeating task — stays in list, just mark done
+        render();scheduleSave();
+      }
+    }else{
+      // Un-marking done — bring back to active
+      delete t.done;delete t.doneAt;
+      render();scheduleSave();
+    }
   }
   function deleteTask(id){
     tasks=tasks.filter(function(x){return x.id!==id;});render();scheduleSave();
@@ -336,7 +396,7 @@ var CAL=(function(){
     if(doneM){
       var t=findTaskByText(doneM[1].trim());
       if(!t)return'I couldn\'t find a task matching "'+doneM[1].trim()+'", sir.';
-      t.done=true;render();scheduleSave();showPanel();
+      t.done=true;t.doneAt=Date.now();render();scheduleSave();showPanel();
       return'Marked "'+t.text+'" as done, sir.';
     }
 
@@ -422,6 +482,7 @@ var CAL=(function(){
       if(!exists){tasks.push(vt);}
     });
     try{localStorage.setItem(LS_KEY,JSON.stringify(tasks));}catch(e){}
+    render();
   }
   return{
     init,showPanel,hidePanel,togglePanel,handleVoice,
