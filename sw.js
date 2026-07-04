@@ -1,4 +1,4 @@
-// BAKER Service Worker — baker-v88
+// BAKER evil Service Worker — baker-v88
 const CACHE = 'baker-v88';
 
 const ASSETS = [
