@@ -35,16 +35,32 @@ var CAL=(function(){
   // ── Markdown ↔ tasks ──────────────────────────────────────
   // Format: - [ ] Task text 📅 2026-06-15
   //         - [x] Done task
+  function _isWorkoutText(s){
+    return /\d+[xX×]\d+|@\s*\d+\s*lbs|\bsets\b|\breps\b|3×5|2×5/.test(s);
+  }
+  function _normText(s){
+    return s.replace(/`due:[^`]*`/g,'').replace(/📅\s*\d{4}-\d{2}-\d{2}/g,'').replace(/\*\*/g,'').replace(/\s+/g,' ').toLowerCase().trim();
+  }
   function parseMarkdown(md){
-    var out=[];
+    var out=[];var seen={};
     md.split('\n').forEach(function(line){
       var m=line.match(/^\s*-\s*\[([ xX])\]\s*(.+)$/);
       if(!m)return;
       var done=m[1].toLowerCase()==='x';
-      var text=m[2].trim();
+      var raw=m[2].trim();
+      if(_isWorkoutText(raw))return; // skip workout entries
       var due='';
-      var dm=text.match(/📅\s*(\d{4}-\d{2}-\d{2})/);
-      if(dm){due=dm[1];text=text.replace(/📅\s*\d{4}-\d{2}-\d{2}/,'').trim();}
+      // Handle 📅 emoji format
+      var dm=raw.match(/📅\s*(\d{4}-\d{2}-\d{2})/);
+      if(dm){due=dm[1];raw=raw.replace(/📅\s*\d{4}-\d{2}-\d{2}/,'').trim();}
+      // Handle backtick due format
+      var bm=raw.match(/`due:(\d{4}-\d{2}-\d{2})`/);
+      if(bm){due=bm[1];raw=raw.replace(/`due:[^`]*`/g,'').trim();}
+      var text=raw.replace(/\s+/g,' ').trim();
+      if(!text)return;
+      var norm=_normText(text);
+      if(seen[norm])return; // deduplicate
+      seen[norm]=true;
       out.push({id:genId(),text:text,done:done,due:due});
     });
     return out;
@@ -85,7 +101,14 @@ var CAL=(function(){
     var md=await vaultRead();
     if(md===null)return false;
     var parsed=parseMarkdown(md);
-    if(parsed.length||md.trim().length<30){tasks=parsed;saveLocal();}
+    if(parsed.length||md.trim().length<30){
+      tasks=parsed;
+      saveLocal();
+      // Write clean version back — this fixes the vault file itself
+      // so duplicates/workouts don't come back on next connect
+      var cleanMd=toMarkdown();
+      if(cleanMd!==md)await vaultWrite(cleanMd);
+    }
     return true;
   }
 
@@ -474,7 +497,8 @@ var CAL=(function(){
   // Called from doConnect() once vault connects
   async function onVaultConnected(){
     await syncFromVault();
-    syncTasksFromDailyLogs();
+    // syncTasksFromDailyLogs disabled — it imported workout entries as tasks
+    // and caused massive duplication. Vault Tasks.md is the single source of truth.
     render();
     var footer=document.getElementById('cal-footer');
     if(footer){footer.textContent='✓ Synced to vault';footer.className='cal-footer synced';}
