@@ -267,8 +267,15 @@ var STRENGTH=(function(){
 
   // ── PR check ──────────────────────────────────────────────
   function _checkPR(exercise,reps,weight){
+    if(!weight||!reps)return false;
     var existing=data.prs[exercise];
-    if(!existing||weight>existing.weight||(weight===existing.weight&&reps>existing.reps)){
+    // Only celebrate a PR if there WAS a previous record to beat
+    // First-ever log of an exercise just quietly sets the baseline
+    if(!existing){
+      data.prs[exercise]={weight:weight,reps:reps,date:_today()};
+      return false; // no popup for first time
+    }
+    if(weight>existing.weight||(weight===existing.weight&&reps>existing.reps)){
       data.prs[exercise]={weight:weight,reps:reps,date:_today()};
       return true;
     }
@@ -319,7 +326,13 @@ var STRENGTH=(function(){
       var age=(now-logTime)/(1000*3600);
       if(age>96)return;
       log.entries.forEach(function(entry){
-        var muscles=EXERCISE_MUSCLES[entry.exercise]||[];
+        // Look up muscles — check custom exercises if not in standard DB
+        var exName=entry.exercise.replace(/^★\s*/,'');
+        var muscles=EXERCISE_MUSCLES[exName]||EXERCISE_MUSCLES[entry.exercise]||[];
+        if(!muscles.length){
+          var ce=data.customExercises.find(function(c){return c.name===exName||c.name===entry.exercise;});
+          if(ce)muscles=ce.muscles||[];
+        }
         if(!muscles.includes(muscle))return;
         var setsCompleted=entry.sets.filter(function(s){return s.done;}).length;
         if(!setsCompleted)return;
@@ -333,14 +346,22 @@ var STRENGTH=(function(){
 
   // ── Strength Score ────────────────────────────────────────
   var KEY_LIFTS=['Bench Press','Squat','Deadlift','Overhead Press','Barbell Row'];
-  var STRENGTH_NORMS={'Bench Press':1.5,'Squat':2.0,'Deadlift':2.5,'Overhead Press':0.9,'Barbell Row':1.25};
+  var STRENGTH_NORMS={'Bench Press':1.5,'Squat':2.0,'Deadlift':2.5,'Overhead Press':0.9,'Barbell Row':1.25,
+    'Zercher Squat':1.4,'Goblet Squat':0.8,'Romanian Deadlift':1.8,'Sumo Deadlift':2.2,
+    'Incline Bench Press':1.2,'Dumbbell Bench Press':0.9,'Pull Up':0.8,'Chin Up':0.8,
+    'Dumbbell Row':0.9,'Cable Row':1.0,'Lat Pulldown':1.0,'Dip':1.0,
+    'Nordic Curl':0.5,'Farmer Carry':1.5,'Sandbag over Shoulder':0.7};
   function _calcScore(){
     var bw=data.bodyweight||185,total=0,count=0;
-    KEY_LIFTS.forEach(function(lift){
-      var pr=data.prs[lift];if(!pr)return;
-      total+=(pr.weight/bw/(STRENGTH_NORMS[lift]||1.5))*200;count++;
+    // Score from ALL tracked PRs, not just Big 5
+    Object.keys(data.prs).forEach(function(lift){
+      var pr=data.prs[lift];if(!pr||!pr.weight)return;
+      var norm=STRENGTH_NORMS[lift]||1.0; // default 1.0x BW for unknown lifts
+      var contribution=(pr.weight/bw/norm)*200;
+      total+=Math.min(contribution,200); // cap each lift's contribution
+      count++;
     });
-    return count?Math.round(total/count):0;
+    return count?Math.min(1000,Math.round(total/count)):0;
   }
   function _calcWeeklyVolume(){
     var ws=_weekStart(),vol=0;
@@ -623,7 +644,10 @@ var STRENGTH=(function(){
       log.entries.forEach(function(entry,ei){
         var prev=_getLastPerformance(entry.exercise);
         var doneCount=entry.sets.filter(function(s){return s.done;}).length;
-        var muscles=(EXERCISE_MUSCLES[entry.exercise]||[]).join(', ');
+        var _exN=entry.exercise.replace(/^★\s*/,'');
+        var _mArr=EXERCISE_MUSCLES[_exN]||EXERCISE_MUSCLES[entry.exercise]||[];
+        if(!_mArr.length){var _ce=data.customExercises.find(function(c){return c.name===_exN||c.name===entry.exercise;});if(_ce)_mArr=_ce.muscles||[];}
+        var muscles=_mArr.join(', ');
 
         html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px">'+
           // Exercise header
@@ -632,7 +656,9 @@ var STRENGTH=(function(){
               '<span style="font-family:var(--mono);font-size:12px;color:var(--text);font-weight:500">'+_esc(entry.exercise)+'</span>'+
               (muscles?'<div style="font-family:var(--mono);font-size:8px;color:var(--muted);margin-top:1px">'+muscles+'</div>':'')+
             '</div>'+
-            '<span style="font-family:var(--mono);font-size:10px;color:var(--muted)">'+doneCount+'/'+entry.sets.length+'</span>'+
+            '<div style="text-align:right">'+
+              '<span style="font-family:var(--mono);font-size:10px;color:var(--muted)">'+doneCount+'/'+entry.sets.length+'</span>'+
+              (function(){var vol=entry.sets.filter(function(s){return s.done;}).reduce(function(t,s){return t+s.reps*s.weight;},0);return vol?'<div style="font-family:var(--mono);font-size:8px;color:var(--accent)">'+vol.toLocaleString()+'lbs</div>':'';})()+'</div>'+
           '</div>'+
           // Previous performance
           (prev?'<div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:8px;padding:4px 6px;background:var(--bg);border-radius:3px">Last ('+prev.date.slice(5)+'): '+
@@ -793,7 +819,7 @@ var STRENGTH=(function(){
         method:'POST',
         headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
         body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,
-          messages:[{role:'user',content:'BAKER strength coach. User trains for strength (heavy, low reps), '+data.bodyweight+'lbs BW. Today: '+log.name+'. Recent:\\n'+recent+'\\nPRs: '+prs+'\\n\\nGive 3-4 specific recs for today. Weight selection, cues, progression. Concise, JARVIS tone.'}]})
+          messages:[{role:'user',content:'BAKER strength coach. User trains for strength (heavy, low reps), '+data.bodyweight+'lbs BW. Today: '+log.name+'. Recent:\n'+recent+'\nPRs: '+prs+'\n\nGive 3-4 specific recs for today. Weight selection, cues, progression. Concise, JARVIS tone.'}]})
       });
       var d=await resp.json();var text=d.content.map(function(b){return b.text||'';}).join('');
       _showRecModal(text);
@@ -818,14 +844,31 @@ var STRENGTH=(function(){
     var el=_el('str-map-content');if(!el)return;
     var theme=typeof FALLOUT!=='undefined'?FALLOUT.getTheme():'none';
     function hc(m){
-      var h=_muscleHeat(m);if(h<0.01)return'rgba(255,255,255,0.04)';
-      var a=0.15+h*0.75;
-      if(theme==='pipboy')return'rgba(57,255,20,'+a.toFixed(2)+')';
-      if(theme==='enclave')return'rgba(200,30,0,'+a.toFixed(2)+')';
-      if(theme==='bos')return'rgba(200,160,60,'+a.toFixed(2)+')';
-      if(theme==='ncr')return'rgba(200,160,90,'+a.toFixed(2)+')';
-      if(theme==='vaulttec')return'rgba(245,196,0,'+a.toFixed(2)+')';
-      return'rgba(124,106,247,'+a.toFixed(2)+')';
+      var h=_muscleHeat(m);
+      if(h<0.05)return'rgba(255,255,255,0.04)'; // truly rested — almost invisible
+      // Map heat 0→1 through a colour gradient: cool blue → hot orange → red
+      // This makes the difference between fresh/pumped/fried much more visible
+      if(theme==='pipboy'||theme==='vaulttec'||theme==='enclave'||theme==='bos'||theme==='ncr'){
+        // For faction themes keep accent colour but ramp alpha AND brightness
+        var col=theme==='pipboy'?'57,255,20':theme==='enclave'?'220,40,0':theme==='bos'?'210,170,60':theme==='ncr'?'200,160,90':'245,196,0';
+        var a=0.25+h*0.75;
+        return'rgba('+col+','+a.toFixed(2)+')';
+      }
+      // Default: heat gradient blue→purple→orange→red
+      if(h<0.33){
+        // Low: blue/cool
+        var a=0.3+h*0.9;
+        return'rgba(80,120,255,'+a.toFixed(2)+')';
+      }else if(h<0.66){
+        // Medium: purple/accent
+        var a=0.5+h*0.5;
+        return'rgba(160,80,255,'+a.toFixed(2)+')';
+      }else{
+        // High: orange/red — well trained or sore
+        var t=(h-0.66)/0.34;
+        var r=Math.round(255);var g=Math.round(140*(1-t));var b=0;
+        return'rgba('+r+','+g+','+b+',0.85)';
+      }
     }
     var totalHeat=0,count=0;
     ['chest','front-delts','side-delts','biceps','triceps','abs','quads','calves','lats','traps','hamstrings','glutes'].forEach(function(m){totalHeat+=_muscleHeat(m);count++;});
@@ -907,19 +950,26 @@ var STRENGTH=(function(){
         '<div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.1em;margin-bottom:4px">WEEKLY VOLUME</div>'+
         '<div style="font-size:20px;font-weight:700;color:var(--accent);font-family:var(--mono)">'+vol.toLocaleString()+' <span style="font-size:11px">lbs</span></div></div>'+
       '<div style="font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.1em;margin-bottom:6px">LIFT PRs & RATIOS</div>';
-    KEY_LIFTS.forEach(function(lift){
-      var pr=data.prs[lift],norm=STRENGTH_NORMS[lift]||1.5;
-      var ratio=pr?(pr.weight/bw):0;
+    // Show Big 5 first then all other PRs
+    var allPRLifts=Object.keys(data.prs);
+    var big5=KEY_LIFTS.filter(function(l){return data.prs[l];});
+    var others=allPRLifts.filter(function(l){return KEY_LIFTS.indexOf(l)<0;}).sort();
+    var showLifts=big5.concat(others);
+    if(!showLifts.length){html+='<div style="font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;padding:20px">No PRs yet — complete sets to start tracking.</div>';}
+    showLifts.forEach(function(lift){
+      var pr=data.prs[lift];if(!pr)return;
+      var norm=STRENGTH_NORMS[lift]||1.0;
+      var ratio=pr.weight/bw;
       var pct=Math.min(100,Math.round((ratio/norm)*100));
       var barColor=pct>=100?'var(--green)':pct>=75?'var(--accent)':pct>=50?'var(--amber)':'var(--muted)';
       html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px">'+
         '<div style="display:flex;justify-content:space-between;margin-bottom:4px">'+
-          '<span style="font-size:10px;color:var(--text)">'+lift+'</span>'+
-          (pr?'<span style="font-family:var(--mono);font-size:10px;color:var(--accent)">'+pr.weight+'×'+pr.reps+'</span>':'<span style="font-size:9px;color:var(--muted)">—</span>')+
+          '<span style="font-size:10px;color:var(--text)">'+_esc(lift)+'</span>'+
+          '<span style="font-family:var(--mono);font-size:10px;color:var(--accent)">'+pr.weight+'×'+pr.reps+' <span style="color:var(--muted);font-size:8px">('+pr.date.slice(5)+')</span></span>'+
         '</div>'+
-        '<div style="height:3px;background:var(--border);border-radius:2px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+barColor+';border-radius:2px"></div></div>'+
+        '<div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+barColor+';border-radius:2px;transition:width .4s"></div></div>'+
         '<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:8px;color:var(--muted);margin-top:2px">'+
-          '<span>'+ratio.toFixed(2)+'× BW</span><span>Target: '+norm+'× ('+Math.round(norm*bw)+')</span></div></div>';
+          '<span>'+ratio.toFixed(2)+'× BW</span><span>'+pct+'% of '+norm+'× norm</span></div></div>';
     });
     el.innerHTML=html;
   }
