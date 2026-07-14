@@ -1077,22 +1077,41 @@ var STRENGTH=(function(){
   function switchTab(tab){currentTab=tab;render();}
   function handleVoice(cmd){
     var c=cmd.toLowerCase();
-    if(/\b(open|show|launch)\b.*\b(strength|workout|gym|training)\b/.test(c)){showPanel();return'Strength panel open, sir.';}
-    if(/\b(log|start)\b.*\bworkout\b/.test(c)){showPanel();switchTab('workout');return"Today's workout, sir.";}
+    if(/\b(log|start|open|show)\b.*\bworkout\b/.test(c)){showPanel();switchTab('workout');return"Today's workout, sir.";}
+    if(/\b(open|show|launch)\b.*\b(strength|gym|training)\b/.test(c)){showPanel();return'Strength panel open, sir.';}
     if(/\b(muscle map|heat map|recovery)\b/.test(c)){showPanel();switchTab('map');return'Recovery map, sir.';}
     if(/\bstrength score\b/.test(c)){showPanel();switchTab('score');return'Score is '+_calcScore()+', sir.';}
+    if(/\b(coach|coaching|recommendations|strength coach)\b/.test(c)){showPanel();switchTab('coach');return'Coaching tab open, sir.';}
     return null;
   }
   function importData(imported){
     if(!imported)return;
     if(imported.split&&imported.split.length)data.split=imported.split;
     if(imported.bodyweight)data.bodyweight=imported.bodyweight;
-    if(imported.prs)data.prs=Object.assign({},imported.prs,data.prs);
+    // Imported PRs merge with existing — keep the BETTER PR per lift
+    if(imported.prs){
+      Object.keys(imported.prs).forEach(function(k){
+        var imp=imported.prs[k];var ex=data.prs[k];
+        if(!ex||imp.weight>ex.weight||(imp.weight===ex.weight&&imp.reps>ex.reps))data.prs[k]=imp;
+      });
+    }
+    // Import logs — merge by date (don't duplicate)
+    if(imported.logs&&imported.logs.length){
+      imported.logs.forEach(function(l){
+        if(!data.logs.find(function(x){return x.date===l.date;}))data.logs.push(l);
+      });
+    }
+    // Import custom exercises — skip duplicates
+    if(imported.customExercises&&imported.customExercises.length){
+      imported.customExercises.forEach(function(ce){
+        if(!data.customExercises.find(function(x){return x.name===ce.name;}))data.customExercises.push(ce);
+      });
+    }
     _save();render();
   }
   function init(){_load();}
 
-  return{init,showPanel,hidePanel,togglePanel,switchTab,handleVoice,importData,_skipRest:_skipRest};
+  return{init,showPanel,hidePanel,togglePanel,switchTab,handleVoice,importData,getAllExercises,_skipRest:_skipRest};
 })();  // ── MAP TAB ───────────────────────────────────────────────────
   var _mapMode='soreness'; // 'soreness' | 'strength'
 
