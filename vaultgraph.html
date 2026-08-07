@@ -3,6 +3,8 @@
 // ═══════════════════════════════════════════════════════════
 var graphNodes=[],graphEdges=[],graphAnim=null;
 var graphTransform={x:0,y:0,scale:1};
+var _graphCanvasCache=null,_graphCtxCache=null;
+var _touchPanning=false,_touchPanStart={x:0,y:0};
 var graphPanning=false,graphPanStart={x:0,y:0};
 var hoveredNode=null,simTick=0;
 var pinnedNodes={};
@@ -17,8 +19,7 @@ var ORPHAN_COLOR='#00e5cc';
 
 // ── Note Birth Particle System ────────────────────────────
 var birthParticles=[];
-var _IS_PHONE=window.innerWidth<768;
-var BIRTH_FPS=_IS_PHONE?1000/15:1000/30;
+var BIRTH_FPS=1000/30;
 
 // Called externally when a note is created
 // type: note type string, targetNodeId: the id of the new node in graphNodes
@@ -47,8 +48,6 @@ function spawnBirthParticle(type,targetPath){
       done:false,
       popped:false
     });
-    // Mark target node as freshly born so it renders oversized
-    if(node)node._bornAt=Date.now()+Math.round(1200); // born after particle arrives
   }
   trySpawn();
 }
@@ -106,6 +105,7 @@ function initGraphCanvas(){
   canvas.width=window.innerWidth;canvas.height=window.innerHeight;
   window.addEventListener('resize',function(){
     canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+    _graphCtxCache=null;
   });
 
   // Pan
@@ -123,6 +123,11 @@ function initGraphCanvas(){
         e.touches[0].clientX-e.touches[1].clientX,
         e.touches[0].clientY-e.touches[1].clientY
       );
+      _touchPanning=false;
+    }else if(e.touches.length===1){
+      // Single finger — start pan
+      _touchPanning=true;
+      _touchPanStart={x:e.touches[0].clientX-graphTransform.x,y:e.touches[0].clientY-graphTransform.y};
     }
   },{passive:true});
   canvas.addEventListener('touchmove',function(e){
@@ -139,9 +144,12 @@ function initGraphCanvas(){
       graphTransform.y=my-(my-graphTransform.y)*factor;
       graphTransform.scale=Math.max(0.1,Math.min(5,graphTransform.scale*factor));
       lastPinchDist=dist;
+    }else if(e.touches.length===1&&_touchPanning){
+      graphTransform.x=e.touches[0].clientX-_touchPanStart.x;
+      graphTransform.y=e.touches[0].clientY-_touchPanStart.y;
     }
   },{passive:false});
-  canvas.addEventListener('touchend',function(){lastPinchDist=null;});
+  canvas.addEventListener('touchend',function(e){lastPinchDist=null;if(e.touches.length===0)_touchPanning=false;});
 
   // Hover + tooltip
   window.addEventListener('mousemove',function(e){
@@ -285,7 +293,7 @@ function buildGraph(){
   var H=(_canvas&&_canvas.height>100)?_canvas.height:window.innerHeight;
   // Only initialize canvas size if not yet set — never reset during operation
   if(_canvas&&(_canvas.width<100||_canvas.height<100)){
-    _canvas.width=window.innerWidth;_canvas.height=window.innerHeight;
+    _canvas.width=window.innerWidth;_canvas.height=window.innerHeight;_graphCtxCache=null;
     W=_canvas.width;H=_canvas.height;
   }
 
@@ -341,7 +349,7 @@ function _layoutGrid(W,H){
 
 // ── FOREST LAYOUT ─────────────────────────────────────────
 function _layoutForest(W,H){
-  var TYPE_ORDER=['conversation','project','lecture','daily','general','system','workout','academic','biometric','weekly'];
+  var TYPE_ORDER=['conversation','project','lecture','daily','general'];
   var USABLE_LEFT=0.06,USABLE_RIGHT=0.94;
   var USABLE_TOP=0.08,USABLE_BOTTOM=0.86;
   var GAP_FRAC=0.04;
@@ -350,17 +358,14 @@ function _layoutForest(W,H){
   TYPE_ORDER.forEach(function(t){groups[t]=[];});
   var orphans=[];
   graphNodes.forEach(function(n){
-    if(n.orphan){orphans.push(n);return;}
-    // Fall back unknown types to 'general' so they always have a bucket
-    var t=groups[n.type]?n.type:'general';
-    groups[t].push(n);
+    if(n.orphan)orphans.push(n);
+    else groups[n.type].push(n);
   });
 
   var activeGroups=TYPE_ORDER.filter(function(t){return groups[t].length>0;});
   activeGroups.sort(function(a,b){return groups[b].length-groups[a].length;});
   var ordered=_centerLargest(activeGroups);
 
-  if(!ordered.length&&!orphans.length)return; // nothing to lay out
   var numSlots=ordered.length+(orphans.length>0?1:0);
   var totalGap=GAP_FRAC*(numSlots-1);
   var usableW=(USABLE_RIGHT-USABLE_LEFT)-totalGap;
@@ -419,10 +424,10 @@ function _layoutYggdrasil(W,H){
     nonOrphans[0].isLeaf=false;
   }
 
-  var TYPE_ORDER=['conversation','project','lecture','daily','general','system','workout','academic','biometric','weekly'];
+  var TYPE_ORDER=['conversation','project','lecture','daily','general'];
   var typeGroups={};
   TYPE_ORDER.forEach(function(t){typeGroups[t]=[];});
-  nonOrphans.slice(1).forEach(function(n){var t=typeGroups[n.type]?n.type:'general';typeGroups[t].push(n);});
+  nonOrphans.slice(1).forEach(function(n){typeGroups[n.type].push(n);});
 
   var activeTypes=TYPE_ORDER.filter(function(t){return typeGroups[t].length>0;});
   var numBranches=activeTypes.length;
@@ -466,7 +471,7 @@ function _layoutYggdrasil(W,H){
 
 // ── CLUSTER LAYOUT ────────────────────────────────────────
 function _layoutCluster(W,H){
-  var typeOrder=['conversation','project','lecture','daily','general','system','workout','academic','biometric','weekly'];
+  var typeOrder=['conversation','project','lecture','daily','general'];
   var groupCenters={};
   var activeTypes=typeOrder.filter(function(t){
     return graphNodes.some(function(n){return n.type===t&&!n.orphan;});
@@ -514,35 +519,27 @@ function detectType(path,content){
   if(p.includes('conversation')||c.includes('type: conversation'))return'conversation';
   if(p.includes('01-projects')||c.includes('type: project'))return'project';
   if(p.includes('lecture')||c.includes('type: lecture'))return'lecture';
+  // daily: explicit type tag, daily-log folder, 00-capture with date filename, or YYYY-MM-DD.md anywhere
   if(c.includes('type: daily')||c.includes('type: daily log')||c.includes('type: daily-log'))return'daily';
   if(p.includes('07-system/daily')||p.includes('daily-log')||p.includes('daily log'))return'daily';
   if(p.includes('00-capture')&&/^\d{4}-\d{2}-\d{2}\.md$/.test(fname))return'daily';
   if(/^\d{4}-\d{2}-\d{2}\.md$/.test(fname))return'daily';
-  // System/module types
-  if(c.includes('type: workout-week')||c.includes('type: system-strength')||p.includes('workouts/'))return'workout';
-  if(c.includes('type: focus-log')||p.includes('focus/'))return'system';
-  if(c.includes('type: baker-memory')||fname==='memory.md')return'system';
-  if(c.includes('type: system-tasks')||fname==='tasks.md')return'system';
-  if(c.includes('type: system-budget')||fname==='budget.md')return'system';
-  if(c.includes('type: system-academic')||p.includes('academic/'))return'academic';
-  if(c.includes('type: system-biometrics')||p.includes('biometrics/'))return'biometric';
-  if(c.includes('type: analyzed-file')||p.includes('04-archive/'))return'general';
-  if(p.includes('07-system/'))return'system';
-  if(c.includes('type: weekly')||p.includes('weekly'))return'weekly';
   return'general';
 }
 
 // ── SIMULATION + DRAW LOOP ────────────────────────────────
-var GRAPH_FPS=_IS_PHONE?1000/15:1000/30,lastGraphFrame=0;
+var GRAPH_FPS=1000/30,lastGraphFrame=0;
 function runGraphSim(){
   if(graphAnim){cancelAnimationFrame(graphAnim);graphAnim=null;}
   graphAnim=requestAnimationFrame(function(now){
     runGraphSim();if(now-lastGraphFrame<GRAPH_FPS)return;lastGraphFrame=now;
+    if(document.hidden)return;// skip work when tab backgrounded
     var dt=1/30;
     swayTime+=dt;
 
-    var canvas=document.getElementById('vault-graph-canvas');
-    var ctx=canvas.getContext('2d');
+    var canvas=_graphCanvasCache||(_graphCanvasCache=document.getElementById('vault-graph-canvas'));
+    if(!canvas)return;
+    var ctx=_graphCtxCache||(_graphCtxCache=canvas.getContext('2d'));
     var W=canvas.width,H=canvas.height;
     H_REF=H; // update AFTER H is defined
     _tickBirthParticles(dt);
@@ -581,7 +578,7 @@ function runGraphSim(){
         b.vx-=dx*w*diff;b.vy-=dy*w*diff;
       });
       if(clusterMode){
-        var typeOrder=['conversation','project','lecture','daily','general','system','workout','academic','biometric','weekly'];
+        var typeOrder=['conversation','project','lecture','daily','general'];
         var activeCenters={};
         typeOrder.forEach(function(t){
           var m=graphNodes.filter(function(n){return n.type===t&&!n.orphan;});
