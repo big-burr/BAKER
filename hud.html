@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
 <title>BAKER — HUD</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="manifest" href="manifest.json">
@@ -512,6 +515,95 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
 .bp-income-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:4px}
 .bp-income-label{font-family:var(--mono);font-size:11px;color:var(--green);flex:1}
 
+
+/* ═══════════════════════════════════════════════════════════ */
+/* MOBILE / iPhone OPTIMIZATION                                 */
+/* ═══════════════════════════════════════════════════════════ */
+
+/* Prevent iOS bounce-scroll and text-size auto-adjust */
+html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+body{overscroll-behavior:none;position:fixed;width:100%;height:100%}
+
+/* Larger tap targets everywhere on touch devices */
+@media (pointer:coarse){
+  .hbtn{padding:8px 12px;font-size:12px;min-height:36px}
+  .bp-tab{min-height:40px;padding:12px 8px}
+  .bp-add-submit{min-height:34px;padding:8px 14px}
+  .bp-month-btn{min-width:32px;min-height:32px;font-size:16px}
+  .bp-tx-del,.vh-close,.bp-close,.brief-close{min-width:32px;min-height:32px;font-size:20px}
+  .rh{display:none!important} /* hide resize handles on touch — too fiddly */
+}
+
+/* ── Phone portrait (≤600px) ── */
+@media (max-width:600px){
+  /* Nav bar — scrollable horizontally, sticky */
+  nav{height:52px;padding:0 8px;gap:6px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+  nav::-webkit-scrollbar{display:none}
+  .nav-logo{font-size:11px;padding:3px 8px;flex-shrink:0}
+  .nav-status{display:none} /* hide status text to save space */
+  .nav-right{gap:5px;flex-shrink:0}
+  .hbtn{padding:7px 9px;font-size:11px;white-space:nowrap;flex-shrink:0}
+
+  /* All floating panels — full-screen sheets on phone */
+  #budget-panel,#vault-panel,#vaultchat-panel,#graphui-panel,
+  #calendar-panel,#month-panel,#spotify-panel{
+    top:52px!important;left:0!important;right:0!important;bottom:0!important;
+    width:100vw!important;max-width:100vw!important;
+    height:calc(100vh - 52px)!important;max-height:none!important;
+    border-radius:0!important;transform:none!important
+  }
+
+  /* Budget panel — stack left/right vertically */
+  .bp-body{flex-direction:column;overflow-y:auto}
+  .bp-left{width:100%;border-right:none;border-bottom:1px solid var(--border)}
+  #bp-pie-canvas{max-width:240px;margin:0 auto}
+  .bp-right{min-height:400px}
+  .bp-totals{grid-template-columns:1fr 1fr}
+
+  /* Budget add form — stack rows */
+  .bp-add-row{flex-wrap:wrap}
+  .bp-input,.bp-select{min-height:36px;font-size:14px} /* 14px prevents iOS zoom */
+  .bp-cat-budget-input{min-height:32px;font-size:14px}
+
+  /* Notes panel */
+  #vault-panel .vp-viewer{font-size:14px}
+
+  /* Orb panel — smaller on phone */
+  #orb-panel{width:180px!important;height:auto!important}
+
+  /* Daily brief — full width */
+  #daily-brief-panel{top:60px!important;left:8px!important;right:8px!important;
+    width:auto!important;max-width:none!important;transform:none!important}
+
+  /* Vault health — bottom sheet */
+  #vault-health-panel{bottom:0!important;left:0!important;right:0!important;
+    width:100%!important;border-radius:14px 14px 0 0!important}
+
+  /* Graph settings — full sheet, scrollable */
+  #gui-body{padding:16px}
+  .gui-slider{min-height:32px}
+
+  /* Prevent iOS input zoom — all inputs 16px min */
+  input,select,textarea{font-size:16px!important}
+}
+
+/* ── Phone landscape / small tablet (601-900px) ── */
+@media (min-width:601px) and (max-width:900px){
+  #budget-panel{width:94vw!important;max-width:94vw!important;transform:none!important;left:3vw!important}
+  .bp-left{width:260px}
+}
+
+/* iOS safe-area insets (notch / home indicator) */
+@supports (padding:env(safe-area-inset-top)){
+  @media (max-width:600px){
+    nav{padding-top:env(safe-area-inset-top);height:calc(52px + env(safe-area-inset-top))}
+    #budget-panel,#vault-panel,#vaultchat-panel,#graphui-panel,#calendar-panel,#month-panel{
+      top:calc(52px + env(safe-area-inset-top))!important;
+      padding-bottom:env(safe-area-inset-bottom)
+    }
+  }
+}
+
 </style>
 </head>
 <body>
@@ -519,8 +611,8 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
 <div id="graph-overlay">
   <div class="graph-ph-icon">🕸</div>
   <div class="graph-ph-title">No vault connected</div>
-  <div class="graph-ph-sub">Connect your vault to see your knowledge graph. Notes become nodes, wikilinks become edges.</div>
-  <button class="graph-connect-btn" onclick="handleVaultBtn()">⬡ Connect Vault</button>
+  <div class="graph-ph-sub" id="graph-ph-sub">Connect your vault to see your knowledge graph. Notes become nodes, wikilinks become edges.</div>
+  <button class="graph-connect-btn" id="graph-connect-btn" onclick="handleVaultBtn()">⬡ Connect Vault</button>
 </div>
 <div id="graph-tooltip">
   <div class="tt-name" id="tt-name"></div>
@@ -885,6 +977,16 @@ input[type=range].gui-slider{-webkit-appearance:none;width:100%;height:3px;borde
       </div>
     </div>
     <div class="field">
+      <label>GitHub Vault (for mobile sync)</label>
+      <div class="modal-sub" style="margin-bottom:6px">Lets BAKER read/write your vault on phone. Use a fine-grained token with Contents read+write on your vault repo.</div>
+      <input type="text" id="gh-repo-input" placeholder="owner/repo (e.g. big-burr/baker-vault)" style="margin-bottom:6px">
+      <input type="text" id="gh-branch-input" placeholder="branch (default: main)" style="margin-bottom:6px">
+      <div class="key-wrap">
+        <input type="password" id="gh-token-input" placeholder="github_pat_...">
+        <button class="show-btn" onclick="toggleShowGH()">&#128065;</button>
+      </div>
+    </div>
+    <div class="field">
       <label>Web Search</label>
       <div class="toggle-row">
         <div>
@@ -969,7 +1071,11 @@ function draw(now){requestAnimationFrame(draw);if(now-lastFrame<FPS_INTERVAL)ret
 requestAnimationFrame(draw);
 })();
 function setOrbState(s){window.orbState=s;var dot=document.getElementById('nav-dot');var pill=document.getElementById('sb-mode');var panel=document.getElementById('orb-panel');dot.className='status-dot '+s;pill.textContent=s;pill.className='sb-pill '+s;panel.className='fp'+(s==='listening'?' listening':'');document.getElementById('nav-status-txt').textContent=s;}
-function makeWindowBehavior(panelEl,hdrEl,opts){opts=opts||{};var MIN_W=opts.minW||180;var MIN_H=opts.minH||80;var NAV_H=44;function normalise(){if(panelEl.offsetParent===null&&panelEl.style.display==='none')return;var r=panelEl.getBoundingClientRect();if(!r.width||!r.height)return;panelEl.style.left=r.left+'px';panelEl.style.top=r.top+'px';panelEl.style.bottom='auto';panelEl.style.right='auto';panelEl.style.width=r.width+'px';panelEl.style.height=r.height+'px';}if(panelEl.style.display!=='none')normalise();panelEl._wbNormalise=normalise;['nw','n','ne','e','se','s','sw','w'].forEach(function(dir){var h=document.createElement('div');h.className='rh rh-'+dir;h.dataset.dir=dir;panelEl.appendChild(h);});var dragging=false,dox=0,doy=0;hdrEl.addEventListener('mousedown',function(e){if(e.button!==0)return;if(e.target.closest('.fp-btns,.spp-close,.spp-tabs,.spp-tab'))return;e.preventDefault();normalise();dragging=true;var r=panelEl.getBoundingClientRect();dox=e.clientX-r.left;doy=e.clientY-r.top;panelEl.style.transition='none';bringToFront(panelEl);document.addEventListener('mousemove',onDragMove);document.addEventListener('mouseup',onDragUp);});function onDragMove(e){if(!dragging)return;var x=e.clientX-dox;var y=e.clientY-doy;x=Math.max(0,Math.min(window.innerWidth-panelEl.offsetWidth,x));y=Math.max(NAV_H,Math.min(window.innerHeight-panelEl.offsetHeight-30,y));panelEl.style.left=x+'px';panelEl.style.top=y+'px';}function onDragUp(){dragging=false;panelEl.style.transition='';document.removeEventListener('mousemove',onDragMove);document.removeEventListener('mouseup',onDragUp);}var resizing=false,rdir='',rsx=0,rsy=0,rx=0,ry=0,rw=0,rh=0;panelEl.addEventListener('mousedown',function(e){var handle=e.target.closest('.rh');if(!handle)return;if(e.button!==0)return;e.preventDefault();e.stopPropagation();normalise();resizing=true;rdir=handle.dataset.dir;rsx=e.clientX;rsy=e.clientY;var r=panelEl.getBoundingClientRect();rx=r.left;ry=r.top;rw=r.width;rh=r.height;panelEl.style.transition='none';bringToFront(panelEl);document.addEventListener('mousemove',onResizeMove);document.addEventListener('mouseup',onResizeUp);});function onResizeMove(e){if(!resizing)return;var dx=e.clientX-rsx;var dy=e.clientY-rsy;var nx=rx,ny=ry,nw=rw,nh=rh;if(rdir.includes('e'))nw=Math.max(MIN_W,rw+dx);if(rdir.includes('w')){nw=Math.max(MIN_W,rw-dx);nx=rx+rw-nw;}if(rdir.includes('s'))nh=Math.max(MIN_H,rh+dy);if(rdir.includes('n')){nh=Math.max(MIN_H,rh-dy);ny=ry+rh-nh;}nx=Math.max(0,Math.min(window.innerWidth-MIN_W,nx));ny=Math.max(NAV_H,Math.min(window.innerHeight-MIN_H-30,ny));panelEl.style.left=nx+'px';panelEl.style.top=ny+'px';panelEl.style.width=nw+'px';panelEl.style.height=nh+'px';}function onResizeUp(){resizing=false;panelEl.style.transition='';document.removeEventListener('mousemove',onResizeMove);document.removeEventListener('mouseup',onResizeUp);}panelEl.addEventListener('mousedown',function(e){if(!e.target.closest('.rh'))bringToFront(panelEl);});}
+function makeWindowBehavior(panelEl,hdrEl,opts){opts=opts||{};var MIN_W=opts.minW||180;var MIN_H=opts.minH||80;var NAV_H=44;function normalise(){if(panelEl.offsetParent===null&&panelEl.style.display==='none')return;var r=panelEl.getBoundingClientRect();if(!r.width||!r.height)return;panelEl.style.left=r.left+'px';panelEl.style.top=r.top+'px';panelEl.style.bottom='auto';panelEl.style.right='auto';panelEl.style.width=r.width+'px';panelEl.style.height=r.height+'px';}if(panelEl.style.display!=='none')normalise();panelEl._wbNormalise=normalise;['nw','n','ne','e','se','s','sw','w'].forEach(function(dir){var h=document.createElement('div');h.className='rh rh-'+dir;h.dataset.dir=dir;panelEl.appendChild(h);});var dragging=false,dox=0,doy=0;hdrEl.addEventListener('mousedown',function(e){if(e.button!==0)return;if(e.target.closest('.fp-btns,.spp-close,.spp-tabs,.spp-tab'))return;e.preventDefault();normalise();dragging=true;var r=panelEl.getBoundingClientRect();dox=e.clientX-r.left;doy=e.clientY-r.top;panelEl.style.transition='none';bringToFront(panelEl);document.addEventListener('mousemove',onDragMove);document.addEventListener('mouseup',onDragUp);});
+  // Touch drag support
+  hdrEl.addEventListener('touchstart',function(e){if(e.target.closest('.fp-btns,.spp-close,.spp-tabs,.spp-tab,button'))return;var t=e.touches[0];normalise();dragging=true;var r=panelEl.getBoundingClientRect();dox=t.clientX-r.left;doy=t.clientY-r.top;panelEl.style.transition='none';bringToFront(panelEl);document.addEventListener('touchmove',onTouchDragMove,{passive:false});document.addEventListener('touchend',onTouchDragUp);},{passive:true});
+  function onTouchDragMove(e){if(!dragging)return;e.preventDefault();var t=e.touches[0];var x=t.clientX-dox;var y=t.clientY-doy;x=Math.max(0,Math.min(window.innerWidth-panelEl.offsetWidth,x));y=Math.max(NAV_H,Math.min(window.innerHeight-panelEl.offsetHeight-30,y));panelEl.style.left=x+'px';panelEl.style.top=y+'px';}
+  function onTouchDragUp(){dragging=false;panelEl.style.transition='';document.removeEventListener('touchmove',onTouchDragMove);document.removeEventListener('touchend',onTouchDragUp);}function onDragMove(e){if(!dragging)return;var x=e.clientX-dox;var y=e.clientY-doy;x=Math.max(0,Math.min(window.innerWidth-panelEl.offsetWidth,x));y=Math.max(NAV_H,Math.min(window.innerHeight-panelEl.offsetHeight-30,y));panelEl.style.left=x+'px';panelEl.style.top=y+'px';}function onDragUp(){dragging=false;panelEl.style.transition='';document.removeEventListener('mousemove',onDragMove);document.removeEventListener('mouseup',onDragUp);}var resizing=false,rdir='',rsx=0,rsy=0,rx=0,ry=0,rw=0,rh=0;panelEl.addEventListener('mousedown',function(e){var handle=e.target.closest('.rh');if(!handle)return;if(e.button!==0)return;e.preventDefault();e.stopPropagation();normalise();resizing=true;rdir=handle.dataset.dir;rsx=e.clientX;rsy=e.clientY;var r=panelEl.getBoundingClientRect();rx=r.left;ry=r.top;rw=r.width;rh=r.height;panelEl.style.transition='none';bringToFront(panelEl);document.addEventListener('mousemove',onResizeMove);document.addEventListener('mouseup',onResizeUp);});function onResizeMove(e){if(!resizing)return;var dx=e.clientX-rsx;var dy=e.clientY-rsy;var nx=rx,ny=ry,nw=rw,nh=rh;if(rdir.includes('e'))nw=Math.max(MIN_W,rw+dx);if(rdir.includes('w')){nw=Math.max(MIN_W,rw-dx);nx=rx+rw-nw;}if(rdir.includes('s'))nh=Math.max(MIN_H,rh+dy);if(rdir.includes('n')){nh=Math.max(MIN_H,rh-dy);ny=ry+rh-nh;}nx=Math.max(0,Math.min(window.innerWidth-MIN_W,nx));ny=Math.max(NAV_H,Math.min(window.innerHeight-MIN_H-30,ny));panelEl.style.left=nx+'px';panelEl.style.top=ny+'px';panelEl.style.width=nw+'px';panelEl.style.height=nh+'px';}function onResizeUp(){resizing=false;panelEl.style.transition='';document.removeEventListener('mousemove',onResizeMove);document.removeEventListener('mouseup',onResizeUp);}panelEl.addEventListener('mousedown',function(e){if(!e.target.closest('.rh'))bringToFront(panelEl);});}
 var _zTop=30;
 function bringToFront(el){el.style.zIndex=++_zTop;}
 function makeDraggable(panelId,hdrId){var p=document.getElementById(panelId);var h=document.getElementById(hdrId);if(p&&h)makeWindowBehavior(p,h);}
@@ -996,14 +1102,42 @@ var DEFAULT_GRAPH_SETTINGS=JSON.parse(JSON.stringify(GraphSettings));
 // VAULT
 // ═══════════════════════════════════════════════════════════
 var vaultHandle=null,vaultIndex=[],vaultConnected=false;
+var vaultBackend=null; // 'fs' | 'github' | null
 var hasFS=('showDirectoryPicker' in window);
 function openDB(){return new Promise(function(res,rej){var r=indexedDB.open('baker-vault',1);r.onupgradeneeded=function(e){e.target.result.createObjectStore('handles',{keyPath:'id'});};r.onsuccess=function(e){res(e.target.result);};r.onerror=function(){rej(r.error);};});}
 async function storeHandle(h){try{var db=await openDB();db.transaction('handles','readwrite').objectStore('handles').put({id:'vault',handle:h});}catch(e){}}
 async function getStoredHandle(){try{var db=await openDB();return new Promise(function(res){var r=db.transaction('handles','readonly').objectStore('handles').get('vault');r.onsuccess=function(){res(r.result?r.result.handle:null);};r.onerror=function(){res(null);};});}catch(e){return null;}}
 async function clearHandle(){try{var db=await openDB();db.transaction('handles','readwrite').objectStore('handles').delete('vault');}catch(e){}}
 async function tryReconnectVault(){var stored=await getStoredHandle();if(!stored)return;setVaultBtn('scanning');try{var perm=await stored.requestPermission({mode:'readwrite'});if(perm==='granted'){await doConnect(stored);}else{setVaultBtn('off');}}catch(e){setVaultBtn('off');}}
-async function handleVaultBtn(){if(!hasFS){alert('Requires Chrome on desktop.');return;}if(vaultConnected){vaultHandle=null;vaultIndex=[];vaultConnected=false;graphNodes=[];graphEdges=[];setVaultBtn('off');document.getElementById('graph-overlay').classList.remove('hidden');document.getElementById('graph-stats').style.display='none';if(graphAnim){cancelAnimationFrame(graphAnim);graphAnim=null;}var ctx=document.getElementById('vault-graph-canvas').getContext('2d');ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);}else{try{var handle=await window.showDirectoryPicker({mode:'readwrite'});await doConnect(handle);}catch(e){if(e.name!=='AbortError')alert('Failed: '+e.message);}}}
+async async function handleVaultBtn(){
+  // Disconnect if already connected
+  if(vaultConnected){
+    vaultHandle=null;vaultIndex=[];vaultConnected=false;vaultBackend=null;graphNodes=[];graphEdges=[];
+    setVaultBtn('off');
+    document.getElementById('graph-overlay').classList.remove('hidden');
+    document.getElementById('graph-stats').style.display='none';
+    if(graphAnim){cancelAnimationFrame(graphAnim);graphAnim=null;}
+    var ctx=document.getElementById('vault-graph-canvas').getContext('2d');
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    return;
+  }
+  // Choose backend: local filesystem on desktop, GitHub on mobile / when no FS
+  if(hasFS){
+    try{
+      var handle=await window.showDirectoryPicker({mode:'readwrite'});
+      vaultBackend='fs';
+      await doConnect(handle);
+    }catch(e){if(e.name!=='AbortError')alert('Failed: '+e.message);}
+  }else if(typeof GHVAULT!=='undefined'&&GHVAULT.isConfigured()){
+    vaultBackend='github';
+    await GHVAULT.connect();
+  }else{
+    alert('To use your vault on mobile, add your GitHub token and repo in Settings first. On desktop, use Chrome or Edge.');
+    openSettings();
+  }
+}
 async function doConnect(handle){
+  vaultBackend='fs';
   vaultHandle=handle;await storeHandle(handle);setVaultBtn('scanning');
   vaultIndex=[];await scanDir(handle,'');
   vaultConnected=true;setVaultBtn('on');buildGraph();
@@ -1011,6 +1145,36 @@ async function doConnect(handle){
   if(typeof CAL!=='undefined')CAL.onVaultConnected();
   if(typeof VAULTUI!=='undefined')VAULTUI.refresh();
   if(typeof VAULTCHAT!=='undefined')VAULTCHAT.onVaultReady();
+}
+
+// ── Unified vault write — routes to filesystem or GitHub ──
+// path: full vault-relative path e.g. '00-Capture/2026-06-17.md'
+// content: full new file content
+// Returns a Promise<bool>.
+async function vaultWrite(path,content){
+  if(vaultBackend==='github'){
+    if(typeof GHVAULT==='undefined')return false;
+    return await GHVAULT.writeNote(path,content);
+  }
+  // Filesystem backend
+  if(!vaultHandle)return false;
+  try{
+    var parts=path.split('/');
+    var fname=parts.pop();
+    var dir=vaultHandle;
+    for(var i=0;i<parts.length;i++){
+      dir=await dir.getDirectoryHandle(parts[i],{create:true});
+    }
+    var fh=await dir.getFileHandle(fname,{create:true});
+    var w=await fh.createWritable();
+    await w.write(content);
+    await w.close();
+    // Update vaultIndex
+    var idx=vaultIndex.findIndex(function(n){return n.path===path;});
+    if(idx>=0)vaultIndex[idx].content=content;
+    else vaultIndex.push({name:fname,path:path,content:content,mtime:Date.now()});
+    return true;
+  }catch(e){return false;}
 }
 function setVaultBtn(s){var b=document.getElementById('vault-btn');b.className='hbtn'+(s==='on'?' on':'');b.textContent=s==='on'?'⬡ Vault on':s==='scanning'?'⟳ Scanning...':'⬡ Connect Vault';}
 async function scanDir(dir,path){try{for await(var entry of dir.values()){if(entry.name.startsWith('.'))continue;if(entry.kind==='file'&&entry.name.endsWith('.md')){try{var f=await entry.getFile();var content=await f.text();vaultIndex.push({name:entry.name,path:path?path+'/'+entry.name:entry.name,content:content,mtime:f.lastModified});}catch(e){}}else if(entry.kind==='directory'){await scanDir(entry,path?path+'/'+entry.name:entry.name);}}}catch(e){}}
@@ -1073,12 +1237,12 @@ function stopSpeaking(){speechSynthesis.cancel();isSpeaking=false;speakEndTime=D
 function startConversationMode(){conversationMode=true;conversationHistory=[];document.getElementById('orb-panel').classList.add('conversation-mode');setStatus('💬 Conversation mode — say "bye Baker" or click the orb to end');document.getElementById('orb-status-txt').textContent='💬 Conversation mode';document.getElementById('orb-status-txt').className='orb-status-txt active';}
 function endConversationMode(farewell){conversationMode=false;var historySnapshot=conversationHistory.slice();conversationHistory=[];document.getElementById('orb-panel').classList.remove('conversation-mode');if(voiceActive)stopVoice();function finishExit(){if(farewell){speakResponse(farewell);}else{speechSynthesis.cancel();isSpeaking=false;setOrbState('idle');setStatus('Say "Baker" to begin');document.getElementById('orb-status-txt').textContent='Say "Baker" to begin';document.getElementById('orb-status-txt').className='orb-status-txt';startWakeWord();}}if(historySnapshot.length>=2&&typeof vaultConnected!=='undefined'&&vaultConnected){showConfirmPopup('Save a summary of this conversation to today\'s log?',function(){conversationHistory=historySnapshot;saveConversationSummary().then(function(){conversationHistory=[];finishExit();});},finishExit);}else{finishExit();}}
 function showConfirmPopup(text,onYes,onNo){var popup=document.getElementById('confirm-popup');document.getElementById('confirm-popup-text').textContent=text;popup.classList.add('vis');var yesBtn=document.getElementById('confirm-yes');var noBtn=document.getElementById('confirm-no');function cleanup(){popup.classList.remove('vis');yesBtn.onclick=null;noBtn.onclick=null;}yesBtn.onclick=function(){cleanup();if(onYes)onYes();};noBtn.onclick=function(){cleanup();if(onNo)onNo();};}
-async function saveConversationSummary(){var key=localStorage.getItem('baker_api_key');if(!key||!conversationHistory.length)return false;if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected)return false;try{var transcript=conversationHistory.map(function(m){return(m.role==='user'?'User':'BAKER')+': '+m.content;}).join('\n');var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:80,system:'Summarize this conversation in ONE short sentence (under 15 words) suitable as a bullet point in a daily log. No preamble, just the sentence.',messages:[{role:'user',content:transcript}]})});var data=await resp.json();if(data.error)return false;var summary=data.content.map(function(b){return b.text||'';}).join('').trim();if(!summary)return false;var now=new Date();var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');var timeStr=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');var dir=await vaultHandle.getDirectoryHandle('00-Capture',{create:true});var fname=dateStr+'.md';var fileHandle=await dir.getFileHandle(fname,{create:true});var file=await fileHandle.getFile();var existing=await file.text();var bullet='- '+timeStr+' — '+summary+'\n';var _tmpl='---\ntype: daily\ndate: '+dateStr+'\nweek: \nmood: \nenergy: \n---\n\n# Daily Log — '+dateStr+'\n\n## Top 3\n- \n- \n- \n\n## Notes\n\n## Done\n\n## Tomorrow\n\n## Conversations\n';
-var newContent=existing.trim().length?(existing.trim()+'\n'+bullet):(_tmpl+bullet);var writable=await fileHandle.createWritable();await writable.write(newContent);await writable.close();if(typeof vaultIndex!=='undefined'){var idx=vaultIndex.findIndex(function(n){return n.path==='00-Capture/'+fname;});if(idx>=0)vaultIndex[idx].content=newContent;else vaultIndex.push({name:fname,path:'00-Capture/'+fname,content:newContent});}if(typeof buildGraph==='function'&&typeof vaultConnected!=='undefined'&&vaultConnected){buildGraph();setTimeout(function(){if(typeof spawnBirthParticle==='function')spawnBirthParticle('daily','00-Capture/'+fname);},400);}return true;}catch(e){return false;}}
+async function saveConversationSummary(){var key=localStorage.getItem('baker_api_key');if(!key||!conversationHistory.length)return false;if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected)return false;try{var transcript=conversationHistory.map(function(m){return(m.role==='user'?'User':'BAKER')+': '+m.content;}).join('\n');var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:80,system:'Summarize this conversation in ONE short sentence (under 15 words) suitable as a bullet point in a daily log. No preamble, just the sentence.',messages:[{role:'user',content:transcript}]})});var data=await resp.json();if(data.error)return false;var summary=data.content.map(function(b){return b.text||'';}).join('').trim();if(!summary)return false;var now=new Date();var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');var timeStr=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');var fname=dateStr+'.md';var _p='00-Capture/'+fname;var _ex=vaultIndex.find(function(n){return n.path===_p;});var existing=_ex?_ex.content:'';var bullet='- '+timeStr+' — '+summary+'\n';var _tmpl='---\ntype: daily\ndate: '+dateStr+'\nweek: \nmood: \nenergy: \n---\n\n# Daily Log — '+dateStr+'\n\n## Top 3\n- \n- \n- \n\n## Notes\n\n## Done\n\n## Tomorrow\n\n## Conversations\n';
+var newContent=existing.trim().length?(existing.trim()+'\n'+bullet):(_tmpl+bullet);await vaultWrite(_p,newContent);if(typeof buildGraph==='function'&&typeof vaultConnected!=='undefined'&&vaultConnected){buildGraph();setTimeout(function(){if(typeof spawnBirthParticle==='function')spawnBirthParticle('daily','00-Capture/'+fname);},400);}return true;}catch(e){return false;}}
 var CONVO_EXIT_PHRASES=/\b(bye baker|goodbye baker|bye[,]? baker|that'?s all|that'?ll be all|end conversation|stop talking|we'?re done|i'?m done|talk later)\b/;
 var CONVO_SAVE_PHRASES=/\b(save (this|that|our) conversation|save (this|that) to (my|the) (vault|daily log|notes)|log this conversation|write this down)\b/;
-async function saveConversationToVault(){if(typeof vaultHandle==='undefined'||!vaultHandle||!vaultConnected)return false;try{var now=new Date();var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');var timeStr=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');var dir=await vaultHandle.getDirectoryHandle('00-Capture',{create:true});var fname=dateStr+'.md';var fileHandle=await dir.getFileHandle(fname,{create:true});var file=await fileHandle.getFile();var existing=await file.text();var transcript='\n## Conversation with Baker — '+timeStr+'\n\n';conversationHistory.forEach(function(m){var who=m.role==='user'?'**You:**':'**Baker:**';transcript+=who+' '+m.content+'\n\n';});var _tmpl2='---\ntype: daily\ndate: '+dateStr+'\nweek: \nmood: \nenergy: \n---\n\n# Daily Log — '+dateStr+'\n\n## Top 3\n- \n- \n- \n\n## Notes\n\n## Done\n\n## Tomorrow\n\n## Conversations\n';
-var newContent=existing.trim().length?(existing.trim()+'\n'+transcript):(_tmpl2+transcript);var writable=await fileHandle.createWritable();await writable.write(newContent);await writable.close();if(typeof vaultIndex!=='undefined'){var _vi=vaultIndex.findIndex(function(n){return n.path==='00-Capture/'+fname;});if(_vi>=0)vaultIndex[_vi].content=newContent;else vaultIndex.push({name:fname,path:'00-Capture/'+fname,content:newContent});}if(typeof buildGraph==='function'&&typeof vaultConnected!=='undefined'&&vaultConnected){buildGraph();setTimeout(function(){if(typeof spawnBirthParticle==='function')spawnBirthParticle('daily','00-Capture/'+fname);},400);}return true;}catch(e){return false;}}
+async function saveConversationToVault(){if(!vaultConnected)return false;try{var now=new Date();var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');var timeStr=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');var fname=dateStr+'.md';var _p='00-Capture/'+fname;var _ex=vaultIndex.find(function(n){return n.path===_p;});var existing=_ex?_ex.content:'';var transcript='\n## Conversation with Baker — '+timeStr+'\n\n';conversationHistory.forEach(function(m){var who=m.role==='user'?'**You:**':'**Baker:**';transcript+=who+' '+m.content+'\n\n';});var _tmpl2='---\ntype: daily\ndate: '+dateStr+'\nweek: \nmood: \nenergy: \n---\n\n# Daily Log — '+dateStr+'\n\n## Top 3\n- \n- \n- \n\n## Notes\n\n## Done\n\n## Tomorrow\n\n## Conversations\n';
+var newContent=existing.trim().length?(existing.trim()+'\n'+transcript):(_tmpl2+transcript);await vaultWrite(_p,newContent);if(typeof buildGraph==='function'&&typeof vaultConnected!=='undefined'&&vaultConnected){buildGraph();setTimeout(function(){if(typeof spawnBirthParticle==='function')spawnBirthParticle('daily','00-Capture/'+fname);},400);}return true;}catch(e){return false;}}
 async function sendToConversation(txt,key){conversationHistory.push({role:'user',content:txt});var webOn=localStorage.getItem('baker_web_search')==='true';var sys='You are BAKER, an AI assistant modelled after JARVIS from Iron Man, currently in a live spoken conversation with the user. This is a natural back-and-forth dialogue — respond conversationally, ask follow-up questions when helpful, and remember context from earlier in this conversation. Keep responses concise (1-4 spoken sentences) since they are read aloud via text-to-speech. No markdown, no lists, no headers — plain spoken prose only. Address the user as "sir" occasionally but not every sentence. If the user wants to capture notes, ideas, or a journal/daily-log entry from this conversation, acknowledge naturally — note-saving to the vault happens automatically when the conversation ends.';var body={model:'claude-sonnet-4-6',max_tokens:300,system:sys,messages:conversationHistory.slice(-20)};if(webOn)body.tools=[{type:'web_search_20250305',name:'web_search',max_uses:2}];try{var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});var data=await resp.json();var response=data.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text||'';}).join('').trim();conversationHistory.push({role:'assistant',content:response});speakResponse(response);}catch(e){speakResponse('I encountered a fault, sir.');setOrbState('idle');if(conversationMode)setTimeout(activateListening,ECHO_LOCKOUT_MS);else startWakeWord();}}
 
 // ═══════════════════════════════════════════════════════════
@@ -1143,11 +1307,20 @@ function setStatus(txt){document.getElementById('sb-txt').textContent=txt;}
 // ═══════════════════════════════════════════════════════════
 // SETTINGS
 // ═══════════════════════════════════════════════════════════
-function openSettings(){var overlay=document.getElementById('overlay');overlay.classList.add('open');var k=localStorage.getItem('baker_api_key');if(k)document.getElementById('key-input').value=k;var ws=localStorage.getItem('baker_web_search')==='true';document.getElementById('search-toggle').checked=ws;document.getElementById('search-lbl').textContent=ws?'ON':'OFF';var effort=localStorage.getItem('baker_effort')||'standard';setEffort(effort,true);var rate=parseFloat(localStorage.getItem('baker_speech_rate')||'0.92');var pct=Math.round(rate*100);document.getElementById('speech-rate-slider').value=pct;document.getElementById('speech-rate-display').textContent=pct;var id=localStorage.getItem('baker_spotify_id');if(id){var inp=document.getElementById('sp-set-id-inp');if(inp)inp.value=id;}SP.updateSettingsUI();}
+function openSettings(){var overlay=document.getElementById('overlay');overlay.classList.add('open');var k=localStorage.getItem('baker_api_key');if(k)document.getElementById('key-input').value=k;
+  var _gr=localStorage.getItem('baker_gh_repo');if(_gr&&document.getElementById('gh-repo-input'))document.getElementById('gh-repo-input').value=_gr;
+  var _gb=localStorage.getItem('baker_gh_branch');if(_gb&&document.getElementById('gh-branch-input'))document.getElementById('gh-branch-input').value=_gb;
+  var _gt=localStorage.getItem('baker_gh_token');if(_gt&&document.getElementById('gh-token-input'))document.getElementById('gh-token-input').value=_gt;var ws=localStorage.getItem('baker_web_search')==='true';document.getElementById('search-toggle').checked=ws;document.getElementById('search-lbl').textContent=ws?'ON':'OFF';var effort=localStorage.getItem('baker_effort')||'standard';setEffort(effort,true);var rate=parseFloat(localStorage.getItem('baker_speech_rate')||'0.92');var pct=Math.round(rate*100);document.getElementById('speech-rate-slider').value=pct;document.getElementById('speech-rate-display').textContent=pct;var id=localStorage.getItem('baker_spotify_id');if(id){var inp=document.getElementById('sp-set-id-inp');if(inp)inp.value=id;}SP.updateSettingsUI();}
 function closeSettings(){document.getElementById('overlay').classList.remove('open');}
 function closeIfOutside(e){if(e.target===document.getElementById('overlay'))closeSettings();}
 function toggleShow(){var i=document.getElementById('key-input');i.type=i.type==='password'?'text':'password';}
-function saveKey(){var v=document.getElementById('key-input').value.trim();if(v)localStorage.setItem('baker_api_key',v);closeSettings();}
+function toggleShowGH(){var i=document.getElementById('gh-token-input');i.type=i.type==='password'?'text':'password';}
+function saveKey(){var v=document.getElementById('key-input').value.trim();if(v)localStorage.setItem('baker_api_key',v);
+  var gr=document.getElementById('gh-repo-input');var gb=document.getElementById('gh-branch-input');var gt=document.getElementById('gh-token-input');
+  if(gr){var rv=gr.value.trim();if(rv)localStorage.setItem('baker_gh_repo',rv);else localStorage.removeItem('baker_gh_repo');}
+  if(gb){var bv=gb.value.trim();localStorage.setItem('baker_gh_branch',bv||'main');}
+  if(gt){var tv=gt.value.trim();if(tv)localStorage.setItem('baker_gh_token',tv);}
+  closeSettings();}
 function clearKey(){localStorage.removeItem('baker_api_key');document.getElementById('key-input').value='';closeSettings();}
 function toggleWebSearch(){var b=document.getElementById('web-search-btn');var on=localStorage.getItem('baker_web_search')==='true';localStorage.setItem('baker_web_search',!on);b.className='hbtn'+(!on?' on':'');b.textContent=(!on?'🌐 Web ✓':'🌐 Web');}
 function updateSearchToggle(){var on=document.getElementById('search-toggle').checked;localStorage.setItem('baker_web_search',on);document.getElementById('search-lbl').textContent=on?'ON':'OFF';var b=document.getElementById('web-search-btn');b.className='hbtn'+(on?' on':'');b.textContent=(on?'🌐 Web ✓':'🌐 Web');}
@@ -1157,6 +1330,7 @@ document.getElementById('speech-rate-slider').addEventListener('input',function(
 </script>
 <script src="js/spotify.js"></script>
 <script src="js/calendar.js"></script>
+<script src="js/vault-github.js"></script>
 <script src="js/vault-ui.js"></script>
 <script src="js/budget.js"></script>
 
@@ -1305,6 +1479,20 @@ var savedEffort=localStorage.getItem('baker_effort')||'standard';setEffort(saved
 var savedRate=parseFloat(localStorage.getItem('baker_speech_rate')||'0.92');speechRate=savedRate;
 var pct=Math.round(savedRate*100);document.getElementById('speech-rate-slider').value=pct;document.getElementById('speech-rate-display').textContent=pct;
 SP.init();startWakeWord();
+// Mobile: File System API unavailable — use GitHub backend if configured
+if(!hasFS){
+  var _sub=document.getElementById('graph-ph-sub');
+  var _btn=document.getElementById('graph-connect-btn');
+  var _ghReady=(typeof GHVAULT!=='undefined'&&GHVAULT.isConfigured());
+  if(_ghReady){
+    if(_sub)_sub.textContent='Tap Connect to load your vault from GitHub.';
+    // keep the connect button visible — it routes to GitHub
+  }else{
+    if(_sub)_sub.textContent='Add your GitHub token & repo in Settings to sync your vault on mobile.';
+    if(_btn)_btn.textContent='⚙ Open Settings';
+    if(_btn)_btn.setAttribute('onclick','openSettings()');
+  }
+}
 // Vault reconnect requires a user gesture (click) for requestPermission in Chrome.
 // Register a one-time listener — fires on first click anywhere on the page.
 (function(){
@@ -1319,6 +1507,10 @@ SP.init();startWakeWord();
   document.addEventListener('click',_tryOnce);
   document.addEventListener('keydown',_tryOnce);
 })();
+// Mobile: auto-connect GitHub vault on load if configured
+if(!hasFS&&typeof GHVAULT!=='undefined'&&GHVAULT.isConfigured()){
+  setTimeout(function(){GHVAULT.connect();},500);
+}
 </script>
 </body>
 </html>
