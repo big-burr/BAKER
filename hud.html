@@ -1109,7 +1109,7 @@ async function storeHandle(h){try{var db=await openDB();db.transaction('handles'
 async function getStoredHandle(){try{var db=await openDB();return new Promise(function(res){var r=db.transaction('handles','readonly').objectStore('handles').get('vault');r.onsuccess=function(){res(r.result?r.result.handle:null);};r.onerror=function(){res(null);};});}catch(e){return null;}}
 async function clearHandle(){try{var db=await openDB();db.transaction('handles','readwrite').objectStore('handles').delete('vault');}catch(e){}}
 async function tryReconnectVault(){var stored=await getStoredHandle();if(!stored)return;setVaultBtn('scanning');try{var perm=await stored.requestPermission({mode:'readwrite'});if(perm==='granted'){await doConnect(stored);}else{setVaultBtn('off');}}catch(e){setVaultBtn('off');}}
-async async function handleVaultBtn(){
+async function handleVaultBtn(){
   // Disconnect if already connected
   if(vaultConnected){
     vaultHandle=null;vaultIndex=[];vaultConnected=false;vaultBackend=null;graphNodes=[];graphEdges=[];
@@ -1330,7 +1330,8 @@ document.getElementById('speech-rate-slider').addEventListener('input',function(
 </script>
 <script src="js/spotify.js"></script>
 <script src="js/calendar.js"></script>
-<script src="js/vault-github.js"></script>
+<script src="js/cal.js"></script>
+<script src="js/mcal.js"></script>
 <script src="js/vault-ui.js"></script>
 <script src="js/budget.js"></script>
 
@@ -1456,11 +1457,11 @@ makeWindowBehavior(document.getElementById('spotify-panel'),document.getElementB
 makeWindowBehavior(document.getElementById('calendar-panel'),document.getElementById('calendar-panel').querySelector('.cal-hdr'),{minW:280,minH:200});
 CAL.init();
 makeWindowBehavior(document.getElementById('month-panel'),document.getElementById('month-panel').querySelector('.mcal-hdr'),{minW:320,minH:360});
-MCAL.init();
+if(typeof MCAL!=='undefined')MCAL.init();
 makeWindowBehavior(document.getElementById('vault-panel'),document.getElementById('vault-panel').querySelector('.vp-hdr'),{minW:300,minH:300});
 VAULTUI.init();
 makeWindowBehavior(document.getElementById('vaultchat-panel'),document.getElementById('vaultchat-panel').querySelector('#vc-hdr'),{minW:320,minH:300});
-VAULTCHAT.init();
+if(typeof VAULTCHAT!=='undefined')VAULTCHAT.init();
 BUDGET.init();
 makeWindowBehavior(document.getElementById('budget-panel'),document.getElementById('budget-panel').querySelector('.bp-hdr'),{minW:600,minH:400});
 makeWindowBehavior(document.getElementById('graphui-panel'),document.getElementById('graphui-panel').querySelector('.gui-hdr'),{minW:260,minH:400});
